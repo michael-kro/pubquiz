@@ -1,4 +1,4 @@
-import { connectSocket, h, LETTERS, ordinal, preload, setDeadline, tick } from './common.js';
+import { brandBlock, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, setDeadline, tick } from './common.js';
 
 const TOKEN_KEY = 'pubquiz.team-token';
 const app = document.getElementById('app');
@@ -183,7 +183,7 @@ function sendAnswer(value) {
  */
 function render() {
   const { remainingMs, ...question } = state?.question ?? {};
-  const key = JSON.stringify([state && { ...state, question, preloadImage: 0 }, ended, joinError, notice, pending, draftOrder, !!token, pendingJoin, connected]);
+  const key = JSON.stringify([state && { ...state, question, preloadImage: 0 }, ended, joinError, notice, pending, draftOrder, !!token, pendingJoin, connected, getBranding()]);
   if (key === lastRenderKey) return;
   lastRenderKey = key;
   // If someone is typing, keep the keyboard open across the rebuild.
@@ -287,6 +287,7 @@ function joinForm() {
   return h(
     'form',
     { class: 'screen join', onsubmit: submit },
+    brandBlock(),
     h('h1', {}, 'Join the quiz'),
     hasRoomFromLink
       ? null
@@ -340,6 +341,7 @@ function phaseView(s) {
       return h(
         'section',
         { class: 'screen center' },
+        brandBlock(),
         h('h1', {}, "You're in!"),
         h('p', {}, 'Waiting for the quiz master to start.'),
         h('p', { class: 'muted' }, `${s.teamCount} ${s.teamCount === 1 ? 'team has' : 'teams have'} joined`),
@@ -404,6 +406,7 @@ function phaseView(s) {
       return h(
         'section',
         { class: 'screen' },
+        final ? brandBlock() : null,
         h('h1', { class: 'center' }, final ? 'Final results' : 'Leaderboard'),
         h('p', { class: 'center big' }, `${final ? 'You finished' : "You're"} ${ordinal(s.rank)} of ${s.teamCount}`),
         standingsList(s.standings, s.teamId, final ? Infinity : 10),
@@ -560,4 +563,9 @@ function standingsList(rows, myTeamId, limit) {
   );
 }
 
+// Colours and logo first, so the page never flashes the default look.
+loadBranding().then((b) => {
+  if (b.name) document.title = b.name;
+  render();
+});
 render();

@@ -580,7 +580,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
     if (value === undefined) delete scoring[name];
     else scoring[name] = value;
     model.scoring = Object.keys(scoring).length ? scoring : undefined;
-    changed({ structure: name === 'mode' });
+    changed({ structure: name === 'mode' || name === 'fastBonus' });
   }
 
   /** A labelled drop-down for a quiz-wide setting. */
@@ -682,6 +682,10 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           : null,
         (model.scoring?.mode ?? 'speed') === 'first'
           ? field('First-correct bonus', numberInput(model.scoring?.bonus, '500', (v) => setScoring('bonus', v)), 'bonus')
+          : null,
+        setting('Fastest teams bonus', [[0, 'Off'], [100, 'Small: 100'], [250, 'Medium: 250'], [500, 'Big: 500']], () => model.scoring?.fastBonus ?? 0, (v) => setScoring('fastBonus', Number(v) || undefined)),
+        (model.scoring?.fastBonus ?? 0) > 0
+          ? setting('Teams that earn it', [[1, 'Quickest only'], [2, 'Quickest two'], [3, 'Quickest three']], () => model.scoring?.fastPlaces ?? 1, (v) => setScoring('fastPlaces', Number(v)))
           : null,
         setting('Leaderboard', [['question', 'After every question'], ['round', 'After each round']], () => model.scoring?.leaderboard ?? 'question', (v) => setScoring('leaderboard', v)),
       ),

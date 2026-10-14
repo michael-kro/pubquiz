@@ -1,10 +1,12 @@
 // HTTP API for the host's quiz library and editor. Every route needs the host key.
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sampleQuizFiles } from './assets.ts';
+import { BrandingError, MAX_LOGO_BYTES, type BrandingStore } from './branding.ts';
 import { Library, LibraryError, MAX_IMAGE_UPLOAD, MAX_IMPORT, type QuizDraft } from './library.ts';
 
 export interface ApiContext {
   library: Library;
+  branding?: BrandingStore;
   isHost(key: string | undefined): boolean;
   /** Starts a library quiz; returns problems that stop it running, if any. */
   runQuiz(id: string, fresh: boolean): Promise<{ ok: true } | { ok: false; issues: string[] }>;
@@ -57,6 +59,25 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
     if (parts[0] === 'quizzes' && parts.length === 1) {
       if (method === 'GET') return void sendJson(res, 200, await library.list()), true;
       if (method === 'POST') return void sendJson(res, 201, { id: await library.create() }), true;
+    }
+
+    if (parts[0] === 'branding' && ctx.branding) {
+      const branding = ctx.branding;
+      if (parts.length === 1 && method === 'GET') {
+        return void sendJson(res, 200, { ...(await branding.info()), editable: branding.editable }), true;
+      }
+      if (parts.length === 1 && method === 'PUT') {
+        await branding.save(await readJson(req));
+        return void sendJson(res, 200, { ...(await branding.info()), editable: branding.editable }), true;
+      }
+      if (parts[1] === 'logo' && method === 'POST') {
+        await branding.setLogo(url.searchParams.get('name') ?? '', await readBody(req, MAX_LOGO_BYTES));
+        return void sendJson(res, 200, { ...(await branding.info()), editable: branding.editable }), true;
+      }
+      if (parts[1] === 'logo' && method === 'DELETE') {
+        await branding.removeLogo();
+        return void sendJson(res, 200, { ...(await branding.info()), editable: branding.editable }), true;
+      }
     }
 
     if (parts[0] === 'sample' && parts.length === 1 && method === 'POST') {
@@ -128,7 +149,7 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
 
     sendJson(res, 404, { error: 'Not found.' });
   } catch (error) {
-    if (error instanceof LibraryError) sendJson(res, error.status, { error: error.message });
+    if (error instanceof LibraryError || error instanceof BrandingError) sendJson(res, error.status, { error: error.message });
     else {
       console.error(error);
       sendJson(res, 500, { error: 'Something went wrong.' });

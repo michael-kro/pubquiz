@@ -5,6 +5,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
+import { BrandingStore } from './branding.ts';
 import { Library } from './library.ts';
 import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
 import { createQuizServer, type QuizServer, type SessionOptions } from './server.ts';
@@ -29,6 +30,8 @@ Options:
       --public-url <url> Use your own public address instead (e.g. a VPS or Tailscale Funnel)
       --public-host <h>  Address to put in the local join link (default: this laptop's Wi-Fi address)
       --quizzes <dir>    Where the quiz library lives (default ${DEFAULT_LIBRARY})
+      --branding <dir>   Folder with branding.json and a logo (name, colours, logo on every page).
+                         Default: the "branding" folder inside your quiz library, editable from the host screen
       --no-name-filter   Allow any team name (the default blocks swearing; invisible characters are always removed)
       --host-pin <pin>   Let the host open /host by typing this PIN (6+ characters), e.g. from a phone
       --no-open          Don't open the host screen in a browser
@@ -94,6 +97,7 @@ async function main(): Promise<void> {
       quizzes: { type: 'string' },
       'host-pin': { type: 'string' },
       'no-name-filter': { type: 'boolean', default: false },
+      branding: { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
   });
@@ -117,6 +121,14 @@ async function main(): Promise<void> {
   const single = quizPath ? await loadQuizArgument(quizPath, values.fresh) : undefined;
   const library = quizPath ? undefined : new Library(resolve(values.quizzes ?? DEFAULT_LIBRARY));
 
+  // A library keeps its branding inside itself, where the host screen can edit it. A folder given on the
+  // command line is used as it is, which is the way to brand a single quiz file.
+  const branding = values.branding
+    ? new BrandingStore(resolve(values.branding), { readOnly: !library })
+    : library
+      ? new BrandingStore(join(library.dir, 'branding'))
+      : undefined;
+
   let tunnel: TunnelManager | undefined;
   let server: QuizServer | undefined;
   try {
@@ -126,6 +138,7 @@ async function main(): Promise<void> {
       library,
       hostKey: library ? await libraryHostKey(library.dir) : undefined,
       hostPin: hostPin?.trim(),
+      branding,
       nameFilter: !values['no-name-filter'],
       port,
       publicHost: values['public-host'],

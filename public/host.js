@@ -1,4 +1,5 @@
-import { connectSocket, h, LETTERS, ordinal, preload, setDeadline, tick } from './common.js';
+import { brandBlock, brandLogo, connectSocket, h, LETTERS, loadBranding, ordinal, preload, setDeadline, tick } from './common.js';
+import { mountBranding } from './branding.js';
 import { mountEditor } from './editor.js';
 
 const app = document.getElementById('app');
@@ -45,6 +46,8 @@ async function api(method, path, body) {
   return data;
 }
 
+const isBrandingPage = () => !TV && location.hash === '#branding';
+let brandingOpen = false;
 const editingId = () => /^#edit\/([a-z0-9-]+)$/.exec(location.hash)?.[1];
 window.addEventListener('hashchange', () => render());
 
@@ -113,6 +116,7 @@ function forgetKey() {
 }
 
 async function start() {
+  await loadBranding();
   if (key) return connect();
   if (TV) {
     fatal = 'Open the TV link from the host screen.';
@@ -205,6 +209,19 @@ function render() {
     app.replaceChildren(h('section', { class: 'screen center' }, h('h1', {}, "Can't open the host screen"), h('p', {}, fatal)));
     return;
   }
+  if (isBrandingPage() && key) {
+    if (!brandingOpen) {
+      brandingOpen = true;
+      mountBranding(app, {
+        api,
+        onExit() {
+          location.hash = '';
+        },
+      });
+    }
+    return; // The branding panel draws itself.
+  }
+  brandingOpen = false;
   const editId = editingId();
   if (editId) {
     if (editor?.id !== editId) openEditor(editId);
@@ -349,9 +366,11 @@ function libraryView(s) {
     h(
       'header',
       { class: 'library-bar' },
+      brandLogo('brand-logo small'),
       h('h1', {}, 'Your quizzes'),
       networkPill(s.network),
       h('span', { class: 'spacer' }),
+      h('a', { class: 'button', href: '#branding' }, 'Branding'),
       h(
         'label',
         { class: 'button' },
@@ -511,6 +530,7 @@ function topBar(s) {
     return h(
       'header',
       { class: 'host-bar' },
+      brandLogo('brand-logo small'),
       h('span', { class: 'quiz-title' }, s.quizTitle),
       h('span', { class: 'join-hint' }, 'Join: ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)),
       soundButton(),
@@ -519,6 +539,7 @@ function topBar(s) {
   return h(
     'header',
     { class: 'host-bar' },
+    brandLogo('brand-logo small'),
     h('span', { class: 'quiz-title' }, s.quizTitle),
     networkPill(s.network),
     soundButton(),
@@ -544,6 +565,7 @@ function stage(s) {
         h(
           'div',
           {},
+          brandBlock(),
           h('h1', {}, 'Scan to join'),
           h('p', { class: 'big' }, s.joinUrl.replace(/^https?:\/\//, '')),
           h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
@@ -576,6 +598,7 @@ function stage(s) {
           ? h('img', { class: `question-image host-image${s.review ? ' small' : ''}`, src: q.image, alt: '' })
           : null,
         questionBody(s, q, reveal),
+        reveal ? fastestBlock(s) : null,
         s.phase === 'open' ? timerBar(q) : null,
         answerProgress(s),
         TV ? null : questionControls(s),
@@ -589,6 +612,7 @@ function stage(s) {
       return h(
         'div',
         { class: 'board' },
+        final ? brandBlock() : null,
         h(
           'h1',
           { class: 'center' },
@@ -620,6 +644,19 @@ function stage(s) {
     }
   }
   return h('div');
+}
+
+/** The quickest correct teams, with what the speed bonus gave them. */
+function fastestBlock(s) {
+  if (!s.fastest?.length) return null;
+  const names = ['Fastest', '2nd fastest', '3rd fastest'];
+  return h(
+    'ul',
+    { class: 'fastest' },
+    s.fastest.map((f) =>
+      h('li', {}, h('span', { class: 'bolt' }, '⚡'), h('span', { class: 'fastest-name' }, f.name), h('span', { class: 'muted' }, names[f.place - 1]), h('span', { class: 'gained' }, `+${f.points}`)),
+    ),
+  );
 }
 
 /** "+950" and an arrow for how far a team moved. */

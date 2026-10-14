@@ -132,6 +132,8 @@ export interface HostView {
   review?: ReviewGroup[];
   /** Ordering: e.g. "3 of 8 teams got the order exactly right". Letter: how many teams tapped each letter. */
   summary?: string;
+  /** From the reveal: the quickest correct teams and what they earned for it. */
+  fastest?: { name: string; points: number; place: number }[];
   standings: StandingRow[];
   preloadImage?: string;
   /** The host can end this quiz and go back to the library. */

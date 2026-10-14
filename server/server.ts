@@ -9,6 +9,7 @@ import { handleApi } from './api.ts';
 import { readPublicFile } from './assets.ts';
 import { Game, type Team } from './game.ts';
 import type { Library } from './library.ts';
+import type { BrandingStore } from './branding.ts';
 import { clientAddress, TokenBucket, WindowCounter } from './limits.ts';
 import { lanAddress } from './net.ts';
 import { parseClientMessage, type HostIdleView, type HostView, type ServerMessage } from './protocol.ts';
@@ -66,6 +67,8 @@ export interface ServerOptions {
   library?: Library;
   /** A short PIN the host can type at /host instead of using the secret link (for running the quiz from a phone). */
   hostPin?: string;
+  /** Name, colours and logo for every page. */
+  branding?: BrandingStore;
   /** Turn off the team-name word filter. */
   nameFilter?: boolean;
   /** Keeps the host link the same across restarts. Defaults to the resumed session's key, or a new one. */
@@ -509,9 +512,32 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     const url = new URL(req.url ?? '/', 'http://localhost');
     const { pathname } = url;
 
+    if (pathname === '/branding.json' || pathname === '/branding/logo') {
+      const branding = options.branding;
+      if (pathname === '/branding.json') {
+        res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-cache', ...PAGE_HEADERS });
+        res.end(JSON.stringify(branding ? await branding.info() : { name: '', tagline: '', accent: '#f5b83d', background: '#14161f' }));
+        return;
+      }
+      const logo = await branding?.logo();
+      if (!logo) {
+        res.writeHead(404).end('Not found');
+        return;
+      }
+      res.writeHead(200, {
+        'content-type': logo.contentType,
+        'cache-control': 'public, max-age=3600',
+        'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+        'x-content-type-options': 'nosniff',
+      });
+      res.end(logo.data);
+      return;
+    }
+
     if (options.library) {
       const handled = await handleApi(req, res, url, {
         library: options.library,
+        branding: options.branding,
         isHost: isHostKey,
         runQuiz: runLibraryQuiz,
       });

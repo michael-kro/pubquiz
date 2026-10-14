@@ -17,6 +17,9 @@ export const MAX_LATENCY_MS = 1500;
 /** How far a phone's own answer time may stray below the server's bound before it's not trusted. */
 export const CLIENT_TIME_TOLERANCE_MS = 150;
 export const MAX_EXTEND_SECONDS = 120;
+/** Share of the fastest-team bonus for 1st, 2nd and 3rd quickest. */
+const FAST_SHARES = [1, 0.6, 0.3];
+const FAST_NAMES = ['Fastest', 'Second fastest', 'Third fastest'];
 
 export interface Answer {
   /** Multiple choice: option index. Text: what the team typed. Ordering: original item indices in the team's order. */
@@ -122,7 +125,7 @@ export class Game {
   /** Questions the host skipped: nobody scores on them. */
   private readonly skipped = new Set<number>();
   /** The first correct team per question ("first" scoring), cleared whenever anything changes. */
-  private firstCorrectMemo = new Map<number, string | undefined>();
+  private firstCorrectMemo = new Map<number, string[]>();
   /** Host marking of typed answers, per question, keyed by normalised answer. */
   private readonly overrides = new Map<number, Map<string, boolean>>();
 
@@ -489,28 +492,50 @@ export class Game {
     return override ?? matchAnswer(given, accepted) !== 'none';
   }
 
-  /** Points for an answer, including the first-correct bonus when the question is scored that way. */
+  /** Points for an answer, including the bonus for being among the quickest correct teams. */
   private markAnswer(questionIndex: number, answer: Answer, team: Team): Marked {
     const marked = this.baseMark(questionIndex, answer);
-    const q = this.quiz.questions[questionIndex]!;
-    if (q.mode === 'first' && marked.correct && this.firstCorrect(questionIndex) === team.id) {
-      return { ...marked, points: marked.points + this.quiz.bonus, detail: marked.detail ?? 'First correct answer: bonus!' };
-    }
-    return marked;
+    if (!marked.correct) return marked;
+    const bonus = this.fastBonusFor(questionIndex, team.id);
+    if (!bonus) return marked;
+    return { ...marked, points: marked.points + bonus.points, detail: [marked.detail, bonus.label].filter(Boolean).join(' · ') };
   }
 
-  /** The team that answered a question correctly in the shortest time. */
-  private firstCorrect(questionIndex: number): string | undefined {
-    if (this.firstCorrectMemo.has(questionIndex)) return this.firstCorrectMemo.get(questionIndex);
-    let best: { id: string; ms: number } | undefined;
+  /** What a team earns for being among the quickest correct answers to a question, if anything. */
+  private fastBonusFor(questionIndex: number, teamId: string): { points: number; label: string; place: number } | undefined {
+    const q = this.quiz.questions[questionIndex]!;
+    const order = this.fastestOrder(questionIndex);
+    const place = order.indexOf(teamId);
+    if (place < 0) return undefined;
+    if (q.mode === 'first') {
+      return place === 0 && this.quiz.bonus > 0 ? { points: this.quiz.bonus, label: '⚡ First correct answer: bonus!', place } : undefined;
+    }
+    if (place >= this.quiz.fastPlaces || this.quiz.fastBonus <= 0) return undefined;
+    const points = Math.round(this.quiz.fastBonus * FAST_SHARES[place]!);
+    return { points, label: `⚡ ${FAST_NAMES[place]} correct answer: +${points}`, place };
+  }
+
+  /** Teams with a correct answer, quickest first (ties go to whoever joined first). */
+  private fastestOrder(questionIndex: number): string[] {
+    const memo = this.firstCorrectMemo.get(questionIndex);
+    if (memo) return memo;
+    const correct: { id: string; ms: number }[] = [];
     for (const team of this.teams.values()) {
       const answer = team.answers.get(questionIndex);
-      if (answer && this.baseMark(questionIndex, answer).correct && (!best || answer.answerMs < best.ms)) {
-        best = { id: team.id, ms: answer.answerMs };
-      }
+      if (answer && this.baseMark(questionIndex, answer).correct) correct.push({ id: team.id, ms: answer.answerMs });
     }
-    this.firstCorrectMemo.set(questionIndex, best?.id);
-    return best?.id;
+    const order = correct.sort((a, b) => a.ms - b.ms).map((c) => c.id);
+    this.firstCorrectMemo.set(questionIndex, order);
+    return order;
+  }
+
+  /** For the host and TV: who earned the speed bonus on the question just revealed. */
+  fastestTeams(): { name: string; points: number; place: number }[] {
+    if (!this.isRevealed(this.questionIndex) || this.questionIndex < 0) return [];
+    return this.fastestOrder(this.questionIndex).flatMap((id) => {
+      const bonus = this.fastBonusFor(this.questionIndex, id);
+      return bonus ? [{ name: this.teams.get(id)!.name, points: bonus.points, place: bonus.place + 1 }] : [];
+    });
   }
 
   private baseMark(questionIndex: number, answer: Answer): Marked {
@@ -788,6 +813,7 @@ export class Game {
       distribution,
       review,
       summary,
+      fastest: this.fastestTeams(),
       standings,
       preloadImage: this.preloadImage(),
     };

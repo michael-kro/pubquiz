@@ -8,6 +8,8 @@ const quiz: Quiz = {
   title: 'Test',
   speedFactor: 0.5,
   bonus: 500,
+  fastBonus: 0,
+  fastPlaces: 1,
   leaderboard: 'question',
   questions: [
     { type: 'multiple-choice', round: 'R1', roundIndex: 0, mode: 'speed', text: 'Q1', options: ['a', 'b', 'c', 'd'], answer: 1, seconds: 20, points: 1000 },

@@ -37,6 +37,10 @@ A question also closes on its own when time runs out or every connected team has
 
 **From a phone:** start with `--host-pin <pin>` (6 or more characters), open `/host` on the host's phone and type the PIN. The phone remembers it. Wrong guesses are limited, but if the quiz is on the internet link, choose a long PIN.
 
+**Branding:** press **Branding** on the quizzes screen to set your venue's name, tagline, accent and background colours, and logo. They show on the team phones (join, lobby and final screens), the host screen and the TV. Text colours are worked out for you so everything stays readable, and the panel warns if the accent is hard to see. Use a logo with a transparent background. To brand a single quiz file, point `--branding <folder>` at a folder holding `branding.json` and `logo.png` (see `venues/my-venue/branding` for a real one).
+
+**Speed bonus:** besides faster answers scoring more, the quickest correct teams earn extra: set `fastBonus` and `fastPlaces` under `scoring` (or use the editor's **Fastest teams bonus**). First place gets all of it, second 60% and third 30%. The reveal shows who earned it.
+
 **Results:** when a quiz finishes, a `…results-<date>.csv` is saved next to it, and the final screen has **Download results (CSV)** with one column per question.
 
 ### How phones connect
@@ -86,6 +90,8 @@ scoring:
                        # first: flat, plus `bonus` extra points for the first correct team
   speedFactor: 0.5     # speed mode: a correct answer at the buzzer earns half the points
   bonus: 500           # first mode
+  fastBonus: 250       # extra points for the quickest correct teams (0 = off)
+  fastPlaces: 3        # how many teams earn it: 1, 2 or 3 (100%, 60%, 30%)
   leaderboard: question  # or `round`: only show the leaderboard at the end of each round
 rounds:
   - name: Music

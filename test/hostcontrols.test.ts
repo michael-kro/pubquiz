@@ -199,7 +199,7 @@ test('"first" bonus goes only to a correct team, even if a wrong team was quicke
   game.answer(rightLater!.id, 0);
   game.advance();
   assert.equal(game.teamView(rightLater!.id)!.result!.points, 1500);
-  assert.equal(game.teamView(rightLater!.id)!.result!.detail, 'First correct answer: bonus!');
+  assert.equal(game.teamView(rightLater!.id)!.result!.detail, '⚡ First correct answer: bonus!');
   assert.equal(game.teamView(wrongFirst!.id)!.result!.points, 0);
   game.dispose();
 });

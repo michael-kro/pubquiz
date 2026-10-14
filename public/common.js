@@ -117,3 +117,97 @@ export function tick() {
 }
 
 setInterval(tick, 200);
+
+// Branding: a name, tagline, logo and two colours, from /branding.json.
+
+const hexToRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+const rgbToHex = (rgb) => '#' + rgb.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+const mix = (a, b, amount) => rgbToHex(hexToRgb(a).map((v, i) => v + (hexToRgb(b)[i] - v) * amount));
+
+/** WCAG relative luminance, 0 (black) to 1 (white). */
+export function luminance(hex) {
+  const [r, g, b] = hexToRgb(hex).map((v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/** WCAG contrast ratio between two colours, 1 to 21. */
+export function contrast(a, b) {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** Works out every colour the pages use from the two chosen ones, so text stays readable on any pair. */
+export function paletteFor(background, accent) {
+  const dark = luminance(background) < 0.4;
+  const text = dark ? '#f4f1ea' : '#1b1d26';
+  const accentText = contrast(accent, '#1a1406') >= contrast(accent, '#ffffff') ? '#1a1406' : '#ffffff';
+  return {
+    '--bg': background,
+    '--surface': mix(background, dark ? '#ffffff' : '#000000', dark ? 0.07 : 0.05),
+    '--surface-2': mix(background, dark ? '#ffffff' : '#000000', dark ? 0.15 : 0.1),
+    '--text': text,
+    '--muted': mix(text, background, 0.38),
+    '--accent': accent,
+    '--accent-text': accentText,
+    colorScheme: dark ? 'dark' : 'light',
+  };
+}
+
+export function applyPalette(background, accent) {
+  const palette = paletteFor(background, accent);
+  const root = document.documentElement;
+  for (const [name, value] of Object.entries(palette)) {
+    if (name.startsWith('--')) root.style.setProperty(name, value);
+  }
+  root.style.colorScheme = palette.colorScheme;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', background);
+}
+
+let branding = { name: '', tagline: '', accent: '#f5b83d', background: '#14161f' };
+
+/** Loads and applies the branding. Never fails: a missing or slow answer just means the default look. */
+export async function loadBranding() {
+  try {
+    const res = await fetch('/branding.json', { signal: AbortSignal.timeout(2500) });
+    if (res.ok) {
+      const info = await res.json();
+      if (/^#[0-9a-f]{6}$/i.test(info.accent) && /^#[0-9a-f]{6}$/i.test(info.background)) {
+        branding = info;
+        applyPalette(info.background, info.accent);
+      }
+    }
+  } catch {
+    // The default look is fine.
+  }
+  return branding;
+}
+
+export const getBranding = () => branding;
+
+/** Switches to new branding straight away (after the host edits it). */
+export function setBranding(info) {
+  branding = info;
+  applyPalette(info.background, info.accent);
+  document.title = info.name || document.title;
+}
+
+/** The logo as an image, or nothing when there isn't one. */
+export function brandLogo(className = 'brand-logo') {
+  return branding.logo ? h('img', { class: className, src: branding.logo, alt: branding.name ? `${branding.name} logo` : 'Logo' }) : null;
+}
+
+/** Logo, name and tagline stacked, for the start and end screens. */
+export function brandBlock() {
+  const { name, tagline } = branding;
+  if (!branding.logo && !name && !tagline) return null;
+  return h(
+    'div',
+    { class: 'brand-block' },
+    brandLogo('brand-logo big'),
+    !branding.logo && name ? h('p', { class: 'brand-name' }, name) : null,
+    tagline ? h('p', { class: 'brand-tagline' }, tagline) : null,
+  );
+}

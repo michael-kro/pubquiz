@@ -20,6 +20,8 @@
 title: Friday Night Quiz
 scoring:
   speedFactor: 0.5   # a correct answer at the buzzer earns half the points; 0 turns the speed bonus off
+  fastBonus: 250     # extra points for the quickest correct teams on every question (0 = off)
+  fastPlaces: 3      # 1, 2 or 3 teams earn it: 100%, 60% and 30% of fastBonus
 
 rounds:
   - name: General Knowledge
