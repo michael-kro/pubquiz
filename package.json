@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node server/main.ts",
     "dev": "node --watch server/main.ts examples/sample-quiz.yaml",
-    "test": "node --test \"test/**/*.test.ts\"",
+    "test": "node --test --test-timeout=20000 \"test/**/*.test.ts\"",
     "typecheck": "tsc",
     "check": "npm run typecheck && npm test"
   },

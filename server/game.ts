@@ -7,6 +7,12 @@ import { scoreAnswer } from './scoring.ts';
 export const MAX_TEAMS = 30;
 export const MAX_NAME_LENGTH = 24;
 export const MAX_TEXT_ANSWER = 100;
+/**
+ * Most network delay we'll subtract from a team's answer time. Also how long a question stays
+ * open after its deadline, so an answer sent in time over a slow connection still counts.
+ * Capped so a team can't fake a huge delay to buy time.
+ */
+export const MAX_LATENCY_MS = 1500;
 
 export interface Answer {
   /** Multiple choice: option index. Text: what the team typed. Ordering: original item indices in the team's order. */
@@ -27,6 +33,18 @@ interface Marked {
   correct: boolean;
   points: number;
   detail?: string;
+}
+
+export interface GameSnapshot {
+  version: 1;
+  phase: Phase;
+  questionIndex: number;
+  openedAt: number;
+  endsAt: number;
+  teams: { id: string; token: string; name: string; answers: [number, Answer][] }[];
+  sentAt: [string, number][];
+  displayOrders: [number, number[]][];
+  overrides: [number, [string, boolean][]][];
 }
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
@@ -153,7 +171,11 @@ export class Game {
 
   // Play
 
-  answer(teamId: string, value: AnswerValue): Result<null> {
+  /**
+   * `latencyMs` is the team's measured round trip. The question took about half of it to reach the
+   * phone and the answer the other half to come back, so it's removed from the answer time.
+   */
+  answer(teamId: string, value: AnswerValue, latencyMs = 0): Result<null> {
     const team = this.teams.get(teamId);
     if (!team) return fail('Your team is not in this quiz.');
     const question = this.currentQuestion;
@@ -162,10 +184,11 @@ export class Game {
 
     const stored = this.validate(question, value);
     if (!stored.ok) return stored;
+    const latency = Math.min(Math.max(latencyMs, 0), MAX_LATENCY_MS);
     const receivedAt = this.now();
-    if (receivedAt > this.endsAt) return fail("Too late, time's up.");
+    if (receivedAt - latency > this.endsAt) return fail("Too late, time's up.");
 
-    const answerMs = receivedAt - (this.sentAt.get(teamId) ?? this.openedAt);
+    const answerMs = Math.max(0, receivedAt - (this.sentAt.get(teamId) ?? this.openedAt) - latency);
     team.answers.set(this.questionIndex, { value: stored.value, answerMs });
 
     if (this.everyoneAnswered()) this.closeQuestion();
@@ -256,6 +279,39 @@ export class Game {
     clearTimeout(this.timer);
   }
 
+  // Saving and restoring, so a crash or restart mid-quiz loses nothing.
+
+  snapshot(): GameSnapshot {
+    return {
+      version: 1,
+      phase: this.phase,
+      questionIndex: this.questionIndex,
+      openedAt: this.openedAt,
+      endsAt: this.endsAt,
+      teams: [...this.teams.values()].map((t) => ({ id: t.id, token: t.token, name: t.name, answers: [...t.answers] })),
+      sentAt: [...this.sentAt],
+      displayOrders: [...this.displayOrders],
+      overrides: [...this.overrides].map(([index, marks]) => [index, [...marks]]),
+    };
+  }
+
+  /** Rebuilds a game from a snapshot. Every team starts disconnected until its phone rejoins. */
+  static restore(quiz: Quiz, snapshot: GameSnapshot, options: GameOptions = {}): Game {
+    const game = new Game(quiz, options);
+    game.phase = snapshot.phase;
+    game.questionIndex = snapshot.questionIndex;
+    game.openedAt = snapshot.openedAt;
+    game.endsAt = snapshot.endsAt;
+    for (const t of snapshot.teams) {
+      game.teams.set(t.id, { id: t.id, token: t.token, name: t.name, connected: false, answers: new Map(t.answers) });
+    }
+    game.sentAt = new Map(snapshot.sentAt);
+    for (const [index, order] of snapshot.displayOrders) game.displayOrders.set(index, order);
+    for (const [index, marks] of snapshot.overrides) game.overrides.set(index, new Map(marks));
+    if (game.phase === 'open') game.startTimer();
+    return game;
+  }
+
   private openQuestion(index: number): void {
     const question = this.quiz.questions[index];
     if (!question) return;
@@ -268,9 +324,13 @@ export class Game {
     }
     this.sentAt = new Map();
     for (const team of this.teams.values()) this.markSent(team);
-    clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.closeQuestion(), question.seconds * 1000);
+    this.startTimer();
     this.changed();
+  }
+
+  private startTimer(): void {
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.closeQuestion(), Math.max(0, this.endsAt + MAX_LATENCY_MS - this.now()));
   }
 
   private closeQuestion(): void {

@@ -2,7 +2,7 @@
 
 A self-hosted live pub quiz. The host runs it on a laptop. Each team joins on one phone by scanning a QR code, with nothing to install. Up to 30 teams.
 
-Status: milestones M0, M1 and M1b from [PLAN.md](PLAN.md) are done: all five question types on the local network.
+Status: milestones M0, M1, M1b and M2 from [PLAN.md](PLAN.md) are done: all five question types on the local network, with reconnects and crash recovery.
 
 ## Run a quiz
 
@@ -21,7 +21,11 @@ A question also closes on its own when time runs out or every connected team has
 
 Teams' phones must be on the same Wi-Fi as the laptop. Some pub and guest Wi-Fi blocks this. If phones can't load the join page, run the quiz on the laptop's own hotspot. Internet tunnel mode comes in M3.
 
-Options: `--port 3001`, `--public-host <address>` (overrides the address in the join link), `--no-open`.
+Options: `--port 3001`, `--public-host <address>` (overrides the address in the join link), `--no-open`, `--fresh`.
+
+**If something goes wrong mid-quiz:** phones that lose signal or lock rejoin automatically with their score. The quiz is saved to `<quiz name>.session.json` as it runs. If the laptop crashes or you close the program, run the same command again: it carries on from where it was, with the same room code and host link. Use `--fresh` to start over.
+
+**Fair timing:** the server measures each phone's connection delay and takes it off the answer time, so a team on a slow connection isn't penalised (up to 1.5 seconds).
 
 ## Writing a quiz
 

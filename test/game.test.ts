@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { mock, test } from 'node:test';
-import { Game, MAX_TEAMS, type Team } from '../server/game.ts';
+import { Game, MAX_LATENCY_MS, MAX_TEAMS, type Team } from '../server/game.ts';
 import type { Quiz } from '../server/quiz.ts';
 import { scoreAnswer } from '../server/scoring.ts';
 
@@ -178,8 +178,76 @@ test('the question closes by itself when time runs out', () => {
     assert.equal(game.phase, 'open');
     assert.equal(game.hostView().question!.remainingMs, 1);
     mock.timers.tick(1);
+    assert.equal(game.hostView().question!.remainingMs, 0);
+    assert.equal(game.phase, 'open', 'stays open briefly for answers still in flight');
+    mock.timers.tick(MAX_LATENCY_MS);
     assert.equal(game.phase, 'closed');
     game.dispose();
+  } finally {
+    mock.timers.reset();
+  }
+});
+
+test('network latency is taken off the answer time, up to a cap', () => {
+  const { game, clock } = setup();
+  const nearby = join(game, 'Nearby');
+  const faraway = join(game, 'Far Away');
+  const faker = join(game, 'Faker');
+  game.advance();
+  clock.advance(4_000);
+  game.answer(nearby.id, 1, 0);
+  game.answer(faraway.id, 1, 800);
+  game.answer(faker.id, 1, 60_000);
+  game.advance();
+  game.advance();
+  // 20 s question: 4 s → 900 points; 3.2 s → 920; the faker only gets the 1.5 s cap: 2.5 s → 937.
+  assert.equal(game.teamView(nearby.id)!.result!.points, 900);
+  assert.equal(game.teamView(faraway.id)!.result!.points, 920);
+  assert.equal(game.teamView(faker.id)!.result!.points, 938);
+  game.dispose();
+});
+
+test('an answer sent before the deadline over a slow link still counts', () => {
+  const { game, clock } = setup();
+  const slow = join(game, 'Slow');
+  join(game, 'Other');
+  game.advance();
+  clock.advance(20_000 + 500);
+  assert.equal(game.answer(slow.id, 1, 0).ok, false, 'no latency: too late');
+  assert.ok(game.answer(slow.id, 1, 600).ok, '600 ms round trip: sent in time');
+  game.dispose();
+});
+
+test('a snapshot restores teams, answers, scores and the open question', () => {
+  mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  try {
+    const game = new Game(quiz);
+    const a = join(game, 'A');
+    const b = join(game, 'B');
+    game.advance();
+    mock.timers.tick(5_000);
+    game.answer(a.id, 1);
+    game.answer(b.id, 0); // everyone has answered, so question 1 closes itself
+    game.advance();
+    game.advance();
+    game.advance(); // question 2 open
+    mock.timers.tick(2_000);
+    game.answer(a.id, 0);
+    const before = game.standings();
+    const snapshot = JSON.parse(JSON.stringify(game.snapshot()));
+    game.dispose();
+
+    const restored = Game.restore(quiz, snapshot);
+    assert.equal(restored.phase, 'open');
+    assert.equal(restored.questionIndex, 1);
+    assert.deepEqual(restored.standings(), before);
+    assert.equal(restored.hostView().connectedCount, 0, 'everyone is offline until they rejoin');
+    assert.equal(restored.rejoin(a.token)?.name, 'A');
+    assert.equal(restored.answer(a.id, 1).ok, false, 'answers survive the restart');
+    assert.ok(restored.answer(b.id, 1).ok);
+    mock.timers.tick(10_000 + MAX_LATENCY_MS);
+    assert.equal(restored.phase, 'closed', 'the question timer carries on');
+    restored.dispose();
   } finally {
     mock.timers.reset();
   }

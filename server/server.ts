@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { Game, type Team } from './game.ts';
+import { createSaver, writeSession, type Session } from './session.ts';
 import { lanAddress } from './net.ts';
 import { parseClientMessage, type HostView, type ServerMessage } from './protocol.ts';
 import type { Quiz } from './quiz.ts';
@@ -23,7 +24,10 @@ const CONTENT_TYPES: Record<string, string> = {
 };
 // No I or O, so codes can't be misread as 1 or 0.
 const ROOM_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-const HEARTBEAT_MS = 15_000;
+const PING_INTERVAL_MS = 5_000;
+/** Pings in a row a connection can miss before it's treated as gone. */
+const MAX_MISSED_PINGS = 3;
+const RTT_SAMPLES = 5;
 
 export interface ServerOptions {
   quiz: Quiz;
@@ -32,6 +36,9 @@ export interface ServerOptions {
   bindHost?: string;
   /** Host name or IP put in the join link. Defaults to the laptop's LAN address. */
   publicHost?: string;
+  /** Where to save the quiz as it runs, and optionally a saved session to carry on from. */
+  session?: { path: string; quizHash: string; resume?: Session };
+  pingIntervalMs?: number;
 }
 
 export interface QuizServer {
@@ -48,20 +55,45 @@ interface Connection {
   ws: WebSocket;
   role?: 'host' | 'team';
   teamId?: string;
-  alive: boolean;
+  pingSentAt?: number;
+  missedPings: number;
+  /** Recent round-trip times in ms, newest last. */
+  rtts: number[];
+}
+
+/** Median of recent round trips: steady against the odd slow ping. */
+function latencyOf(conn: Connection): number {
+  if (conn.rtts.length === 0) return 0;
+  const sorted = [...conn.rtts].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)]!;
 }
 
 export async function createQuizServer(options: ServerOptions): Promise<QuizServer> {
-  const roomCode = Array.from({ length: 4 }, () => ROOM_ALPHABET[randomInt(ROOM_ALPHABET.length)]).join('');
-  const hostKey = randomBytes(18).toString('base64url');
+  const resume = options.session?.resume;
+  const roomCode = resume?.roomCode ?? Array.from({ length: 4 }, () => ROOM_ALPHABET[randomInt(ROOM_ALPHABET.length)]).join('');
+  const hostKey = resume?.hostKey ?? randomBytes(18).toString('base64url');
   const connections = new Set<Connection>();
   const teamConnections = new Map<string, Connection>();
   let joinUrl = '';
   let qrSvg = '';
 
+  const sessionOptions = options.session;
+  const saver = sessionOptions
+    ? createSaver(() =>
+        writeSession(sessionOptions.path, {
+          quizHash: sessionOptions.quizHash,
+          roomCode,
+          hostKey,
+          savedAt: new Date().toISOString(),
+          game: game.snapshot(),
+        }),
+      )
+    : undefined;
+
   let broadcastQueued = false;
-  const game = new Game(options.quiz, {
+  const gameOptions = {
     onChange() {
+      saver?.schedule();
       // Several changes in one tick (e.g. last answer closes the question) go out as one update.
       if (broadcastQueued) return;
       broadcastQueued = true;
@@ -70,7 +102,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         broadcast();
       });
     },
-  });
+  };
+  const game = resume ? Game.restore(options.quiz, resume.game, gameOptions) : new Game(options.quiz, gameOptions);
+  saver?.schedule();
 
   function send(conn: Connection, message: ServerMessage): void {
     if (conn.ws.readyState === conn.ws.OPEN) conn.ws.send(JSON.stringify(message));
@@ -150,7 +184,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
       case 'answer': {
         if (conn.role !== 'team' || !conn.teamId) return send(conn, { t: 'error', message: 'Join a team first.' });
-        const result = game.answer(conn.teamId, msg.value);
+        const result = game.answer(conn.teamId, msg.value, latencyOf(conn));
         if (!result.ok) send(conn, { t: 'error', message: result.error });
         return;
       }
@@ -235,12 +269,26 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   });
   const wss = new WebSocketServer({ server: httpServer, path: '/ws', maxPayload: 4096 });
 
+  function ping(conn: Connection): void {
+    if (conn.pingSentAt !== undefined && ++conn.missedPings >= MAX_MISSED_PINGS) {
+      // Phones that sleep often leave sockets half-open; drop them so the team shows as offline.
+      conn.ws.terminate();
+      return;
+    }
+    conn.pingSentAt ??= Date.now();
+    conn.ws.ping();
+  }
+
   wss.on('connection', (ws) => {
-    const conn: Connection = { ws, alive: true };
+    const conn: Connection = { ws, missedPings: 0, rtts: [] };
     connections.add(conn);
     ws.on('pong', () => {
-      conn.alive = true;
+      if (conn.pingSentAt === undefined) return;
+      conn.rtts = [...conn.rtts, Date.now() - conn.pingSentAt].slice(-RTT_SAMPLES);
+      conn.pingSentAt = undefined;
+      conn.missedPings = 0;
     });
+    ping(conn);
     ws.on('message', (data) => handleMessage(conn, data.toString()));
     ws.on('close', () => {
       connections.delete(conn);
@@ -251,17 +299,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     });
   });
 
-  // Phones that sleep often leave sockets half-open; drop any that stop answering pings.
+  // Browsers answer WebSocket pings automatically, which gives each team's round-trip time.
   const heartbeat = setInterval(() => {
-    for (const conn of connections) {
-      if (!conn.alive) {
-        conn.ws.terminate();
-        continue;
-      }
-      conn.alive = false;
-      conn.ws.ping();
-    }
-  }, HEARTBEAT_MS);
+    for (const conn of connections) ping(conn);
+  }, options.pingIntervalMs ?? PING_INTERVAL_MS);
 
   await new Promise<void>((resolveListen, rejectListen) => {
     httpServer.once('error', rejectListen);
@@ -269,6 +310,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   });
 
   const port = (httpServer.address() as AddressInfo).port;
+  let closing: Promise<void> | undefined;
   const publicHost = options.publicHost ?? lanAddress() ?? 'localhost';
   joinUrl = `http://${publicHost}:${port}/?room=${roomCode}`;
   qrSvg = await QRCode.toString(joinUrl, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
@@ -280,12 +322,16 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     hostKey,
     hostUrl: `http://localhost:${port}/host?key=${hostKey}`,
     joinUrl,
-    async close() {
-      clearInterval(heartbeat);
-      game.dispose();
-      for (const conn of connections) conn.ws.terminate();
-      await new Promise<void>((done) => wss.close(() => done()));
-      await new Promise<void>((done) => httpServer.close(() => done()));
+    close() {
+      closing ??= (async () => {
+        clearInterval(heartbeat);
+        game.dispose();
+        await saver?.flush();
+        for (const conn of connections) conn.ws.terminate();
+        await new Promise<void>((done) => wss.close(() => done()));
+        await new Promise<void>((done) => httpServer.close(() => done()));
+      })();
+      return closing;
     },
   };
 }

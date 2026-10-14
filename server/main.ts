@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
+import { readFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { loadQuizFile, QuizError } from './quiz.ts';
 import { createQuizServer } from './server.ts';
+import { hashQuiz, readSession } from './session.ts';
 
 const USAGE = `Usage: npm start -- <quiz.yaml> [options]
 
@@ -10,7 +12,11 @@ Options:
   -p, --port <n>         Port to listen on (default 3000)
       --public-host <h>  Address to put in the join link (default: this laptop's Wi-Fi address)
       --no-open          Don't open the host screen in a browser
-  -h, --help             Show this help`;
+      --fresh            Start over instead of resuming an unfinished quiz
+  -h, --help             Show this help
+
+The quiz is saved as it runs (next to the quiz file, as <name>.session.json).
+If the laptop crashes or you restart, run the same command to carry on.`;
 
 function openBrowser(url: string): void {
   const [command, args] =
@@ -29,6 +35,7 @@ async function main(): Promise<void> {
       port: { type: 'string', short: 'p', default: '3000' },
       'public-host': { type: 'string' },
       'no-open': { type: 'boolean', default: false },
+      fresh: { type: 'boolean', default: false },
       help: { type: 'boolean', short: 'h', default: false },
     },
   });
@@ -57,9 +64,19 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const sessionPath = `${quizPath.replace(/\.ya?ml$/i, '')}.session.json`;
+  const quizHash = hashQuiz(await readFile(quizPath, 'utf8'));
+  const saved = values.fresh ? undefined : await readSession(sessionPath);
+  const resume = saved && saved.quizHash === quizHash && saved.game.phase !== 'finished' ? saved : undefined;
+
   let server;
   try {
-    server = await createQuizServer({ quiz, port, publicHost: values['public-host'] });
+    server = await createQuizServer({
+      quiz,
+      port,
+      publicHost: values['public-host'],
+      session: { path: sessionPath, quizHash, resume },
+    });
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'EADDRINUSE') {
       console.error(`Port ${port} is already in use. Try another with --port 3001.`);
@@ -69,8 +86,17 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const game = server.game;
+  const resumedAt =
+    resume && game.phase !== 'lobby'
+      ? ` at question ${game.questionIndex + 1} of ${quiz.questions.length}`
+      : resume
+        ? ' in the lobby'
+        : '';
   console.log(`
-Pub quiz: "${quiz.title}" (${quiz.questions.length} questions)
+Pub quiz: "${quiz.title}" (${quiz.questions.length} questions)${
+    resume ? `\nResumed the unfinished quiz${resumedAt}. Teams reconnect automatically. (Use --fresh to start over.)` : ''
+  }
 
   Host screen:  ${server.hostUrl}
   Teams join:   ${server.joinUrl}
