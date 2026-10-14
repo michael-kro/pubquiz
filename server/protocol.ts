@@ -21,6 +21,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('kick'), teamId: z.string().max(200) }),
   z.object({ t: z.literal('mark'), key: z.string().max(400), correct: z.boolean() }),
   z.object({ t: z.literal('network'), action: z.enum(['use-lan', 'use-tunnel']) }),
+  z.object({ t: z.literal('end-quiz') }),
 ]);
 
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
@@ -114,10 +115,21 @@ export interface HostView {
   summary?: string;
   standings: StandingRow[];
   preloadImage?: string;
+  /** The host can end this quiz and go back to the library. */
+  canEnd: boolean;
+}
+
+/** What the host sees when no quiz is running. */
+export interface HostIdleView {
+  phase: 'idle';
+  /** The quiz library and editor are available. */
+  library: boolean;
+  network: NetworkStatus;
 }
 
 export type ServerMessage =
-  | { t: 'state'; view: TeamView | HostView }
+  | { t: 'state'; view: TeamView | HostView | HostIdleView }
+  | { t: 'quiz-ended' }
   | { t: 'joined'; token: string; teamName: string }
   | { t: 'rejoin-failed' }
   | { t: 'error'; message: string }

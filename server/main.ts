@@ -1,13 +1,22 @@
 #!/usr/bin/env node
 import { spawn } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { randomBytes } from 'node:crypto';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { loadQuizFile, QuizError } from './quiz.ts';
-import { createQuizServer, type QuizServer } from './server.ts';
+import { Library } from './library.ts';
+import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
+import { createQuizServer, type QuizServer, type SessionOptions } from './server.ts';
 import { hashQuiz, readSession } from './session.ts';
 import { cloudflaredProvider, ensureCloudflared, ngrokProvider, TunnelManager, type NetworkStatus } from './tunnel.ts';
 
-const USAGE = `Usage: npm start -- <quiz.yaml> [options]
+const DEFAULT_LIBRARY = join(homedir(), 'PubQuiz');
+
+const USAGE = `Usage: pubquiz [quiz.yaml] [options]
+
+With no quiz file, opens your quiz library (${DEFAULT_LIBRARY}) on the host screen,
+where you can write, import and run quizzes. With a quiz file, runs that quiz straight away.
 
 Teams join over the internet by default (a free Cloudflare link, no account needed), so
 their phones can use 4G or any Wi-Fi. With no internet, use --lan and put the phones on
@@ -19,12 +28,13 @@ Options:
       --tunnel <name>    Internet link to use: cloudflare (default) or ngrok
       --public-url <url> Use your own public address instead (e.g. a VPS or Tailscale Funnel)
       --public-host <h>  Address to put in the local join link (default: this laptop's Wi-Fi address)
+      --quizzes <dir>    Where the quiz library lives (default ${DEFAULT_LIBRARY})
       --no-open          Don't open the host screen in a browser
       --fresh            Start over instead of resuming an unfinished quiz
   -h, --help             Show this help
 
-The quiz is saved as it runs (next to the quiz file, as <name>.session.json).
-If the laptop crashes or you restart, run the same command to carry on.`;
+Quizzes are saved as they run. If the laptop crashes or you restart, run the same
+command again to carry on.`;
 
 function openBrowser(url: string): void {
   const [command, args] =
@@ -34,6 +44,38 @@ function openBrowser(url: string): void {
         ? ['cmd', ['/c', 'start', '', url]]
         : ['xdg-open', [url]];
   spawn(command, args, { stdio: 'ignore', detached: true }).on('error', () => {}).unref();
+}
+
+function fail(message: string): never {
+  console.error(message);
+  process.exit(1);
+}
+
+/** The library's host key is kept on disk, so the host link (and any bookmark of it) survives restarts. */
+async function libraryHostKey(dir: string): Promise<string> {
+  const path = join(dir, '.host-key');
+  const saved = (await readFile(path, 'utf8').catch(() => '')).trim();
+  if (/^[\w-]{20,}$/.test(saved)) return saved;
+  const key = randomBytes(18).toString('base64url');
+  await mkdir(dir, { recursive: true });
+  await writeFile(path, key, { mode: 0o600 });
+  return key;
+}
+
+/** Loads a quiz file given on the command line, with its saved session if there's an unfinished one. */
+async function loadQuizArgument(quizPath: string, fresh: boolean): Promise<{ quiz: Quiz; session: SessionOptions }> {
+  let quiz: Quiz;
+  try {
+    quiz = await loadQuizFile(quizPath);
+  } catch (error) {
+    if (error instanceof QuizError) fail(`Problems in ${quizPath}:\n  ${error.issues.join('\n  ')}`);
+    fail(`Couldn't read ${quizPath}: ${(error as Error).message}`);
+  }
+  const path = `${quizPath.replace(/\.ya?ml$/i, '')}.session.json`;
+  const quizHash = hashQuiz(await readFile(quizPath, 'utf8'));
+  const saved = fresh ? undefined : await readSession(path);
+  const resume = saved && saved.quizHash === quizHash && saved.game.phase !== 'finished' ? saved : undefined;
+  return { quiz, session: { path, quizHash, resume } };
 }
 
 async function main(): Promise<void> {
@@ -47,58 +89,35 @@ async function main(): Promise<void> {
       lan: { type: 'boolean', default: false },
       tunnel: { type: 'string', default: 'cloudflare' },
       'public-url': { type: 'string' },
+      quizzes: { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
   });
 
-  const quizPath = positionals[0];
-  if (values.help || !quizPath) {
+  if (values.help) {
     console.log(USAGE);
-    process.exit(values.help ? 0 : 1);
+    process.exit(0);
   }
-
   const port = Number(values.port);
-  if (!Number.isInteger(port) || port < 0 || port > 65535) {
-    console.error(`Invalid port: ${values.port}`);
-    process.exit(1);
-  }
-
-  let quiz;
-  try {
-    quiz = await loadQuizFile(quizPath);
-  } catch (error) {
-    if (error instanceof QuizError) {
-      console.error(`Problems in ${quizPath}:\n  ${error.issues.join('\n  ')}`);
-    } else {
-      console.error(`Couldn't read ${quizPath}: ${(error as Error).message}`);
-    }
-    process.exit(1);
-  }
-
-  if (!['cloudflare', 'ngrok'].includes(values.tunnel)) {
-    console.error(`Unknown --tunnel "${values.tunnel}". Use cloudflare or ngrok.`);
-    process.exit(1);
-  }
+  if (!Number.isInteger(port) || port < 0 || port > 65535) fail(`Invalid port: ${values.port}`);
+  if (!['cloudflare', 'ngrok'].includes(values.tunnel)) fail(`Unknown --tunnel "${values.tunnel}". Use cloudflare or ngrok.`);
   const publicUrl = values['public-url']?.replace(/\/+$/, '');
-  if (publicUrl && !/^https?:\/\//.test(publicUrl)) {
-    console.error('--public-url must start with https:// (or http://).');
-    process.exit(1);
-  }
+  if (publicUrl && !/^https?:\/\//.test(publicUrl)) fail('--public-url must start with https:// (or http://).');
+
+  const quizPath = positionals[0];
+  const single = quizPath ? await loadQuizArgument(quizPath, values.fresh) : undefined;
+  const library = quizPath ? undefined : new Library(resolve(values.quizzes ?? DEFAULT_LIBRARY));
 
   let tunnel: TunnelManager | undefined;
-
-  const sessionPath = `${quizPath.replace(/\.ya?ml$/i, '')}.session.json`;
-  const quizHash = hashQuiz(await readFile(quizPath, 'utf8'));
-  const saved = values.fresh ? undefined : await readSession(sessionPath);
-  const resume = saved && saved.quizHash === quizHash && saved.game.phase !== 'finished' ? saved : undefined;
-
   let server: QuizServer | undefined;
   try {
     server = await createQuizServer({
-      quiz,
+      quiz: single?.quiz,
+      session: single?.session,
+      library,
+      hostKey: library ? await libraryHostKey(library.dir) : undefined,
       port,
       publicHost: values['public-host'],
-      session: { path: sessionPath, quizHash, resume },
       onNetworkAction(action) {
         if (action === 'use-lan') {
           tunnel?.stop();
@@ -110,37 +129,33 @@ async function main(): Promise<void> {
       },
     });
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'EADDRINUSE') {
-      console.error(`Port ${port} is already in use. Try another with --port 3001.`);
-    } else {
-      console.error((error as Error).message);
-    }
-    process.exit(1);
+    if ((error as NodeJS.ErrnoException).code === 'EADDRINUSE') fail(`Port ${port} is already in use. Try another with --port 3001.`);
+    fail((error as Error).message);
   }
 
+  const resume = single?.session.resume;
   const game = server.game;
-  const resumedAt =
-    resume && game.phase !== 'lobby'
-      ? ` at question ${game.questionIndex + 1} of ${quiz.questions.length}`
-      : resume
-        ? ' in the lobby'
-        : '';
+  const heading = single
+    ? `Pub quiz: "${single.quiz.title}" (${single.quiz.questions.length} questions)${
+        resume && game
+          ? `\nResumed the unfinished quiz${
+              game.phase === 'lobby' ? ' in the lobby' : ` at question ${game.questionIndex + 1} of ${single.quiz.questions.length}`
+            }. Teams reconnect automatically. (Use --fresh to start over.)`
+          : ''
+      }`
+    : `Pub quiz library: ${library!.dir}`;
   console.log(`
-Pub quiz: "${quiz.title}" (${quiz.questions.length} questions)${
-    resume ? `\nResumed the unfinished quiz${resumedAt}. Teams reconnect automatically. (Use --fresh to start over.)` : ''
-  }
+${heading}
 
-  Host screen:  ${server.hostUrl}
-  ${values.lan ? 'Teams join: ' : 'Local link: '}  ${server.lanJoinUrl}
-  Room code:    ${server.roomCode}
+  Host screen:  ${server.hostUrl}${single ? `\n  ${values.lan ? 'Teams join: ' : 'Local link: '}  ${server.lanJoinUrl}\n  Room code:    ${server.roomCode}` : ''}
 
 ${
-    values.lan
-      ? "Local Wi-Fi only: teams' phones must be on the same Wi-Fi as this laptop."
-      : publicUrl
-        ? `Teams can also join at ${publicUrl}/?room=${server.roomCode}`
-        : 'Setting up the internet link; the QR code on the host screen switches to it when ready.'
-  }
+  values.lan
+    ? "Local Wi-Fi only: teams' phones must be on the same Wi-Fi as this laptop."
+    : publicUrl
+      ? `Teams join through ${publicUrl}`
+      : 'Setting up the internet link; the QR code on the host screen switches to it when ready.'
+}
 Press Ctrl+C to stop.
 `);
 
@@ -163,7 +178,7 @@ Press Ctrl+C to stop.
         quizServer.setNetwork(status);
         if (status.state === lastState && status.state !== 'down') return;
         lastState = status.state;
-        if (status.state === 'up') console.log(`Internet link ready: ${status.publicUrl}/?room=${quizServer.roomCode}`);
+        if (status.state === 'up') console.log(`Internet link ready: ${status.publicUrl}`);
         if (status.state === 'down') console.log(`Internet link problem: ${status.message}`);
       },
     });
@@ -174,7 +189,7 @@ Press Ctrl+C to stop.
 
   const shutdown = () => {
     tunnel?.stop();
-    server.close().finally(() => process.exit(0));
+    quizServer.close().finally(() => process.exit(0));
   };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);

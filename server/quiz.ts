@@ -15,12 +15,12 @@ export const IMAGE_TYPES: Record<string, string> = {
   '.svg': 'image/svg+xml',
 };
 
-const text = z.string().trim().min(1);
+const text = z.string({ error: 'needs some text' }).trim().min(1, 'is empty');
 
 const common = {
   text,
-  seconds: z.number().int().min(5).max(300).default(20),
-  points: z.number().int().min(0).max(10_000).default(1000),
+  seconds: z.number({ error: 'must be a number' }).int('must be a whole number').min(5, 'must be at least 5 seconds').max(300, 'can be at most 300 seconds').default(20),
+  points: z.number({ error: 'must be a number' }).int('must be a whole number').min(0, "can't be negative").max(10_000, 'can be at most 10,000').default(1000),
   /** A file path relative to the quiz file, or an http(s) URL. */
   image: text.optional(),
   /** Faster correct answers earn more. Defaults to on, except for music. */
@@ -28,8 +28,8 @@ const common = {
 };
 
 const accept = z
-  .array(text)
-  .min(1)
+  .array(text, { error: 'needs a list of accepted answers' })
+  .min(1, 'needs at least one accepted answer')
   .refine((answers) => answers.every((a) => normalise(a)), {
     message: 'each accepted answer needs at least one letter or number',
   });
@@ -39,8 +39,8 @@ const QuestionSchema = z.discriminatedUnion('type', [
     .object({
       type: z.literal('multiple-choice'),
       ...common,
-      options: z.array(text).min(2).max(4),
-      answer: z.number().int().min(0),
+      options: z.array(text, { error: 'needs a list of options' }).min(2, 'needs at least 2 options').max(4, 'can have at most 4 options'),
+      answer: z.number({ error: 'must say which option is right (0 for the first)' }).int().min(0, 'must be 0 or more'),
     })
     .strict()
     .refine((q) => q.answer < q.options.length, {
@@ -69,16 +69,16 @@ const QuestionSchema = z.discriminatedUnion('type', [
       type: z.literal('ordering'),
       ...common,
       /** Listed in the correct order. */
-      items: z.array(text).length(ORDERING_ITEMS, `needs exactly ${ORDERING_ITEMS} items`),
+      items: z.array(text, { error: 'needs a list of items' }).length(ORDERING_ITEMS, `needs exactly ${ORDERING_ITEMS} items`),
     })
     .strict()
     .refine((q) => new Set(q.items.map((i) => i.toLowerCase())).size === q.items.length, {
       message: 'items must all be different',
       path: ['items'],
     }),
-]);
+], { error: 'type must be one of: multiple-choice, picture, music, ordering, letter' });
 
-const QuizFile = z
+export const QuizFile = z
   .object({
     title: text,
     scoring: z
@@ -89,8 +89,11 @@ const QuizFile = z
       .strict()
       .default({ speedFactor: 0.5 }),
     rounds: z
-      .array(z.object({ name: text, questions: z.array(QuestionSchema).min(1) }).strict())
-      .min(1),
+      .array(
+        z.object({ name: text, questions: z.array(QuestionSchema, { error: 'needs a list of questions' }).min(1, 'needs at least one question') }).strict(),
+        { error: 'needs a list of rounds' },
+      )
+      .min(1, 'needs at least one round'),
   })
   .strict();
 
@@ -116,6 +119,31 @@ export interface Quiz {
 
 export function isTextAnswer(q: Question): q is Extract<Question, { type: 'picture' | 'music' }> {
   return q.type === 'picture' || q.type === 'music';
+}
+
+export interface QuizIssue {
+  /** Where in the quiz file, e.g. ['rounds', 0, 'questions', 2, 'answer']. */
+  path: (string | number)[];
+  message: string;
+}
+
+/** "Round 1, question 3, answer: must be …" */
+export function describeIssue(issue: QuizIssue): string {
+  return `${describePath(issue.path)}: ${issue.message}`;
+}
+
+export type QuizFileData = z.infer<typeof QuizFile>;
+
+/** Validates quiz data (parsed YAML, or the editor's draft) without throwing. */
+export function checkQuiz(raw: unknown): { data?: QuizFileData; issues: QuizIssue[] } {
+  const result = QuizFile.safeParse(raw);
+  if (result.success) return { data: result.data, issues: [] };
+  return {
+    issues: result.error.issues.map((issue) => ({
+      path: issue.path.filter((p): p is string | number => typeof p !== 'symbol'),
+      message: issue.message,
+    })),
+  };
 }
 
 export class QuizError extends Error {
@@ -144,12 +172,16 @@ export function parseQuiz(source: string): Quiz {
     throw new QuizError([`Not valid YAML: ${(error as Error).message}`]);
   }
 
-  const result = QuizFile.safeParse(raw);
-  if (!result.success) {
-    throw new QuizError(result.error.issues.map((issue) => `${describePath(issue.path)}: ${issue.message}`));
-  }
+  return quizFromData(checkedOrThrow(raw));
+}
 
-  const file = result.data;
+function checkedOrThrow(raw: unknown): QuizFileData {
+  const { data, issues } = checkQuiz(raw);
+  if (!data) throw new QuizError(issues.map(describeIssue));
+  return data;
+}
+
+function quizFromData(file: QuizFileData): Quiz {
   return {
     title: file.title,
     speedFactor: file.scoring.speedFactor,

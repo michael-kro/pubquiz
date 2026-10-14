@@ -2,7 +2,7 @@
 
 A self-hosted live pub quiz. The host runs it on a laptop. Each team joins on one phone by scanning a QR code, with nothing to install. Up to 30 teams.
 
-Status: milestones M0, M1, M1b, M2 and M3 from [PLAN.md](PLAN.md) are done: all five question types, joining over the internet or local Wi-Fi, reconnects and crash recovery.
+Status: milestones M0–M3b from [PLAN.md](PLAN.md) are done: all five question types, an in-app quiz editor, joining over the internet or local Wi-Fi, reconnects and crash recovery.
 
 ## Run a quiz
 
@@ -10,10 +10,18 @@ Needs Node.js 22.18 or newer.
 
 ```sh
 npm install
-npm start -- examples/sample-quiz.yaml
+npm start                                  # your quiz library and editor
+npm start -- examples/sample-quiz.yaml     # or run one quiz file straight away
 ```
 
-The host screen opens in your browser. Put it on the projector, and teams scan the QR code to join. Use the yellow button (or Space, →, or a presentation clicker) to move through each question:
+The host screen opens in your browser. With no quiz file it shows **Your quizzes**, kept in `~/PubQuiz` (change it with `--quizzes <folder>`). There you can:
+
+- **New quiz:** write one in the editor. Pick a type for each question, upload pictures (big photos are shrunk automatically), drag questions to reorder them, and see a preview of what teams see. It saves as you type, and marks anything that needs fixing.
+- **Import:** a `.yaml` quiz file, or a `.zip` with `quiz.yaml` and an `images/` folder.
+- **Export:** a `.zip` you can back up, share or import elsewhere.
+- **Run ▶:** start the quiz. **End quiz** takes you back. An unfinished quiz can be resumed later or started over.
+
+The host link stays the same between runs, so you can bookmark it. Put it on the projector, and teams scan the QR code to join. Use the yellow button (or Space, →, or a presentation clicker) to move through each question:
 
 **Start quiz → Close question → Reveal answer → Show leaderboard → Next question**
 

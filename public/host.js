@@ -1,4 +1,5 @@
 import { connectSocket, h, LETTERS, ordinal, preload, setDeadline, tick } from './common.js';
+import { mountEditor } from './editor.js';
 
 const app = document.getElementById('app');
 const statusBanner = document.getElementById('status');
@@ -8,6 +9,37 @@ let state = null;
 let fatal = key ? null : 'This page needs the host link printed in the terminal when the quiz started.';
 let notice = '';
 let noticeTimer;
+let library = { items: null, error: '' };
+let editor = null; // { id, instance } while the editor is open.
+
+/** Calls the host API. Errors carry the server's message, and `issues` when a quiz can't run. */
+async function api(method, path, body) {
+  const raw = body instanceof Blob || body instanceof Uint8Array;
+  const res = await fetch(`/api${path}`, {
+    method,
+    headers: { 'x-host-key': key, ...(body !== undefined && !raw ? { 'content-type': 'application/json' } : {}) },
+    body: body === undefined ? undefined : raw ? body : JSON.stringify(body),
+  });
+  const data = res.headers.get('content-type')?.includes('json') ? await res.json() : null;
+  if (!res.ok) {
+    const error = new Error(data?.error ?? (data?.issues ? 'This quiz has problems to fix first.' : `Something went wrong (${res.status}).`));
+    error.issues = data?.issues;
+    throw error;
+  }
+  return data;
+}
+
+const editingId = () => /^#edit\/([a-z0-9-]+)$/.exec(location.hash)?.[1];
+window.addEventListener('hashchange', () => render());
+
+async function loadLibrary() {
+  try {
+    library = { items: await api('GET', '/quizzes'), error: '' };
+  } catch (error) {
+    library = { items: library.items, error: error.message };
+  }
+  render();
+}
 
 const socket = key
   ? connectSocket({
@@ -19,6 +51,7 @@ const socket = key
       },
       onMessage(message) {
         if (message.t === 'state') {
+          if (message.view.phase === 'idle' && state?.phase !== 'idle' && message.view.library) void loadLibrary();
           state = message.view;
           setDeadline(state.question?.remainingMs);
           preload(state.preloadImage);
@@ -49,7 +82,7 @@ function advance() {
 
 // Space, → and PageDown (what presentation clickers send) all move on.
 document.addEventListener('keydown', (event) => {
-  if (!state || event.target !== document.body) return;
+  if (!state || state.phase === 'idle' || editingId() || event.target !== document.body) return;
   if ([' ', 'ArrowRight', 'PageDown', 'Enter'].includes(event.key)) {
     event.preventDefault();
     advance();
@@ -73,8 +106,21 @@ function render() {
     app.replaceChildren(h('section', { class: 'screen center' }, h('h1', {}, "Can't open the host screen"), h('p', {}, fatal)));
     return;
   }
+  const editId = editingId();
+  if (editId) {
+    if (editor?.id !== editId) openEditor(editId);
+    return; // The editor draws itself.
+  }
+  if (editor) {
+    editor.instance?.destroy();
+    editor = null;
+  }
   if (!state) {
     app.replaceChildren(h('section', { class: 'screen center' }, h('p', { class: 'muted' }, 'Connecting…')));
+    return;
+  }
+  if (state.phase === 'idle') {
+    app.replaceChildren(libraryView(state), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '');
     return;
   }
   app.replaceChildren(
@@ -124,6 +170,163 @@ function networkBanner(s) {
   return null;
 }
 
+function openEditor(id) {
+  editor = { id, instance: null };
+  app.replaceChildren(h('section', { class: 'screen center' }, h('p', { class: 'muted' }, 'Opening the editor…')));
+  mountEditor(app, {
+    id,
+    hostKey: key,
+    api,
+    onExit() {
+      location.hash = '';
+      void loadLibrary();
+    },
+    onRun() {
+      location.hash = '';
+    },
+  })
+    .then((instance) => {
+      if (editor?.id === id) editor.instance = instance;
+      else instance.destroy();
+    })
+    .catch((error) => {
+      editor = null;
+      location.hash = '';
+      showNotice(error.message);
+    });
+}
+
+function endQuiz(s) {
+  const midQuiz = !['lobby', 'finished'].includes(s.phase);
+  if (midQuiz && !confirm('End this quiz now? Teams are disconnected. You can resume it later from your quizzes.')) return;
+  socket.send({ t: 'end-quiz' });
+}
+
+async function runQuiz(id, fresh = false) {
+  try {
+    await api('POST', `/quizzes/${id}/run`, { fresh });
+  } catch (error) {
+    showNotice(error.issues?.length ? `Can't run it yet: ${error.issues[0]}${error.issues.length > 1 ? ` (and ${error.issues.length - 1} more)` : ''}` : error.message);
+    render();
+  }
+}
+
+async function importQuiz(file) {
+  try {
+    const result = await api('POST', `/import?name=${encodeURIComponent(file.name)}`, file);
+    if (result.issues.length) {
+      showNotice(`Imported. ${result.issues.length} ${result.issues.length === 1 ? 'thing needs' : 'things need'} fixing before it can run.`);
+      location.hash = `#edit/${result.id}`;
+    } else {
+      showNotice(`Imported "${file.name}".`);
+      await loadLibrary();
+    }
+  } catch (error) {
+    showNotice(error.message);
+    render();
+  }
+}
+
+function libraryView(s) {
+  if (!s.library) {
+    return h('section', { class: 'screen center' }, h('h1', {}, 'No quiz running'), h('p', {}, 'Restart the program to run a quiz.'));
+  }
+  const items = library.items;
+  const act = (fn) => async () => {
+    try {
+      await fn();
+    } catch (error) {
+      showNotice(error.message);
+    }
+    await loadLibrary();
+  };
+  return h(
+    'div',
+    { class: 'library' },
+    h(
+      'header',
+      { class: 'library-bar' },
+      h('h1', {}, 'Your quizzes'),
+      networkPill(s.network),
+      h('span', { class: 'spacer' }),
+      h(
+        'label',
+        { class: 'button' },
+        'Import…',
+        h('input', {
+          type: 'file',
+          accept: '.yaml,.yml,.zip',
+          hidden: true,
+          onchange: (e) => e.target.files[0] && importQuiz(e.target.files[0]),
+        }),
+      ),
+      h(
+        'button',
+        {
+          class: 'primary',
+          onclick: async () => {
+            try {
+              const { id } = await api('POST', '/quizzes');
+              location.hash = `#edit/${id}`;
+            } catch (error) {
+              showNotice(error.message);
+            }
+          },
+        },
+        '+ New quiz',
+      ),
+    ),
+    library.error ? h('p', { class: 'error' }, library.error) : null,
+    items === null
+      ? h('p', { class: 'muted' }, 'Loading…')
+      : items.length === 0
+        ? h(
+            'div',
+            { class: 'empty' },
+            h('p', { class: 'big' }, 'No quizzes yet.'),
+            h('p', { class: 'muted' }, 'Make one with “New quiz”, or import a quiz file (.yaml, or a .zip with pictures).'),
+          )
+        : h(
+            'ul',
+            { class: 'quiz-cards' },
+            items.map((q) =>
+              h(
+                'li',
+                { class: 'quiz-card' },
+                h('h2', {}, q.title),
+                h(
+                  'p',
+                  { class: 'muted' },
+                  `${q.rounds} ${q.rounds === 1 ? 'round' : 'rounds'} · ${q.questions} ${q.questions === 1 ? 'question' : 'questions'}`,
+                ),
+                q.problems
+                  ? h('p', { class: 'problem' }, `${q.problems} ${q.problems === 1 ? 'thing' : 'things'} to fix before it can run`)
+                  : null,
+                q.unfinished ? h('p', { class: 'unfinished' }, `Unfinished: stopped at question ${q.unfinished.question} of ${q.unfinished.total}`) : null,
+                h(
+                  'div',
+                  { class: 'card-actions' },
+                  q.unfinished
+                    ? [
+                        h('button', { class: 'primary', disabled: q.problems > 0, onclick: () => runQuiz(q.id) }, 'Resume ▶'),
+                        h('button', { disabled: q.problems > 0, onclick: () => confirm('Start again from the beginning? The unfinished scores are lost.') && runQuiz(q.id, true) }, 'Start over'),
+                      ]
+                    : h('button', { class: 'primary', disabled: q.problems > 0, onclick: () => runQuiz(q.id) }, 'Run ▶'),
+                  h('a', { class: 'button', href: `#edit/${q.id}` }, 'Edit'),
+                  h('button', { onclick: act(() => api('POST', `/quizzes/${q.id}/duplicate`)) }, 'Duplicate'),
+                  h('a', { class: 'button', href: `/api/quizzes/${q.id}/export.zip?key=${encodeURIComponent(key)}` }, 'Export'),
+                  h(
+                    'button',
+                    { class: 'danger', onclick: act(async () => confirm(`Delete "${q.title}"?`) && (await api('DELETE', `/quizzes/${q.id}`))) },
+                    'Delete',
+                  ),
+                ),
+              ),
+            ),
+          ),
+  );
+}
+
 function topBar(s) {
   return h(
     'header',
@@ -131,6 +334,7 @@ function topBar(s) {
     h('span', { class: 'quiz-title' }, s.quizTitle),
     networkPill(s.network),
     h('span', { class: 'join-hint' }, 'Join: ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)),
+    s.canEnd ? h('button', { class: 'end', onclick: () => endQuiz(s) }, s.phase === 'finished' ? 'Back to quizzes' : 'End quiz') : null,
     h(
       'button',
       { class: 'primary next', onclick: advance, disabled: s.phase === 'finished', title: 'Space or → also works' },

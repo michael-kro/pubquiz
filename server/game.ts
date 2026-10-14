@@ -516,7 +516,7 @@ export class Game {
     };
   }
 
-  hostView(): Omit<HostView, 'roomCode' | 'joinUrl' | 'lanJoinUrl' | 'qrVersion' | 'network'> {
+  hostView(): Omit<HostView, 'roomCode' | 'joinUrl' | 'lanJoinUrl' | 'qrVersion' | 'network' | 'canEnd'> {
     const teams = [...this.teams.values()];
     const standings = this.standings();
     const scores = new Map(standings.map((row) => [row.teamId, row.score]));

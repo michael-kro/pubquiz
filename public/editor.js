@@ -1,0 +1,755 @@
+// The quiz editor on the host screen. Edits a draft of quiz.yaml, autosaves it, and shows
+// the server's validation problems next to the fields they're about.
+import { h, LETTERS } from './common.js';
+
+const TYPES = {
+  'multiple-choice': 'Multiple choice',
+  picture: 'Picture',
+  music: 'Music',
+  ordering: 'Put in order',
+  letter: 'First letter',
+};
+const ORDERING_ITEMS = 5;
+const SAVE_DELAY_MS = 700;
+const MAX_IMAGE_SIDE = 1600;
+
+let nextKey = 1;
+const newKey = () => `k${nextKey++}`;
+
+/** Mirrors the server: lower-case, no accents, punctuation or leading "the/a/an". */
+function normalise(text) {
+  return String(text ?? '')
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^(the|a|an) /, '');
+}
+
+function blankQuestion(type = 'multiple-choice', from = {}) {
+  const keep = { text: from.text ?? '', seconds: from.seconds, points: from.points, image: from.image };
+  for (const k of Object.keys(keep)) if (keep[k] === undefined) delete keep[k];
+  const typed = {
+    'multiple-choice': { options: ['', '', '', ''], answer: 0 },
+    picture: { accept: [''] },
+    music: { accept: [''] },
+    ordering: { items: Array(ORDERING_ITEMS).fill('') },
+    letter: { answer: '' },
+  }[type];
+  // Carry the answer across where the types are similar.
+  if ((type === 'picture' || type === 'music') && from.accept) typed.accept = [...from.accept];
+  if ((type === 'picture' || type === 'music') && from.type === 'letter' && from.answer) typed.accept = [from.answer];
+  if (type === 'letter' && from.accept?.[0]) typed.answer = from.accept[0];
+  return { key: newKey(), type, ...keep, ...typed };
+}
+
+/** Adds editor-only keys so questions keep their identity while being moved around. */
+function toModel(draft) {
+  const rounds = Array.isArray(draft.rounds) ? draft.rounds : [];
+  return {
+    ...draft,
+    title: typeof draft.title === 'string' ? draft.title : '',
+    rounds: rounds.map((round) => ({
+      ...round,
+      key: newKey(),
+      name: typeof round?.name === 'string' ? round.name : '',
+      questions: (Array.isArray(round?.questions) ? round.questions : []).map((q) => ({ ...q, key: newKey() })),
+    })),
+  };
+}
+
+function toDraft(model) {
+  const { rounds, ...rest } = model;
+  return {
+    ...rest,
+    rounds: rounds.map(({ key, questions, ...round }) => ({
+      ...round,
+      questions: questions.map(({ key: _key, ...q }) => q),
+    })),
+  };
+}
+
+/** Shrinks big photos in the browser before upload, so phones on 4G load them quickly. */
+async function prepareImage(file) {
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return { blob: file, name: file.name };
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(bitmap.width, bitmap.height));
+  if (scale === 1 && file.size < 1_500_000) return { blob: file, name: file.name };
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff'; // JPEG has no transparency.
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+  return { blob, name: file.name.replace(/\.[^.]+$/, '') + '.jpg' };
+}
+
+/**
+ * Mounts the editor for quiz `id` into `container`.
+ * `api(method, path, body)` calls the host API; `onExit()` goes back to the library; `onRun()` after a quiz starts.
+ */
+export async function mountEditor(container, { id, hostKey, api, onExit, onRun }) {
+  const loaded = await api('GET', `/quizzes/${id}`);
+  const model = toModel(loaded.draft);
+  if (model.rounds.length === 0) model.rounds.push({ key: newKey(), name: 'Round 1', questions: [blankQuestion()] });
+  let issues = loaded.issues;
+  let selected = model.rounds[0]?.questions[0]?.key;
+  let saveTimer;
+  let saving = Promise.resolve();
+  let saveState = 'saved';
+  let runProblems = [];
+  let dragKey = null;
+
+  const imageUrl = (path) =>
+    /^https?:\/\//i.test(path) ? path : `/api/quizzes/${encodeURIComponent(id)}/images/${encodeURIComponent(path.replace(/^images\//, ''))}?key=${encodeURIComponent(hostKey)}`;
+
+  function find(key) {
+    for (const [r, round] of model.rounds.entries()) {
+      const q = round.questions.findIndex((question) => question.key === key);
+      if (q >= 0) return { round, r, q, question: round.questions[q] };
+    }
+    return undefined;
+  }
+
+  // Saving
+
+  function changed({ structure = false } = {}) {
+    saveState = 'pending';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(save, SAVE_DELAY_MS);
+    if (structure) render();
+    else updateStatus();
+    renderPreview();
+  }
+
+  function save() {
+    clearTimeout(saveTimer);
+    saveTimer = undefined;
+    saving = saving.then(async () => {
+      saveState = 'saving';
+      updateStatus();
+      try {
+        const result = await api('PUT', `/quizzes/${id}`, toDraft(model));
+        issues = result.issues;
+        saveState = saveTimer ? 'pending' : 'saved';
+      } catch {
+        saveState = 'failed';
+        saveTimer = setTimeout(save, 3000);
+      }
+      updateStatus();
+      updateIssues();
+    });
+    return saving;
+  }
+
+  async function flush() {
+    if (saveTimer) save();
+    await saving;
+  }
+
+  // Problems from the server, mapped onto questions and fields.
+
+  function issuesFor(r, q) {
+    return issues.filter((i) => i.path[0] === 'rounds' && i.path[1] === r && i.path[2] === 'questions' && i.path[3] === q);
+  }
+
+  function updateIssues() {
+    // Badges in the sidebar.
+    for (const [r, round] of model.rounds.entries()) {
+      for (const [q, question] of round.questions.entries()) {
+        const item = container.querySelector(`[data-question="${question.key}"]`);
+        item?.classList.toggle('has-problem', issuesFor(r, q).length > 0);
+      }
+    }
+    // Messages next to fields of the selected question.
+    for (const el of container.querySelectorAll('[data-problem]')) el.textContent = '';
+    const where = selected && find(selected);
+    if (where) {
+      const byField = new Map();
+      for (const issue of issuesFor(where.r, where.q)) {
+        const field = String(issue.path[4] ?? '');
+        const sentence = `${subject(field, issue.path[5])} ${issue.message}.`;
+        const sentences = byField.get(field) ?? new Set();
+        sentences.add(sentence);
+        byField.set(field, sentences);
+      }
+      for (const [field, sentences] of byField) {
+        const el = container.querySelector(`[data-problem="${field}"]`) ?? container.querySelector('[data-problem="*"]');
+        if (el) el.textContent = [el.textContent, ...sentences].filter(Boolean).join(' ');
+      }
+    }
+    const general = issues.filter((i) => i.path[0] !== 'rounds' || i.path.length <= 3);
+    const top = container.querySelector('.editor-problems');
+    if (top) {
+      const messages = [...general.map((i) => describe(i)), ...runProblems];
+      top.replaceChildren(...messages.map((m) => h('li', {}, m)));
+      top.hidden = messages.length === 0;
+    }
+    const count = container.querySelector('.problem-count');
+    if (count) count.textContent = issues.length ? `${issues.length} ${issues.length === 1 ? 'thing' : 'things'} to fix` : '';
+  }
+
+  /** "Option B", "Answer 2", "Item 5", or the field's name. */
+  function subject(field, index) {
+    if (typeof index === 'number') {
+      if (field === 'options') return `Option ${LETTERS[index] ?? index + 1}`;
+      if (field === 'accept') return `Answer ${index + 1}`;
+      if (field === 'items') return `Item ${index + 1}`;
+    }
+    const names = { text: 'The question', options: 'Options', answer: 'The answer', accept: 'Accepted answers', items: 'Items', image: 'The picture', seconds: 'Time', points: 'Points', letter: 'The letter', type: 'Type' };
+    return names[field] ?? 'This question';
+  }
+
+  function describe(issue) {
+    if (issue.path[0] === 'title') return `Quiz title ${issue.message}.`;
+    if (issue.path[0] === 'rounds' && typeof issue.path[1] === 'number') {
+      return `Round ${issue.path[1] + 1}${issue.path[2] === 'name' ? ' name' : ''} ${issue.message}.`;
+    }
+    return `${issue.path.join(' ')} ${issue.message}.`.trim();
+  }
+
+  function updateStatus() {
+    const el = container.querySelector('.save-status');
+    if (!el) return;
+    el.textContent = { saved: 'All changes saved', pending: 'Saving…', saving: 'Saving…', failed: "Couldn't save. Retrying…" }[saveState];
+    el.classList.toggle('failed', saveState === 'failed');
+  }
+
+  // Editing actions
+
+  function select(key) {
+    selected = key;
+    runProblems = [];
+    render();
+  }
+
+  function addQuestion(round, type = 'multiple-choice') {
+    const question = blankQuestion(type);
+    round.questions.push(question);
+    selected = question.key;
+    changed({ structure: true });
+    container.querySelector('.question-form textarea')?.focus();
+  }
+
+  function moveQuestion(key, toRound, toIndex) {
+    const from = find(key);
+    if (!from) return;
+    from.round.questions.splice(from.q, 1);
+    const index = Math.max(0, Math.min(toIndex, toRound.questions.length));
+    toRound.questions.splice(index, 0, from.question);
+    changed({ structure: true });
+  }
+
+  function removeQuestion(key) {
+    const where = find(key);
+    if (!where) return;
+    if (!confirm('Delete this question?')) return;
+    where.round.questions.splice(where.q, 1);
+    selected = where.round.questions[Math.min(where.q, where.round.questions.length - 1)]?.key ?? model.rounds.flatMap((r) => r.questions)[0]?.key;
+    changed({ structure: true });
+  }
+
+  function duplicateQuestion(key) {
+    const where = find(key);
+    if (!where) return;
+    const copy = { ...structuredClone(where.question), key: newKey() };
+    where.round.questions.splice(where.q + 1, 0, copy);
+    selected = copy.key;
+    changed({ structure: true });
+  }
+
+  function addRound() {
+    const round = { key: newKey(), name: `Round ${model.rounds.length + 1}`, questions: [blankQuestion()] };
+    model.rounds.push(round);
+    selected = round.questions[0].key;
+    changed({ structure: true });
+  }
+
+  function moveRound(index, by) {
+    const target = index + by;
+    if (target < 0 || target >= model.rounds.length) return;
+    [model.rounds[index], model.rounds[target]] = [model.rounds[target], model.rounds[index]];
+    changed({ structure: true });
+  }
+
+  function removeRound(index) {
+    const round = model.rounds[index];
+    if (!confirm(`Delete "${round.name || 'this round'}" and its ${round.questions.length} questions?`)) return;
+    model.rounds.splice(index, 1);
+    if (!find(selected)) selected = model.rounds.flatMap((r) => r.questions)[0]?.key;
+    changed({ structure: true });
+  }
+
+  async function uploadImage(question, file) {
+    const status = container.querySelector('[data-problem="image"]');
+    if (status) status.textContent = 'Uploading…';
+    try {
+      const { blob, name } = await prepareImage(file);
+      const result = await api('POST', `/quizzes/${id}/images?name=${encodeURIComponent(name)}`, blob);
+      question.image = result.path;
+      changed({ structure: true });
+    } catch (error) {
+      if (status) status.textContent = error.message;
+    }
+  }
+
+  async function run() {
+    await flush();
+    try {
+      await api('POST', `/quizzes/${id}/run`, {});
+      onRun();
+    } catch (error) {
+      runProblems = error.issues ?? [error.message];
+      updateIssues();
+      container.querySelector('.editor-problems')?.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  // Rendering
+
+  function field(label, input, problemKey, hint) {
+    return h(
+      'label',
+      { class: 'field' },
+      h('span', { class: 'field-label' }, label),
+      input,
+      hint ? h('span', { class: 'hint' }, hint) : null,
+      problemKey ? h('span', { class: 'problem', 'data-problem': problemKey, role: 'status' }) : null,
+    );
+  }
+
+  function textInput(value, onInput, attrs = {}) {
+    return h('input', { value: value ?? '', ...attrs, oninput: (e) => onInput(e.target.value) });
+  }
+
+  function numberInput(value, placeholder, onInput) {
+    return h('input', {
+      type: 'number',
+      inputmode: 'numeric',
+      value: value ?? '',
+      placeholder,
+      oninput: (e) => onInput(e.target.value === '' ? undefined : Number(e.target.value)),
+    });
+  }
+
+  function listEditor(question, prop, { min, max, label, placeholder, numbered = false, moveable = false }) {
+    const list = question[prop];
+    return h(
+      'div',
+      { class: 'list-editor' },
+      list.map((value, i) =>
+        h(
+          'div',
+          { class: 'list-row' },
+          numbered ? h('span', { class: 'row-number' }, i + 1) : null,
+          textInput(value, (v) => {
+            list[i] = v;
+            changed();
+          }, { placeholder: placeholder(i), 'aria-label': `${label} ${i + 1}` }),
+          moveable
+            ? [
+                h('button', { type: 'button', class: 'icon', title: 'Move up', disabled: i === 0, onclick: () => swap(list, i, i - 1) }, '↑'),
+                h('button', { type: 'button', class: 'icon', title: 'Move down', disabled: i === list.length - 1, onclick: () => swap(list, i, i + 1) }, '↓'),
+              ]
+            : null,
+          list.length > min
+            ? h('button', { type: 'button', class: 'icon', title: `Remove ${label.toLowerCase()}`, onclick: () => {
+                list.splice(i, 1);
+                changed({ structure: true });
+              } }, '×')
+            : null,
+        ),
+      ),
+      list.length < max
+        ? h('button', { type: 'button', class: 'add', onclick: () => {
+            list.push('');
+            changed({ structure: true });
+          } }, `+ Add ${label.toLowerCase()}`)
+        : null,
+    );
+  }
+
+  function swap(list, a, b) {
+    [list[a], list[b]] = [list[b], list[a]];
+    changed({ structure: true });
+  }
+
+  function typeFields(q) {
+    switch (q.type) {
+      case 'multiple-choice':
+        return field(
+          'Options (tick the right one)',
+          h(
+            'div',
+            { class: 'list-editor' },
+            q.options.map((option, i) =>
+              h(
+                'div',
+                { class: 'list-row' },
+                h('input', {
+                  type: 'radio',
+                  name: `answer-${q.key}`,
+                  checked: q.answer === i,
+                  'aria-label': `Option ${LETTERS[i]} is right`,
+                  onchange: () => {
+                    q.answer = i;
+                    changed();
+                  },
+                }),
+                h('span', { class: `row-letter opt-${i}` }, LETTERS[i]),
+                textInput(option, (v) => {
+                  q.options[i] = v;
+                  changed();
+                }, { placeholder: `Option ${LETTERS[i]}`, 'aria-label': `Option ${LETTERS[i]}` }),
+                q.options.length > 2
+                  ? h('button', { type: 'button', class: 'icon', title: 'Remove option', onclick: () => {
+                      q.options.splice(i, 1);
+                      if (q.answer >= q.options.length) q.answer = 0;
+                      else if (q.answer > i) q.answer--;
+                      changed({ structure: true });
+                    } }, '×')
+                  : null,
+              ),
+            ),
+            q.options.length < 4
+              ? h('button', { type: 'button', class: 'add', onclick: () => {
+                  q.options.push('');
+                  changed({ structure: true });
+                } }, '+ Add option')
+              : null,
+          ),
+          'options',
+        );
+      case 'picture':
+      case 'music':
+        return field(
+          'Accepted answers',
+          listEditor(q, 'accept', { min: 1, max: 10, label: 'Answer', placeholder: (i) => (i === 0 ? 'The answer' : 'Another way to write it') }),
+          'accept',
+          'Teams type their answer. Small typos, capitals and "the" are forgiven, and you check every answer before the reveal.',
+        );
+      case 'ordering':
+        return field(
+          'Items, in the right order',
+          listEditor(q, 'items', { min: ORDERING_ITEMS, max: ORDERING_ITEMS, label: 'Item', placeholder: (i) => (i === 0 ? 'First' : i === 4 ? 'Last' : `Item ${i + 1}`), numbered: true, moveable: true }),
+          'items',
+          'Teams see these shuffled.',
+        );
+      case 'letter': {
+        const letter = (q.letter || normalise(q.answer)[0] || '?').toUpperCase();
+        return [
+          field(
+            'Answer',
+            textInput(q.answer, (v) => {
+              q.answer = v;
+              const shown = container.querySelector('.letter-shown');
+              if (shown && !q.letter) shown.textContent = (normalise(v)[0] || '?').toUpperCase();
+              changed();
+            }, { placeholder: 'e.g. John Lennon' }),
+            'answer',
+            'Skip "The"; write people first name first.',
+          ),
+          h('p', { class: 'letter-line' }, 'Teams tap ', h('strong', { class: 'letter-shown' }, letter)),
+          field(
+            'Different letter (optional)',
+            textInput(q.letter, (v) => {
+              q.letter = v.trim() ? v.trim().toUpperCase().slice(0, 1) : undefined;
+              changed();
+            }, { maxlength: '1', class: 'short', placeholder: letter }),
+            'letter',
+            'Only needed when the answer starts with a number or symbol.',
+          ),
+        ];
+      }
+    }
+    return null;
+  }
+
+  function imageField(q) {
+    const required = q.type === 'picture';
+    return field(
+      required ? 'Picture' : 'Picture (optional)',
+      h(
+        'div',
+        { class: 'image-field' },
+        q.image ? h('img', { class: 'image-thumb', src: imageUrl(q.image), alt: '' }) : null,
+        h(
+          'div',
+          { class: 'image-actions' },
+          h('input', {
+            type: 'file',
+            accept: 'image/png,image/jpeg,image/webp,image/gif,image/svg+xml',
+            'aria-label': 'Upload a picture',
+            onchange: (e) => e.target.files[0] && uploadImage(q, e.target.files[0]),
+          }),
+          textInput(/^https?:/.test(q.image ?? '') ? q.image : '', (v) => {
+            q.image = v.trim() || undefined;
+            changed();
+          }, { placeholder: 'or paste a picture web address', 'aria-label': 'Picture web address' }),
+          q.image
+            ? h('button', { type: 'button', class: 'link-button', onclick: () => {
+                delete q.image;
+                changed({ structure: true });
+              } }, 'Remove picture')
+            : null,
+        ),
+      ),
+      'image',
+    );
+  }
+
+  function questionForm(q) {
+    const speedDefault = q.type !== 'music';
+    return h(
+      'div',
+      { class: 'question-form' },
+      h(
+        'div',
+        { class: 'form-row' },
+        field(
+          'Type',
+          h(
+            'select',
+            {
+              onchange: (e) => {
+                const where = find(q.key);
+                const replacement = { ...blankQuestion(e.target.value, q), key: q.key };
+                where.round.questions[where.q] = replacement;
+                changed({ structure: true });
+              },
+            },
+            Object.entries(TYPES).map(([value, label]) => h('option', { value, selected: q.type === value }, label)),
+          ),
+          'type',
+        ),
+        field('Seconds', numberInput(q.seconds, '20', (v) => {
+          q.seconds = v;
+          changed();
+        }), 'seconds'),
+        field('Points', numberInput(q.points, '1000', (v) => {
+          q.points = v;
+          changed();
+        }), 'points'),
+      ),
+      field(
+        q.type === 'music' ? 'Question (play the track yourself)' : 'Question',
+        h('textarea', {
+          rows: '2',
+          placeholder: q.type === 'music' ? 'e.g. Track 1: name the band' : 'Type the question',
+          oninput: (e) => {
+            q.text = e.target.value;
+            const item = container.querySelector(`[data-question="${q.key}"] .q-text`);
+            if (item) item.textContent = e.target.value || 'New question';
+            changed();
+          },
+        }, q.text ?? ''),
+        'text',
+      ),
+      typeFields(q),
+      imageField(q),
+      h(
+        'label',
+        { class: 'check' },
+        h('input', {
+          type: 'checkbox',
+          checked: q.speedBonus ?? speedDefault,
+          onchange: (e) => {
+            q.speedBonus = e.target.checked === speedDefault ? undefined : e.target.checked;
+            changed();
+          },
+        }),
+        ' Faster answers score more',
+      ),
+      h('p', { class: 'problem', 'data-problem': '*', role: 'status' }),
+      h(
+        'div',
+        { class: 'form-actions' },
+        h('button', { type: 'button', onclick: () => duplicateQuestion(q.key) }, 'Duplicate question'),
+        h('button', { type: 'button', class: 'danger', onclick: () => removeQuestion(q.key) }, 'Delete question'),
+      ),
+    );
+  }
+
+  function sidebar() {
+    return h(
+      'nav',
+      { class: 'editor-sidebar', 'aria-label': 'Rounds and questions' },
+      model.rounds.map((round, r) =>
+        h(
+          'section',
+          {
+            class: 'round',
+            ondragover: (e) => dragKey && e.preventDefault(),
+            ondrop: (e) => {
+              e.preventDefault();
+              if (dragKey) moveQuestion(dragKey, round, round.questions.length);
+            },
+          },
+          h(
+            'div',
+            { class: 'round-head' },
+            textInput(round.name, (v) => {
+              round.name = v;
+              changed();
+            }, { class: 'round-name', 'aria-label': `Round ${r + 1} name`, placeholder: `Round ${r + 1}` }),
+            h('button', { type: 'button', class: 'icon', title: 'Move round up', disabled: r === 0, onclick: () => moveRound(r, -1) }, '↑'),
+            h('button', { type: 'button', class: 'icon', title: 'Move round down', disabled: r === model.rounds.length - 1, onclick: () => moveRound(r, 1) }, '↓'),
+            h('button', { type: 'button', class: 'icon', title: 'Delete round', onclick: () => removeRound(r) }, '×'),
+          ),
+          h(
+            'ol',
+            { class: 'question-list' },
+            round.questions.map((q, i) =>
+              h(
+                'li',
+                {
+                  'data-question': q.key,
+                  class: q.key === selected ? 'selected' : '',
+                  draggable: 'true',
+                  ondragstart: (e) => {
+                    dragKey = q.key;
+                    e.dataTransfer.effectAllowed = 'move';
+                  },
+                  ondragend: () => (dragKey = null),
+                  ondragover: (e) => dragKey && e.preventDefault(),
+                  ondrop: (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (dragKey && dragKey !== q.key) moveQuestion(dragKey, round, i);
+                  },
+                },
+                h(
+                  'button',
+                  { type: 'button', class: 'question-item', onclick: () => select(q.key) },
+                  h('span', { class: 'q-type' }, TYPES[q.type] ?? q.type),
+                  h('span', { class: 'q-text' }, q.text || 'New question'),
+                ),
+              ),
+            ),
+          ),
+          h('button', { type: 'button', class: 'add', onclick: () => addQuestion(round) }, '+ Question'),
+        ),
+      ),
+      h('button', { type: 'button', class: 'add add-round', onclick: addRound }, '+ Round'),
+      h(
+        'label',
+        { class: 'field settings' },
+        h('span', { class: 'field-label' }, 'Speed bonus'),
+        h(
+          'select',
+          {
+            onchange: (e) => {
+              model.scoring = { ...(model.scoring ?? {}), speedFactor: Number(e.target.value) };
+              changed();
+            },
+          },
+          [
+            [0.5, 'Half points at the buzzer'],
+            [0.25, 'Small'],
+            [0, 'Off'],
+          ].map(([value, label]) => h('option', { value, selected: (model.scoring?.speedFactor ?? 0.5) === value }, label)),
+        ),
+      ),
+    );
+  }
+
+  function previewOf(q) {
+    if (!q) return null;
+    const answer = (() => {
+      switch (q.type) {
+        case 'multiple-choice':
+          return h('div', { class: 'options' }, q.options.map((o, i) =>
+            h('div', { class: `option opt-${i}${i === q.answer ? ' chosen' : ''}` }, h('span', { class: 'letter' }, LETTERS[i]), h('span', {}, o || '…')),
+          ));
+        case 'picture':
+        case 'music':
+          return h('div', { class: 'text-answer' }, h('input', { disabled: true, placeholder: 'Type your answer' }), h('div', { class: 'primary fake-button' }, 'Submit answer'));
+        case 'ordering':
+          return h('div', { class: 'pool' }, [...q.items].reverse().map((item) => h('div', { class: 'pool-item' }, item || '…')));
+        case 'letter':
+          return h('div', { class: 'keypad' }, [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].map((l) =>
+            h('div', { class: `key${l === (q.letter || normalise(q.answer)[0] || '').toUpperCase() ? ' chosen' : ''}` }, l),
+          ));
+      }
+      return null;
+    })();
+    return h(
+      'div',
+      { class: 'phone-frame' },
+      h('div', { class: 'screen' },
+        q.type === 'music' ? h('p', { class: 'music-badge' }, '🎵 Listen to the music') : null,
+        h('h2', { class: 'question-text' }, q.text || 'Your question'),
+        q.image ? h('img', { class: 'question-image', src: imageUrl(q.image), alt: '' }) : null,
+        answer,
+      ),
+    );
+  }
+
+  function renderPreview() {
+    const box = container.querySelector('.preview-box');
+    if (box) box.replaceChildren(previewOf(selected && find(selected)?.question) ?? '');
+  }
+
+  function render() {
+    const where = selected && find(selected);
+    const scroll = container.querySelector('.editor-sidebar')?.scrollTop;
+    container.replaceChildren(
+      h(
+        'div',
+        { class: 'editor' },
+        h(
+          'header',
+          { class: 'editor-bar' },
+          h('button', { type: 'button', class: 'back', onclick: async () => {
+            await flush();
+            onExit();
+          } }, '← Quizzes'),
+          h('input', {
+            class: 'quiz-title-input',
+            value: model.title,
+            placeholder: 'Quiz title',
+            'aria-label': 'Quiz title',
+            oninput: (e) => {
+              model.title = e.target.value;
+              changed();
+            },
+          }),
+          h('span', { class: 'problem-count' }),
+          h('span', { class: 'save-status', role: 'status' }),
+          h('a', { class: 'button', href: `/api/quizzes/${id}/export.zip?key=${encodeURIComponent(hostKey)}`, onclick: () => flush() }, 'Export'),
+          h('button', { type: 'button', class: 'primary', onclick: run }, 'Run quiz ▶'),
+        ),
+        h('ul', { class: 'editor-problems', hidden: true }),
+        h(
+          'div',
+          { class: 'editor-body' },
+          sidebar(),
+          h('section', { class: 'editor-main' }, where ? questionForm(where.question) : h('p', { class: 'muted' }, 'Add a question to get started.')),
+          h('aside', { class: 'editor-preview' }, h('p', { class: 'muted small' }, 'What teams see'), h('div', { class: 'preview-box' })),
+        ),
+      ),
+    );
+    if (scroll) container.querySelector('.editor-sidebar').scrollTop = scroll;
+    updateStatus();
+    updateIssues();
+    renderPreview();
+  }
+
+  const warnIfUnsaved = (e) => {
+    if (saveState !== 'saved') e.preventDefault();
+  };
+  window.addEventListener('beforeunload', warnIfUnsaved);
+
+  render();
+  return {
+    flush,
+    destroy() {
+      window.removeEventListener('beforeunload', warnIfUnsaved);
+    },
+  };
+}

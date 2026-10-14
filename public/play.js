@@ -14,6 +14,7 @@ let noticeTimer;
 let lastRenderKey = '';
 let pendingJoin = null; // A join or rejoin tapped before the connection was ready.
 let connected = false;
+let stopped = false; // This page is done with the server (quiz over, kicked or replaced).
 const form = { room: (params.get('room') ?? '').toUpperCase(), name: '', code: '', rejoining: false };
 
 // Per-question drafts, reset when a new question opens.
@@ -49,7 +50,7 @@ const socket = connectSocket({
   },
   onStatus(isConnected) {
     connected = isConnected;
-    statusBanner.hidden = isConnected || Boolean(ended);
+    statusBanner.hidden = isConnected || stopped;
     lastRenderKey = '';
     render();
   },
@@ -88,10 +89,19 @@ const socket = connectSocket({
       case 'kicked':
         writeToken(null);
         ended = 'The quiz master removed your team from this quiz.';
+        stopped = true;
+        socket.stop();
+        break;
+      case 'quiz-ended':
+        // Keep showing the final results if the quiz finished; otherwise say it's over.
+        writeToken(null);
+        if (state?.phase !== 'finished') ended = 'The quiz master has ended this quiz. Thanks for playing!';
+        stopped = true;
         socket.stop();
         break;
       case 'replaced':
         ended = 'Your team is now playing on another device. Use that one to answer.';
+        stopped = true;
         socket.stop();
         break;
     }
