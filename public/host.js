@@ -801,7 +801,12 @@ function timerBar(q) {
   if (q.remainingMs == null) return null;
   const total = q.seconds * 1000;
   // Start part-way through the animation, so the bar is right after any re-render.
-  return h('div', { class: 'timer-bar' }, h('div', { class: 'timer-fill', style: `animation-duration: ${total}ms; animation-delay: -${Math.max(0, total - q.remainingMs)}ms` }));
+  // While the host has the clock paused the bar is held at that frame, then carries on from it.
+  return h(
+    'div',
+    { class: 'timer-bar' },
+    h('div', { class: 'timer-fill', style: `animation-duration: ${total}ms; animation-delay: -${Math.max(0, total - q.remainingMs)}ms; animation-play-state: ${q.paused ? 'paused' : 'running'}` }),
+  );
 }
 
 function questionBody(s, q, reveal) {
