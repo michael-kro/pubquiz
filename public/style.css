@@ -331,6 +331,8 @@ input {
 .teams li:hover { background: var(--surface-2); }
 .teams .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .teams .score { font-variant-numeric: tabular-nums; color: var(--muted); }
+.team-code-small { display: none; font-size: 0.75rem; letter-spacing: 0.1em; color: var(--muted); }
+.teams li:hover .team-code-small { display: inline; }
 .teams .tick { color: var(--right); font-weight: 800; }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--right); flex: none; }
 .offline .dot { background: var(--wrong); }

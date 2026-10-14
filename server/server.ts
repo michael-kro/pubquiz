@@ -2,11 +2,11 @@ import { createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto
 import { readFile, rename, writeFile } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { basename, dirname, extname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { basename, dirname, extname, join } from 'node:path';
 import QRCode from 'qrcode';
 import { WebSocketServer, type WebSocket } from 'ws';
 import { handleApi } from './api.ts';
+import { readPublicFile } from './assets.ts';
 import { Game, type Team } from './game.ts';
 import type { Library } from './library.ts';
 import { lanAddress } from './net.ts';
@@ -15,7 +15,6 @@ import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
 import { createSaver, hashQuiz, readSession, writeSession, type Session } from './session.ts';
 import type { NetworkStatus } from './tunnel.ts';
 
-const PUBLIC_DIR = fileURLToPath(new URL('../public/', import.meta.url));
 const ROUTES: Record<string, string> = { '/': 'play.html', '/host': 'host.html', '/screen': 'screen.html' };
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -167,6 +166,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       ...view,
       question: view.question && !revealed ? { ...view.question, answerText: '', answer: undefined } : view.question,
       review: revealed ? view.review : undefined,
+      teams: view.teams.map((t) => ({ ...t, code: '' })),
       screenKey: '',
       canEnd: false,
     };
@@ -526,21 +526,23 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       return;
     }
 
-    const file = resolve(PUBLIC_DIR, ROUTES[pathname] ?? `.${decodeURIComponent(pathname)}`);
-    if (!file.startsWith(PUBLIC_DIR)) {
+    let relativePath: string;
+    try {
+      relativePath = ROUTES[pathname] ?? decodeURIComponent(pathname).replace(/^\/+/, '');
+    } catch {
+      res.writeHead(400).end('Bad request');
+      return;
+    }
+    const body = await readPublicFile(relativePath);
+    if (!body) {
       res.writeHead(404).end('Not found');
       return;
     }
-    try {
-      const body = await readFile(file);
-      res.writeHead(200, {
-        'content-type': CONTENT_TYPES[extname(file)] ?? 'application/octet-stream',
-        'cache-control': 'no-cache',
-      });
-      res.end(body);
-    } catch {
-      res.writeHead(404).end('Not found');
-    }
+    res.writeHead(200, {
+      'content-type': CONTENT_TYPES[extname(relativePath)] ?? 'application/octet-stream',
+      'cache-control': 'no-cache',
+    });
+    res.end(body);
   }
 
   const httpServer = createServer((req, res) => {

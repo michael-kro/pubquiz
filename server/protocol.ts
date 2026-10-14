@@ -121,7 +121,8 @@ export interface HostView {
   /** Changes whenever the QR code does, so the page reloads the image. */
   qrVersion: number;
   network: NetworkStatus;
-  teams: { id: string; name: string; score: number; connected: boolean; answered: boolean }[];
+  /** `code` is blank on the TV screen: anyone with a team's code can take over its phone. */
+  teams: { id: string; name: string; code: string; score: number; connected: boolean; answered: boolean }[];
   question?: QuestionView & { answerText: string; answer?: number };
   answeredCount: number;
   connectedCount: number;

@@ -130,9 +130,12 @@ test('the TV screen sees the quiz but never the answer before the reveal, and ha
   host.send({ t: 'advance' });
   const open = await tv.state('open');
   assert.equal(open.question.text, 'Q1');
+  assert.deepEqual(open.teams.map((t: { code: string }) => t.code), [''], 'the TV never gets team codes');
+  const hostOpen = await host.state('open');
+  assert.match(hostOpen.teams[0].code, /^[A-HJ-NP-Z2-9]{6}$/);
   assert.equal(open.question.answerText, '');
   assert.equal(open.question.answer, undefined);
-  assert.equal((await host.state('open')).question.answerText, 'a', 'the host still sees it');
+  assert.equal(hostOpen.question.answerText, 'a', 'the host still sees it');
   team.send({ t: 'answer', value: 0 });
   const closed = await tv.state('closed');
   assert.equal(closed.question.answerText, '');

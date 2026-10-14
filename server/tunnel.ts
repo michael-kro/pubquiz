@@ -2,7 +2,7 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { chmod, mkdir, mkdtemp, rename, rm, stat, writeFile } from 'node:fs/promises';
-import { homedir, tmpdir } from 'node:os';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 
@@ -88,8 +88,9 @@ export async function ensureCloudflared(log: (message: string) => void = () => {
   if (digest !== release.sha256) throw new Error('The cloudflared download failed its checksum check, so it was not used.');
 
   await mkdir(binDir, { recursive: true });
-  // Unpack in a fresh, empty folder, then move just the binary into place.
-  const work = await mkdtemp(join(tmpdir(), 'pubquiz-cloudflared-'));
+  // Unpack in a fresh, empty folder next to the destination (so the final move can't cross drives),
+  // then move just the binary into place.
+  const work = await mkdtemp(join(binDir, '.download-'));
   try {
     const downloaded = join(work, release.file);
     await writeFile(downloaded, data);

@@ -385,6 +385,14 @@ function libraryView(s) {
             { class: 'empty' },
             h('p', { class: 'big' }, 'No quizzes yet.'),
             h('p', { class: 'muted' }, 'Make one with “New quiz”, or import a quiz file (.yaml, or a .zip with pictures).'),
+            h(
+              'button',
+              {
+                class: 'primary',
+                onclick: act(() => api('POST', '/sample')),
+              },
+              'Add a sample quiz to try',
+            ),
           )
         : h(
             'ul',
@@ -800,6 +808,7 @@ function teamsPanel(s) {
           { class: team.connected ? '' : 'offline', title: team.connected ? 'Connected' : 'Disconnected' },
           h('span', { class: 'dot', 'aria-label': team.connected ? 'connected' : 'disconnected' }),
           h('span', { class: 'name' }, team.name),
+          !TV && team.code ? h('span', { class: 'team-code-small', title: 'Team code: lets this team carry on from another phone' }, team.code) : null,
           s.phase === 'open' && team.answered ? h('span', { class: 'tick', 'aria-label': 'answered' }, '✓') : null,
           h('span', { class: 'score' }, team.score),
           TV ? null : h(

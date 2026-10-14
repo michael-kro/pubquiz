@@ -1,0 +1,23 @@
+# docker compose up -d     then     docker compose logs pubquiz     for the host link.
+services:
+  pubquiz:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      # Quizzes, saved games and results. A named volume (not a folder) so the container can always write to it.
+      # Get files out with: docker compose cp pubquiz:/data/quizzes ./quizzes-backup
+      - pubquiz-data:/data
+    environment:
+      # Sign in to /host with a PIN, e.g. from a phone (6 or more characters). Leave empty to use the host link.
+      PUBQUIZ_HOST_PIN: ""
+      # No internet at the venue? Set PUBQUIZ_LAN to 1 and PUBQUIZ_PUBLIC_HOST to this computer's
+      # address on the venue Wi-Fi (e.g. 192.168.1.20), so the QR code points at the right place.
+      PUBQUIZ_LAN: "0"
+      PUBQUIZ_PUBLIC_HOST: ""
+      # Already have a public address for this (a VPS, Tailscale Funnel)? Put it here instead.
+      PUBQUIZ_PUBLIC_URL: ""
+    restart: unless-stopped
+
+volumes:
+  pubquiz-data:

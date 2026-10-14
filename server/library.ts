@@ -140,6 +140,17 @@ export class Library {
     return this.write(await this.newId('new quiz'), structuredClone(BLANK));
   }
 
+  /** Adds a copy of the bundled sample quiz, so a first run has something to try. */
+  async addSample(files: Map<string, Buffer>): Promise<string> {
+    const id = await this.newId('sample quiz');
+    await mkdir(this.folder(id), { recursive: true });
+    for (const [path, data] of files) {
+      if (path === QUIZ_FILE) await writeFile(this.quizPath(id), data);
+      else await this.putFile(id, path, data);
+    }
+    return id;
+  }
+
   async read(id: string): Promise<{ draft: QuizDraft; issues: QuizIssue[]; images: string[] }> {
     let source: string;
     try {

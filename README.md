@@ -2,11 +2,13 @@
 
 A self-hosted live pub quiz. The host runs it on a laptop. Each team joins on one phone by scanning a QR code, with nothing to install. Up to 30 teams.
 
-Status: milestones M0–M4b from [PLAN.md](PLAN.md) are done: all five question types, an in-app quiz editor, joining over the internet or local Wi-Fi, reconnects and crash recovery.
+Status: milestones M0–M5 from [PLAN.md](PLAN.md) are done: all five question types, an in-app quiz editor, joining over the internet or local Wi-Fi, reconnects and crash recovery.
+
+New here? Read [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md). Trouble at a venue? See [docs/VENUE-TROUBLESHOOTING.md](docs/VENUE-TROUBLESHOOTING.md).
 
 ## Run a quiz
 
-Needs Node.js 22.18 or newer.
+From source (needs Node.js 22.18 or newer), or use a [single-file program or Docker](#packaging).
 
 ```sh
 npm install
@@ -91,6 +93,26 @@ rounds:
 Every question can also set `seconds` (default 20), `points` (default 1000), `image`, and `speedBonus`. A correct answer earns its full points if instant, falling to half at the deadline. The speed bonus is off by default for music, because teams can't answer until they recognise the track. Set `scoring.speedFactor: 0` to turn it off everywhere. Ordering gives half the points for items in the right place and half for getting the whole order right.
 
 If the file has a mistake, the program says where, e.g. `Round 1, question 3, answer: must be the position of one of the options, counting from 0`.
+
+## Packaging
+
+**Single-file programs** (no Node needed on the host's computer):
+
+```sh
+npm run build:binaries                  # all five into dist/, with dist/SHA256SUMS
+node scripts/build-binaries.mjs linux-x64   # or just the ones you name
+```
+
+Targets: `macos-arm64`, `macos-x64`, `linux-x64`, `linux-arm64`, `windows-x64`. They are 60–90 MB each (they include a JavaScript runtime, [Bun](https://bun.sh)) with the pages and sample quiz baked in. They aren't signed, so macOS and Windows warn on first run (see the getting-started guide). Needs internet the first time, to fetch each platform's runtime.
+
+**Docker:**
+
+```sh
+docker compose up -d
+docker compose logs pubquiz        # prints the host link
+```
+
+Quizzes, saved games and results live in the `pubquiz-data` volume. Settings are environment variables in [compose.yaml](compose.yaml): `PUBQUIZ_HOST_PIN`, `PUBQUIZ_LAN`, `PUBQUIZ_PUBLIC_HOST`, `PUBQUIZ_PUBLIC_URL`. The internet link works from inside the container. For local-Wi-Fi mode in Docker, set `PUBQUIZ_LAN=1` and `PUBQUIZ_PUBLIC_HOST` to the computer's address on the venue Wi-Fi.
 
 ## How timing stays fair
 

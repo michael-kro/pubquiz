@@ -1,5 +1,6 @@
 // HTTP API for the host's quiz library and editor. Every route needs the host key.
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { sampleQuizFiles } from './assets.ts';
 import { Library, LibraryError, MAX_IMAGE_UPLOAD, MAX_IMPORT, type QuizDraft } from './library.ts';
 
 export interface ApiContext {
@@ -56,6 +57,10 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
     if (parts[0] === 'quizzes' && parts.length === 1) {
       if (method === 'GET') return void sendJson(res, 200, await library.list()), true;
       if (method === 'POST') return void sendJson(res, 201, { id: await library.create() }), true;
+    }
+
+    if (parts[0] === 'sample' && parts.length === 1 && method === 'POST') {
+      return void sendJson(res, 201, { id: await library.addSample(await sampleQuizFiles()) }), true;
     }
 
     // /api/import?name=quiz.zip

@@ -761,6 +761,7 @@ export class Game {
       teams: teams.map((t) => ({
         id: t.id,
         name: t.name,
+        code: t.code,
         score: scores.get(t.id) ?? 0,
         connected: t.connected,
         answered: t.answers.has(this.questionIndex),

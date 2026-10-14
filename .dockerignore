@@ -1,0 +1,11 @@
+node_modules
+dist
+.git
+.claude
+test
+scripts
+*.session.json
+*.results-*.csv
+pubquiz-data
+*.md
+!README.md
