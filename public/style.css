@@ -490,6 +490,20 @@ input {
 .lobby .brand-block { text-align: left; }
 .lobby .brand-logo.big { margin-left: 0; }
 
+.avatar { display: inline-grid; place-items: center; flex: none; border-radius: 50%; overflow: hidden; background: var(--surface-2); color: #fff; font-weight: 800; line-height: 1; user-select: none; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-button { padding: 0; background: none; border-radius: 50%; position: relative; cursor: pointer; }
+.avatar-button::after { content: '📷'; position: absolute; right: -4px; bottom: -4px; font-size: 0.8rem; background: var(--surface-2); border-radius: 50%; width: 1.4em; height: 1.4em; display: grid; place-items: center; }
+.team-bar .team-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.photo-prompt { background: var(--surface); border-radius: var(--radius); padding: 16px; margin: 16px 0; text-align: center; display: grid; gap: 10px; justify-items: center; }
+.photo-prompt .photo-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.photo-prompt button, .photo-prompt label.button { background: var(--surface-2); color: var(--text); padding: 0.6em 1.1em; border-radius: var(--radius); font-weight: 600; cursor: pointer; }
+.standings .avatar { margin-right: -2px; }
+.podium-spot .avatar { margin-bottom: 8px; }
+.teams .avatar { margin-right: 2px; }
+.teams .remove-photo { display: none; background: none; color: var(--muted); padding: 0 4px; font-size: 0.9rem; }
+.teams li:hover .remove-photo { display: inline; }
+
 /* Announcements for screen readers only */
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
@@ -507,6 +521,8 @@ input {
 .podium-spot.empty { visibility: hidden; }
 .podium-spot.place-1 { animation-delay: 0.5s; }
 .podium-spot.place-2 { animation-delay: 0.25s; }
+.podium-names { display: grid; gap: 10px; justify-items: center; }
+.podium-team { display: grid; gap: 4px; justify-items: center; }
 .podium-name { font-size: clamp(1.2rem, 2.4vw, 2rem); font-weight: 800; overflow-wrap: anywhere; }
 .podium-score { color: var(--muted); margin-bottom: 8px; font-weight: 700; }
 .podium-step { width: 100%; display: grid; place-items: center; font-size: 2rem; font-weight: 800; color: var(--accent-text); background: var(--accent); border-radius: 12px 12px 0 0; }

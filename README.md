@@ -39,6 +39,8 @@ A question also closes on its own when time runs out or every connected team has
 
 **Branding:** press **Branding** on the quizzes screen to set your venue's name, tagline, accent and background colours, and logo. They show on the team phones (join, lobby and final screens), the host screen and the TV. Text colours are worked out for you so everything stays readable, and the panel warns if the accent is hard to see. Use a logo with a transparent background. To brand a single quiz file, point `--branding <folder>` at a folder holding `branding.json` and `logo.png` (see `venues/my-venue/branding` for a real one).
 
+**Team photos:** each team can add a photo from its phone (a selfie, or one from the camera roll). It is cropped square and shrunk on the phone, checked by the server, and shows next to the team's name on the leaderboard, the TV, the host list and the podium. Teams without one get coloured initials. The host can untick **Team photos** at any time to switch them off for everyone, or hover over a team and press 🚫 to remove one. `--no-photos` starts with photos off. Photos are saved beside the game, so they survive a restart, and a new game starts without them.
+
 **Speed bonus:** besides faster answers scoring more, the quickest correct teams earn extra: set `fastBonus` and `fastPlaces` under `scoring` (or use the editor's **Fastest teams bonus**). First place gets all of it, second 60% and third 30%. The reveal shows who earned it.
 
 **Results:** when a quiz finishes, a `…results-<date>.csv` is saved next to it, and the final screen has **Download results (CSV)** with one column per question.

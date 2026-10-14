@@ -29,6 +29,8 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('mark'), key: z.string().max(400), correct: z.boolean() }),
   z.object({ t: z.literal('network'), action: z.enum(['use-lan', 'use-tunnel']) }),
   z.object({ t: z.literal('end-quiz') }),
+  z.object({ t: z.literal('photos'), enabled: z.boolean() }),
+  z.object({ t: z.literal('remove-photo'), teamId: z.string().max(200) }),
 ]);
 
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
@@ -48,6 +50,8 @@ export interface StandingRow {
   score: number;
   /** Tied teams share a rank (1, 1, 3). */
   rank: number;
+  /** The team's photo, if it has one and photos are on. */
+  photo?: string;
   /** Points the current question was worth to this team, from the reveal onwards. */
   gained?: number;
   /** Places moved up (positive) or down since the previous question. */
@@ -84,6 +88,9 @@ export interface TeamView {
   teamName: string;
   /** Typed on another phone (or a new link) to carry on as this team. */
   teamCode: string;
+  /** This team's own photo, and whether photos are allowed at all. */
+  photo?: string;
+  photosEnabled: boolean;
   score: number;
   rank: number;
   teamCount: number;
@@ -122,7 +129,8 @@ export interface HostView {
   qrVersion: number;
   network: NetworkStatus;
   /** `code` is blank on the TV screen: anyone with a team's code can take over its phone. */
-  teams: { id: string; name: string; code: string; score: number; connected: boolean; answered: boolean }[];
+  teams: { id: string; name: string; code: string; photo?: string; score: number; connected: boolean; answered: boolean }[];
+  photosEnabled: boolean;
   question?: QuestionView & { answerText: string; answer?: number; info?: string };
   answeredCount: number;
   connectedCount: number;

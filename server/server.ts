@@ -11,6 +11,7 @@ import { Game, type Team } from './game.ts';
 import type { Library } from './library.ts';
 import type { BrandingStore } from './branding.ts';
 import { clientAddress, TokenBucket, WindowCounter } from './limits.ts';
+import { MAX_PHOTO_BYTES, PhotoStore, sniffImage } from './photos.ts';
 import { lanAddress } from './net.ts';
 import { parseClientMessage, type HostIdleView, type HostView, type ServerMessage } from './protocol.ts';
 import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
@@ -69,6 +70,8 @@ export interface ServerOptions {
   hostPin?: string;
   /** Name, colours and logo for every page. */
   branding?: BrandingStore;
+  /** Let teams add a photo (the host can still switch it off). Default on. */
+  photos?: boolean;
   /** Turn off the team-name word filter. */
   nameFilter?: boolean;
   /** Keeps the host link the same across restarts. Defaults to the resumed session's key, or a new one. */
@@ -121,6 +124,7 @@ interface ActiveQuiz {
   game: Game;
   roomCode: string;
   saver?: ReturnType<typeof createSaver>;
+  photos: PhotoStore;
   resultsWritten?: boolean;
 }
 
@@ -148,6 +152,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   const teamConnections = new Map<string, Connection>();
   const instanceId = randomBytes(9).toString('base64url');
   const joinGuesses = new WindowCounter(MAX_JOIN_GUESSES_PER_MINUTE, 60_000);
+  const photoUploads = new WindowCounter(5, 60_000);
   const perAddress = new Map<string, number>();
   // Derived from the host key, so a TV left on /screen reconnects after a restart.
   const screenKey = createHmac('sha256', hostKey).update('screen').digest('base64url').slice(0, 24);
@@ -262,6 +267,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     active = undefined;
     ending.game.dispose();
     await ending.saver?.flush();
+    await ending.photos.flush();
     releaseTeams();
     await updateJoinUrl();
     broadcast();
@@ -285,7 +291,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     const game = resume
       ? Game.restore(quiz, resume.game, gameOptions)
       : new Game(quiz, gameOptions);
-    const current: ActiveQuiz = { quiz, game, roomCode };
+    const photoPath = session?.path.replace(/session\.json$/, 'photos.json');
+    const photos = resume && photoPath ? await PhotoStore.load(photoPath) : new PhotoStore(photoPath);
+    if (!resume) {
+      photos.reset();
+      game.photosEnabled = options.photos !== false;
+    }
+    const current: ActiveQuiz = { quiz, game, roomCode, photos };
     if (session) {
       current.saver = createSaver(() =>
         writeSession(session.path, {
@@ -299,6 +311,8 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       current.saver.schedule();
     }
     active = current;
+    // A resumed game and its photo file are saved separately; make sure they agree about who has one.
+    if (resume) for (const [teamId, version] of photos.versions()) game.setPhoto(teamId, version);
     await updateJoinUrl();
     broadcast();
   }
@@ -445,6 +459,17 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         void endQuiz();
         return;
 
+      case 'photos':
+        if (hostOnly()) game?.setPhotosEnabled(msg.enabled);
+        return;
+
+      case 'remove-photo':
+        if (hostOnly() && active) {
+          active.photos.remove(msg.teamId);
+          active.game.setPhoto(msg.teamId);
+        }
+        return;
+
       case 'network':
         if (hostOnly()) options.onNetworkAction?.(msg.action);
         return;
@@ -454,6 +479,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         const teamConn = teamConnections.get(msg.teamId);
         teamConnections.delete(msg.teamId);
         game.kick(msg.teamId);
+        active?.photos.remove(msg.teamId);
         if (teamConn) {
           teamConn.role = undefined;
           teamConn.teamId = undefined;
@@ -471,6 +497,39 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   const MAX_FAILURES_PER_ADDRESS = 5;
   const MAX_FAILURES_TOTAL = 20;
   const FAILURE_WINDOW_MS = 60_000;
+
+  async function handlePhotoUpload(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const json = (status: number, body: unknown) => {
+      res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      res.end(JSON.stringify(body));
+    };
+    const token = req.headers['x-team-token'];
+    const team = active && typeof token === 'string' ? active.game.teamByToken(token) : undefined;
+    if (!active || !team) return json(401, { error: 'Join the quiz first.' });
+    if (req.method === 'DELETE') {
+      active.photos.remove(team.id);
+      active.game.setPhoto(team.id);
+      return json(200, { ok: true });
+    }
+    if (!active.game.photosEnabled) return json(403, { error: 'The quiz master has turned team photos off.' });
+    if (photoUploads.blocked(team.id)) return json(429, { error: 'That is a lot of photos. Wait a minute and try again.' });
+    if (Number(req.headers['content-length'] ?? 0) > MAX_PHOTO_BYTES) return json(413, { error: 'That photo is too big.' });
+
+    const chunks: Buffer[] = [];
+    let size = 0;
+    for await (const chunk of req) {
+      size += (chunk as Buffer).length;
+      if (size > MAX_PHOTO_BYTES) return json(413, { error: 'That photo is too big.' });
+      chunks.push(chunk as Buffer);
+    }
+    const data = Buffer.concat(chunks);
+    const contentType = sniffImage(data);
+    if (!contentType) return json(415, { error: 'Use a JPEG, PNG or WebP photo.' });
+    photoUploads.add(team.id);
+    const version = active.photos.set(team.id, data, contentType);
+    active.game.setPhoto(team.id, version);
+    return json(200, { ok: true, photo: `/team-photo/${team.id}?v=${version}` });
+  }
 
   async function handleLogin(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const json = (status: number, body: unknown) => {
@@ -548,6 +607,30 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
     if (pathname === '/login') {
       await handleLogin(req, res);
+      return;
+    }
+
+    if (pathname === '/team-photo' && (req.method === 'POST' || req.method === 'DELETE')) {
+      await handlePhotoUpload(req, res);
+      return;
+    }
+
+    if (pathname.startsWith('/team-photo/') && req.method === 'GET') {
+      const id = pathname.slice('/team-photo/'.length);
+      const photo = active && active.game.photosEnabled && active.game.getTeam(id) ? active.photos.get(id) : undefined;
+      if (!photo) {
+        res.writeHead(404).end('Not found');
+        return;
+      }
+      res.writeHead(200, {
+        'content-type': photo.contentType,
+        // The address carries the version, so a changed photo has a new address and this can be kept for good.
+        'cache-control': 'public, max-age=31536000, immutable',
+        'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+        'x-content-type-options': 'nosniff',
+        'cross-origin-resource-policy': 'same-origin',
+      });
+      res.end(photo.data);
       return;
     }
 
@@ -713,6 +796,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         // Stop without telling phones the quiz ended: after a restart they rejoin and carry on.
         active?.game.dispose();
         await active?.saver?.flush();
+        await active?.photos.flush();
         for (const conn of connections) conn.ws.terminate();
         await new Promise<void>((done) => wss.close(() => done()));
         await new Promise<void>((done) => httpServer.close(() => done()));

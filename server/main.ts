@@ -32,6 +32,7 @@ Options:
       --quizzes <dir>    Where the quiz library lives (default ${DEFAULT_LIBRARY})
       --branding <dir>   Folder with branding.json and a logo (name, colours, logo on every page).
                          Default: the "branding" folder inside your quiz library, editable from the host screen
+      --no-photos        Don't let teams add a photo (the host can also switch photos off during a quiz)
       --no-name-filter   Allow any team name (the default blocks swearing; invisible characters are always removed)
       --host-pin <pin>   Let the host open /host by typing this PIN (6+ characters), e.g. from a phone
       --no-open          Don't open the host screen in a browser
@@ -97,6 +98,7 @@ async function main(): Promise<void> {
       quizzes: { type: 'string' },
       'host-pin': { type: 'string' },
       'no-name-filter': { type: 'boolean', default: false },
+      'no-photos': { type: 'boolean', default: false },
       branding: { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
@@ -140,6 +142,7 @@ async function main(): Promise<void> {
       hostPin: hostPin?.trim(),
       branding,
       nameFilter: !values['no-name-filter'],
+      photos: !values['no-photos'],
       port,
       publicHost: values['public-host'],
       onNetworkAction(action) {

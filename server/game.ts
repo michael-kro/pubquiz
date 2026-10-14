@@ -56,6 +56,8 @@ export interface GameSnapshot {
   sentAt: [string, number][];
   pausedAt?: number;
   skipped?: number[];
+  photos?: [string, number][];
+  photosEnabled?: boolean;
   displayOrders: [number, number[]][];
   overrides: [number, [string, boolean][]][];
 }
@@ -128,6 +130,10 @@ export class Game {
   private readonly displayOrders = new Map<number, number[]>();
   /** Set while the host has the clock paused. */
   private pausedAt: number | undefined;
+  /** teamId → photo version, for teams that have uploaded one. The pictures themselves are in the PhotoStore. */
+  private readonly photoVersions = new Map<string, number>();
+  /** The host can switch photos off for the whole quiz. */
+  photosEnabled = true;
   /** Questions the host skipped: nobody scores on them. */
   private readonly skipped = new Set<number>();
   /** The first correct team per question ("first" scoring), cleared whenever anything changes. */
@@ -203,9 +209,33 @@ export class Game {
   kick(teamId: string): boolean {
     if (!this.teams.delete(teamId)) return false;
     this.sentAt.delete(teamId);
+    this.photoVersions.delete(teamId);
     if (this.phase === 'open' && this.everyoneAnswered()) this.closeQuestion();
     else this.changed();
     return true;
+  }
+
+  /** Records (or clears, with no version) that a team has a photo. */
+  setPhoto(teamId: string, version?: number): void {
+    if (!this.teams.has(teamId)) return;
+    if (version === undefined) this.photoVersions.delete(teamId);
+    else this.photoVersions.set(teamId, version);
+    this.changed();
+  }
+
+  setPhotosEnabled(enabled: boolean): void {
+    this.photosEnabled = enabled;
+    this.changed();
+  }
+
+  /** Finds a team by its saved login without touching its connection state. */
+  teamByToken(token: string): Team | undefined {
+    return [...this.teams.values()].find((t) => t.token === token);
+  }
+
+  private photoUrl(teamId: string): string | undefined {
+    const version = this.photoVersions.get(teamId);
+    return this.photosEnabled && version !== undefined ? `/team-photo/${teamId}?v=${version}` : undefined;
   }
 
   getTeamNames(): string[] {
@@ -422,6 +452,8 @@ export class Game {
       sentAt: [...this.sentAt],
       pausedAt: this.pausedAt,
       skipped: [...this.skipped],
+      photos: [...this.photoVersions],
+      photosEnabled: this.photosEnabled,
       displayOrders: [...this.displayOrders],
       overrides: [...this.overrides].map(([index, marks]) => [index, [...marks]]),
     };
@@ -439,6 +471,8 @@ export class Game {
     }
     game.sentAt = new Map(snapshot.sentAt);
     game.pausedAt = snapshot.pausedAt;
+    for (const [id, version] of snapshot.photos ?? []) game.photoVersions.set(id, version);
+    game.photosEnabled = snapshot.photosEnabled ?? true;
     for (const index of snapshot.skipped ?? []) game.skipped.add(index);
     for (const [index, order] of snapshot.displayOrders) game.displayOrders.set(index, order);
     for (const [index, marks] of snapshot.overrides) game.overrides.set(index, new Map(marks));
@@ -668,6 +702,7 @@ export class Game {
         name: t.name,
         score: scores.get(t)!,
         rank: ranks.get(t)!,
+        photo: this.photoUrl(t.id),
         gained: showMovement ? scores.get(t)! - before.get(t)! : undefined,
         // Positive: moved up. Only meaningful once there was a previous question.
         moved: previousRanks && this.questionIndex > 0 ? previousRanks.get(t)! - ranks.get(t)! : undefined,
@@ -756,6 +791,8 @@ export class Game {
       teamId: team.id,
       teamName: team.name,
       teamCode: team.code,
+      photo: this.photoUrl(team.id),
+      photosEnabled: this.photosEnabled,
       score: mine?.score ?? 0,
       rank: mine?.rank ?? standings.length,
       teamCount: this.teams.size,
@@ -846,10 +883,12 @@ export class Game {
       quizTitle: this.quiz.title,
       questionCount: this.quiz.questions.length,
       maxTeams: MAX_TEAMS,
+      photosEnabled: this.photosEnabled,
       teams: teams.map((t) => ({
         id: t.id,
         name: t.name,
         code: t.code,
+        photo: this.photoUrl(t.id),
         score: scores.get(t.id) ?? 0,
         connected: t.connected,
         answered: t.answers.has(this.questionIndex),

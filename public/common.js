@@ -118,6 +118,43 @@ export function tick() {
 
 setInterval(tick, 200);
 
+// Team photos
+
+const AVATAR_COLOURS = ['#e2574c', '#3a86e0', '#e2a23b', '#3bb273', '#8e5bd4', '#d4559b', '#2aa6b8', '#7c8a3a'];
+
+/** A round picture for a team: its photo, or its initials on a colour taken from its name. */
+export function avatar(name, photo, size = 36) {
+  const el = h('span', { class: 'avatar', style: `width:${size}px;height:${size}px;font-size:${Math.round(size * 0.42)}px` });
+  if (photo) {
+    el.append(h('img', { src: photo, alt: '', loading: 'lazy', draggable: 'false' }));
+  } else {
+    let hash = 0;
+    for (const ch of name) hash = (hash * 31 + ch.codePointAt(0)) >>> 0;
+    el.style.background = AVATAR_COLOURS[hash % AVATAR_COLOURS.length];
+    el.append([...name.trim()].slice(0, 2).join('').toUpperCase() || '?');
+  }
+  return el;
+}
+
+const PHOTO_SIDE = 256;
+
+/** Crops a picture to a square and shrinks it, so uploads are small and fast on mobile data. Returns a JPEG blob. */
+export async function prepareTeamPhoto(file) {
+  if (!file.type.startsWith('image/')) throw new Error('Choose a photo.');
+  // "from-image" applies the camera's rotation, so portrait photos aren't sideways.
+  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const side = Math.min(bitmap.width, bitmap.height);
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = PHOTO_SIDE;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, PHOTO_SIDE, PHOTO_SIDE);
+  ctx.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, PHOTO_SIDE, PHOTO_SIDE);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.82));
+  if (!blob) throw new Error("Couldn't read that photo.");
+  return blob;
+}
+
 // Branding: a name, tagline, logo and two colours, from /branding.json.
 
 const hexToRgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));

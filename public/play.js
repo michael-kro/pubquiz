@@ -1,4 +1,4 @@
-import { brandBlock, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, setDeadline, tick } from './common.js';
+import { avatar, brandBlock, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setDeadline, tick } from './common.js';
 
 const TOKEN_KEY = 'pubquiz.team-token';
 const app = document.getElementById('app');
@@ -37,6 +37,7 @@ let joinError = '';
 let notice = '';
 let noticeTimer;
 let lastRenderKey = '';
+let photoBusy = false;
 let pendingJoin = null; // A join or rejoin tapped before the connection was ready.
 let connected = false;
 let stopped = false; // This page is done with the server (quiz over, kicked or replaced).
@@ -184,7 +185,7 @@ function sendAnswer(value) {
  */
 function render() {
   const { remainingMs, ...question } = state?.question ?? {};
-  const key = JSON.stringify([state && { ...state, question, preloadImage: 0 }, ended, joinError, notice, pending, draftOrder, !!token, pendingJoin, connected, getBranding()]);
+  const key = JSON.stringify([state && { ...state, question, preloadImage: 0 }, ended, joinError, notice, pending, draftOrder, !!token, pendingJoin, connected, getBranding(), photoBusy]);
   if (key === lastRenderKey) return;
   lastRenderKey = key;
   // If someone is typing, keep the keyboard open across the rebuild.
@@ -210,7 +211,14 @@ function view() {
     h(
       'header',
       { class: 'team-bar' },
-      h('span', { class: 'team-name' }, state.teamName),
+      h(
+        'span',
+        { class: 'team-left' },
+        state.photosEnabled
+          ? h('button', { class: 'avatar-button', type: 'button', 'aria-label': state.photo ? 'Change your team photo' : 'Add a team photo', onclick: () => pickPhoto(false) }, avatar(state.teamName, state.photo, 34))
+          : avatar(state.teamName, undefined, 34),
+        h('span', { class: 'team-name' }, state.teamName),
+      ),
       h('span', { class: 'team-score' }, `${state.score} pts`),
     ),
     phaseView(state),
@@ -272,6 +280,50 @@ function switchForm(rejoining) {
   joinError = '';
   lastRenderKey = '';
   render();
+}
+
+/** Opens the camera (or the photo picker), shrinks the picture on the phone and uploads it. */
+function pickPhoto(camera) {
+  const input = h('input', { type: 'file', accept: 'image/*', ...(camera ? { capture: 'user' } : {}), hidden: true });
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0];
+    input.remove();
+    if (!file) return;
+    photoBusy = true;
+    render();
+    try {
+      const blob = await prepareTeamPhoto(file);
+      const res = await fetch('/team-photo', { method: 'POST', headers: { 'x-team-token': token }, body: blob });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? `Couldn't upload that photo (${res.status}).`);
+    } catch (error) {
+      showNotice(error.message);
+    }
+    photoBusy = false;
+    render();
+  });
+  document.body.append(input);
+  input.click();
+}
+
+async function removePhoto() {
+  await fetch('/team-photo', { method: 'DELETE', headers: { 'x-team-token': token } }).catch(() => {});
+}
+
+function photoPrompt(s) {
+  if (!s.photosEnabled) return null;
+  return h(
+    'div',
+    { class: 'photo-prompt' },
+    avatar(s.teamName, s.photo, 96),
+    h('p', {}, s.photo ? 'Looking good! This shows on the big screen and the leaderboard.' : 'Add a team photo. It shows on the big screen and the leaderboard.'),
+    h(
+      'div',
+      { class: 'photo-actions' },
+      h('button', { type: 'button', disabled: photoBusy, onclick: () => pickPhoto(true) }, photoBusy ? 'Uploading…' : s.photo ? '📷 Retake' : '📷 Take a photo'),
+      h('button', { type: 'button', disabled: photoBusy, onclick: () => pickPhoto(false) }, 'Choose from your photos'),
+      s.photo ? h('button', { type: 'button', class: 'link-button', onclick: removePhoto }, 'Remove photo') : null,
+    ),
+  );
 }
 
 function joinForm() {
@@ -346,6 +398,7 @@ function phaseView(s) {
         h('h1', {}, "You're in!"),
         h('p', {}, 'Waiting for the quiz master to start.'),
         h('p', { class: 'muted' }, `${s.teamCount} ${s.teamCount === 1 ? 'team has' : 'teams have'} joined`),
+        photoPrompt(s),
       );
 
     case 'open': {
@@ -586,6 +639,7 @@ function standingsList(rows, myTeamId, limit) {
         'li',
         { class: row.teamId === myTeamId ? 'me' : '' },
         h('span', { class: 'rank' }, row.rank),
+        avatar(row.name, row.photo, 30),
         h('span', { class: 'name' }, row.name),
         h('span', { class: 'score' }, row.score),
       ),

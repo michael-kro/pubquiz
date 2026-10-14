@@ -1,4 +1,4 @@
-import { brandBlock, brandLogo, connectSocket, h, LETTERS, loadBranding, ordinal, preload, setDeadline, tick } from './common.js';
+import { avatar, brandBlock, brandLogo, connectSocket, h, LETTERS, loadBranding, ordinal, preload, setDeadline, tick } from './common.js';
 import { mountBranding } from './branding.js';
 import { mountEditor } from './editor.js';
 
@@ -628,6 +628,7 @@ function stage(s) {
               'li',
               { style: `animation-delay: ${Math.min(i, 20) * 60}ms` },
               h('span', { class: 'rank' }, ordinal(row.rank)),
+              avatar(row.name, row.photo, 36),
               h('span', { class: 'name' }, row.name),
               movement(row),
               h('span', { class: 'score' }, row.score),
@@ -692,7 +693,13 @@ function podium(standings) {
       return h(
         'div',
         { class: `podium-spot place-${place}` },
-        h('div', { class: 'podium-names' }, teams.map((t) => h('div', { class: 'podium-name' }, t.name))),
+        h(
+          'div',
+          { class: 'podium-names' },
+          teams.map((t) =>
+            h('div', { class: 'podium-team' }, avatar(t.name, t.photo, teams.length === 1 ? (place === 1 ? 110 : 84) : 56), h('div', { class: 'podium-name' }, t.name)),
+          ),
+        ),
         h('div', { class: 'podium-score' }, `${teams[0].score} pts`),
         h('div', { class: 'podium-step' }, ordinal(place)),
       );
@@ -859,6 +866,14 @@ function teamsPanel(s) {
     'aside',
     { class: 'teams' },
     h('h2', {}, `Teams ${s.teams.length}/${s.maxTeams}`),
+    TV
+      ? null
+      : h(
+          'label',
+          { class: 'check photos-toggle', title: 'Let teams add a photo that shows on the screens' },
+          h('input', { type: 'checkbox', checked: s.photosEnabled, onchange: (e) => socket.send({ t: 'photos', enabled: e.target.checked }) }),
+          ' Team photos',
+        ),
     s.teams.length === 0 ? h('p', { class: 'muted small' }, 'No teams yet.') : null,
     h(
       'ul',
@@ -868,7 +883,9 @@ function teamsPanel(s) {
           'li',
           { class: team.connected ? '' : 'offline', title: team.connected ? 'Connected' : 'Disconnected' },
           h('span', { class: 'dot', 'aria-label': team.connected ? 'connected' : 'disconnected' }),
+          avatar(team.name, team.photo, 26),
           h('span', { class: 'name' }, team.name),
+          !TV && team.photo ? h('button', { class: 'remove-photo', title: `Remove ${team.name}'s photo`, 'aria-label': `Remove ${team.name}'s photo`, onclick: () => confirm(`Remove ${team.name}'s photo?`) && socket.send({ t: 'remove-photo', teamId: team.id }) }, '🚫') : null,
           !TV && team.code ? h('span', { class: 'team-code-small', title: 'Team code: lets this team carry on from another phone' }, team.code) : null,
           s.phase === 'open' && team.answered ? h('span', { class: 'tick', 'aria-label': 'answered' }, '✓') : null,
           h('span', { class: 'score' }, team.score),
