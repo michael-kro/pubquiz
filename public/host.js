@@ -3,16 +3,26 @@ import { mountEditor } from './editor.js';
 
 const app = document.getElementById('app');
 const statusBanner = document.getElementById('status');
-const key = new URLSearchParams(location.search).get('key');
 /** The TV screen: the same page without any controls, and without answers before the reveal. */
 const TV = document.body.classList.contains('tv');
+const KEY_STORAGE = 'pubquiz.host-key';
+const params = new URLSearchParams(location.search);
+
+function storedKey() {
+  try {
+    return localStorage.getItem(KEY_STORAGE);
+  } catch {
+    return null;
+  }
+}
+
+// The host link carries the key. Without it, a host can type the PIN (if the program was started with one).
+let key = params.get('key') ?? (TV ? null : storedKey());
+let needPin = false;
+let pinError = '';
 
 let state = null;
-let fatal = key
-  ? null
-  : TV
-    ? 'Open the TV link from the host screen.'
-    : 'This page needs the host link printed in the terminal when the quiz started.';
+let fatal = null;
 let notice = '';
 let noticeTimer;
 let library = { items: null, error: '' };
@@ -47,32 +57,88 @@ async function loadLibrary() {
   render();
 }
 
-const socket = key
-  ? connectSocket({
-      onOpen() {
-        socket.send({ t: TV ? 'screen' : 'host', key });
-      },
-      onStatus(connected) {
-        statusBanner.hidden = connected || Boolean(fatal);
-      },
-      onMessage(message) {
-        if (message.t === 'state') {
-          if (message.view.phase === 'idle' && state?.phase !== 'idle' && message.view.library) void loadLibrary();
-          playSoundsFor(state, message.view);
-          state = message.view;
-          setDeadline(state.question?.remainingMs);
-          preload(state.preloadImage);
-        } else if (message.t === 'error') {
-          if (state) showNotice(message.message);
-          else {
-            fatal = message.message;
-            socket.stop();
-          }
+let socket = null;
+
+function connect() {
+  socket = connectSocket({
+    onOpen() {
+      socket.send({ t: TV ? 'screen' : 'host', key });
+    },
+    onStatus(connected) {
+      statusBanner.hidden = connected || Boolean(fatal) || needPin;
+    },
+    onMessage(message) {
+      if (message.t === 'state') {
+        if (message.view.phase === 'idle' && state?.phase !== 'idle' && message.view.library) void loadLibrary();
+        playSoundsFor(state, message.view);
+        state = message.view;
+        setDeadline(state.question?.remainingMs, state.question?.paused);
+        preload(state.preloadImage);
+        if (!TV) rememberKey();
+      } else if (message.t === 'error') {
+        if (state) showNotice(message.message);
+        else if (!TV && storedKey() === key) {
+          // A saved key that no longer works (the program was reset): ask for the PIN again.
+          socket.stop();
+          forgetKey();
+          void start();
+        } else {
+          fatal = message.message;
+          socket.stop();
         }
-        render();
-      },
-    })
-  : null;
+      }
+      render();
+    },
+  });
+}
+
+function rememberKey() {
+  try {
+    localStorage.setItem(KEY_STORAGE, key);
+  } catch {
+    // The link still works; the host just has to type the PIN next time.
+  }
+}
+
+function forgetKey() {
+  key = null;
+  try {
+    localStorage.removeItem(KEY_STORAGE);
+  } catch {
+    // Nothing to forget.
+  }
+}
+
+async function start() {
+  if (key) return connect();
+  if (TV) {
+    fatal = 'Open the TV link from the host screen.';
+    return render();
+  }
+  try {
+    needPin = (await (await fetch('/login')).json()).pin === true;
+  } catch {
+    needPin = false;
+  }
+  if (!needPin) fatal = 'This page needs the host link printed in the terminal when the quiz started.';
+  render();
+}
+
+async function submitPin(pin) {
+  pinError = '';
+  try {
+    const res = await fetch('/login', { method: 'POST', body: JSON.stringify({ pin }), headers: { 'content-type': 'application/json' } });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error ?? 'Could not sign in.');
+    key = data.key;
+    needPin = false;
+    rememberKey();
+    connect();
+  } catch (error) {
+    pinError = error.message;
+  }
+  render();
+}
 
 function showNotice(text) {
   notice = text;
@@ -93,6 +159,8 @@ document.addEventListener('keydown', (event) => {
   if ([' ', 'ArrowRight', 'PageDown', 'Enter'].includes(event.key)) {
     event.preventDefault();
     advance();
+  } else if ((event.key === 'p' || event.key === 'P') && state.phase === 'open') {
+    socket?.send({ t: state.question?.paused ? 'resume' : 'pause' });
   }
 });
 
@@ -108,7 +176,28 @@ function nextLabel(s) {
   }[s.phase];
 }
 
+function pinForm() {
+  return h(
+    'form',
+    {
+      class: 'screen join',
+      onsubmit: (event) => {
+        event.preventDefault();
+        void submitPin(new FormData(event.target).get('pin'));
+      },
+    },
+    h('h1', {}, 'Quiz master'),
+    h('label', {}, 'PIN', h('input', { name: 'pin', type: 'password', autocomplete: 'current-password', required: true, autofocus: true })),
+    pinError ? h('p', { class: 'error', role: 'alert' }, pinError) : null,
+    h('button', { class: 'primary', type: 'submit' }, 'Open the host screen'),
+  );
+}
+
 function render() {
+  if (needPin && !key) {
+    app.replaceChildren(pinForm());
+    return;
+  }
   if (fatal) {
     app.replaceChildren(h('section', { class: 'screen center' }, h('h1', {}, "Can't open the host screen"), h('p', {}, fatal)));
     return;
@@ -469,6 +558,7 @@ function stage(s) {
             ? h('span', { class: 'countdown big', 'data-countdown': true })
             : h('span', { class: 'phase-label' }, s.phase === 'closed' ? "Time's up" : 'Answer'),
         ),
+        q.paused ? h('p', { class: 'paused-banner', role: 'status' }, '⏸ Paused') : null,
         q.type === 'music' ? h('p', { class: 'music-badge' }, '🎵 Music round: play the track now') : null,
         h('h1', { class: 'question-text' }, q.text),
         q.image
@@ -477,6 +567,7 @@ function stage(s) {
         questionBody(s, q, reveal),
         s.phase === 'open' ? timerBar(q) : null,
         answerProgress(s),
+        TV ? null : questionControls(s),
       );
     }
 
@@ -557,6 +648,31 @@ function podium(standings) {
         h('div', { class: 'podium-step' }, ordinal(place)),
       );
     }),
+  );
+}
+
+/** Pause, add time and skip, for the question in progress. */
+function questionControls(s) {
+  const q = s.question;
+  if (s.phase !== 'open' && s.phase !== 'closed') return null;
+  return h(
+    'div',
+    { class: 'question-controls' },
+    s.phase === 'open'
+      ? [
+          h('button', { onclick: () => socket.send({ t: q.paused ? 'resume' : 'pause' }), title: 'P' }, q.paused ? '▶ Resume' : '⏸ Pause'),
+          h('button', { onclick: () => socket.send({ t: 'extend', seconds: 10 }) }, '+10 s'),
+        ]
+      : null,
+    h(
+      'button',
+      {
+        class: 'danger',
+        title: 'Throw this question away: nobody scores on it',
+        onclick: () => confirm('Skip this question? Nobody scores on it.') && socket.send({ t: 'skip' }),
+      },
+      'Skip question',
+    ),
   );
 }
 
@@ -706,4 +822,4 @@ function teamsPanel(s) {
   );
 }
 
-render();
+void start();

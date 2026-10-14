@@ -15,17 +15,17 @@ function announce() {
     const r = state.result;
     text = {
       lobby: "You're in. Waiting for the quiz master to start.",
-      open: q && `Question ${q.index + 1} of ${q.total}. ${q.text}`,
+      open: q && `${q.paused ? 'Paused. ' : ''}Question ${q.index + 1} of ${q.total}. ${q.text}`,
       closed: "Time's up.",
       reveal: r && `${r.correct ? 'Correct' : 'Not correct'}. ${r.points} points. The answer was ${r.answerText}.`,
       leaderboard: `You are ${ordinal(state.rank)} of ${state.teamCount}.`,
       finished: `Final results. You finished ${ordinal(state.rank)} of ${state.teamCount}.`,
     }[state.phase] ?? '';
-    text = `${state.phase}:${q?.index}:${text}`;
+    text = `${state.phase}:${q?.index}${q?.paused ? 'p' : ''}:${text}`;
   }
   if (text && text !== announced) {
     announced = text;
-    live.textContent = text.replace(/^[a-z]+:[\d]*:/, '');
+    live.textContent = text.replace(/^[a-z]+:-?\d*p?:/, '');
   }
 }
 const params = new URLSearchParams(location.search);
@@ -103,7 +103,8 @@ const socket = connectSocket({
           draftOrder = [];
         }
         if (state.phase !== 'open' || state.myAnswerText != null) pending = null;
-        setDeadline(state.question?.remainingMs);
+        setDeadline(state.question?.remainingMs, state.question?.paused);
+        trackQuestionTiming(state);
         preload(state.preloadImage);
         break;
       case 'error':
@@ -143,8 +144,31 @@ function showNotice(text) {
   }, 3000);
 }
 
+// The phone times its own answer, from the moment the question appeared on its screen. The server
+// checks that against what it saw, so this can only ever remove network delay, never claim a faster answer.
+let timing = { index: -1, at: 0, valid: false, pausedMs: 0, pausedSince: undefined };
+
+function trackQuestionTiming(s) {
+  const q = s.question;
+  if (!q || s.phase !== 'open') return;
+  if (q.index !== timing.index) {
+    // Only trust it if we saw the question from (nearly) the start; after a page reload we didn't.
+    timing = { index: q.index, at: performance.now(), valid: q.remainingMs >= q.seconds * 1000 - 2000, pausedMs: 0, pausedSince: undefined };
+  }
+  if (q.paused && timing.pausedSince === undefined) timing.pausedSince = performance.now();
+  if (!q.paused && timing.pausedSince !== undefined) {
+    timing.pausedMs += performance.now() - timing.pausedSince;
+    timing.pausedSince = undefined;
+  }
+}
+
+function elapsedMs() {
+  if (!state?.question || timing.index !== state.question.index || !timing.valid || timing.pausedSince !== undefined) return undefined;
+  return Math.max(0, Math.round(performance.now() - timing.at - timing.pausedMs));
+}
+
 function sendAnswer(value) {
-  if (socket.send({ t: 'answer', value })) {
+  if (socket.send({ t: 'answer', value, elapsedMs: elapsedMs() })) {
     pending = value;
     render();
   } else {
@@ -322,16 +346,18 @@ function phaseView(s) {
       );
 
     case 'open': {
-      const locked = s.myAnswerText != null || pending != null;
+      const answered = s.myAnswerText != null || pending != null;
+      const locked = answered || Boolean(q.paused);
       return h(
         'section',
         { class: 'screen' },
         h('div', { class: 'question-top' }, questionHeader(q), h('span', { class: 'countdown', 'data-countdown': true })),
+        q.paused ? h('p', { class: 'paused-banner', role: 'status' }, '⏸ Paused by the quiz master. The clock is stopped.') : null,
         q.type === 'music' ? h('p', { class: 'music-badge' }, '🎵 Listen to the music') : null,
         h('h2', { class: 'question-text' }, q.text),
         questionImage(q),
         answerInput(s, q, locked),
-        locked
+        answered
           ? h(
               'p',
               { class: 'center muted' },

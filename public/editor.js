@@ -575,6 +575,28 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
     );
   }
 
+  function setScoring(name, value) {
+    const scoring = { ...(model.scoring ?? {}) };
+    if (value === undefined) delete scoring[name];
+    else scoring[name] = value;
+    model.scoring = Object.keys(scoring).length ? scoring : undefined;
+    changed({ structure: name === 'mode' });
+  }
+
+  /** A labelled drop-down for a quiz-wide setting. */
+  function setting(label, options, get, set) {
+    return h(
+      'label',
+      { class: 'field' },
+      h('span', { class: 'field-label' }, label),
+      h(
+        'select',
+        { onchange: (e) => set(e.target.value) },
+        options.map(([value, text]) => h('option', { value, selected: String(get()) === String(value) }, text)),
+      ),
+    );
+  }
+
   function sidebar() {
     return h(
       'nav',
@@ -600,6 +622,21 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
             h('button', { type: 'button', class: 'icon', title: 'Move round up', disabled: r === 0, onclick: () => moveRound(r, -1) }, '↑'),
             h('button', { type: 'button', class: 'icon', title: 'Move round down', disabled: r === model.rounds.length - 1, onclick: () => moveRound(r, 1) }, '↓'),
             h('button', { type: 'button', class: 'icon', title: 'Delete round', onclick: () => removeRound(r) }, '×'),
+          ),
+          h(
+            'select',
+            {
+              class: 'round-mode',
+              'aria-label': `Scoring for round ${r + 1}`,
+              onchange: (e) => {
+                if (e.target.value) round.mode = e.target.value;
+                else delete round.mode;
+                changed();
+              },
+            },
+            [['', 'Scoring: quiz default'], ['speed', 'Scoring: faster scores more'], ['flat', 'Scoring: flat'], ['first', 'Scoring: first-correct bonus']].map(
+              ([value, text]) => h('option', { value, selected: (round.mode ?? '') === value }, text),
+            ),
           ),
           h(
             'ol',
@@ -637,23 +674,16 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
       ),
       h('button', { type: 'button', class: 'add add-round', onclick: addRound }, '+ Round'),
       h(
-        'label',
-        { class: 'field settings' },
-        h('span', { class: 'field-label' }, 'Speed bonus'),
-        h(
-          'select',
-          {
-            onchange: (e) => {
-              model.scoring = { ...(model.scoring ?? {}), speedFactor: Number(e.target.value) };
-              changed();
-            },
-          },
-          [
-            [0.5, 'Half points at the buzzer'],
-            [0.25, 'Small'],
-            [0, 'Off'],
-          ].map(([value, label]) => h('option', { value, selected: (model.scoring?.speedFactor ?? 0.5) === value }, label)),
-        ),
+        'div',
+        { class: 'settings' },
+        setting('Scoring', [['speed', 'Faster scores more'], ['flat', 'Same for every correct answer'], ['first', 'Flat + bonus for the first correct team']], () => model.scoring?.mode ?? 'speed', (v) => setScoring('mode', v)),
+        (model.scoring?.mode ?? 'speed') === 'speed'
+          ? setting('Speed bonus', [[0.5, 'Half points at the buzzer'], [0.25, 'Small'], [0, 'Off']], () => model.scoring?.speedFactor ?? 0.5, (v) => setScoring('speedFactor', Number(v)))
+          : null,
+        (model.scoring?.mode ?? 'speed') === 'first'
+          ? field('First-correct bonus', numberInput(model.scoring?.bonus, '500', (v) => setScoring('bonus', v)), 'bonus')
+          : null,
+        setting('Leaderboard', [['question', 'After every question'], ['round', 'After each round']], () => model.scoring?.leaderboard ?? 'question', (v) => setScoring('leaderboard', v)),
       ),
     );
   }

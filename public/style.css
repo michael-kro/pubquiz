@@ -413,7 +413,9 @@ input {
 .q-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .add { background: none; color: var(--accent); font-weight: 700; padding: 6px 4px; text-align: left; }
 .add-round { font-size: 1.05rem; }
-.settings { margin-top: auto; }
+.settings { margin-top: auto; display: grid; gap: 12px; }
+.round-mode { width: 100%; margin: 6px 0 0; font-size: 0.8rem; padding: 0.35em 0.5em; border-radius: 8px; border: 1px solid var(--surface-2); background: var(--surface); color: var(--muted); }
+.settings .field select, .settings .field input { font-size: 0.9rem; }
 
 .editor-main { overflow: auto; padding: 20px 28px; }
 .question-form { display: flex; flex-direction: column; gap: 16px; max-width: 720px; }
@@ -464,6 +466,10 @@ input {
   .editor-body { grid-template-columns: 1fr; }
   .editor-sidebar, .editor-preview { border: 0; }
 }
+
+.paused-banner { background: var(--accent); color: var(--accent-text); font-weight: 700; padding: 10px 14px; border-radius: var(--radius); margin: 0 0 12px; }
+.countdown.frozen { background: var(--accent); color: var(--accent-text); }
+.question-controls { display: flex; justify-content: center; gap: 10px; margin-top: 16px; }
 
 /* Announcements for screen readers only */
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

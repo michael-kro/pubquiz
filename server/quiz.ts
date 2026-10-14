@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { normalise } from './matching.ts';
 
 export const ORDERING_ITEMS = 5;
+export const SCORING_MODES = ['speed', 'flat', 'first'] as const;
+export type ScoringMode = (typeof SCORING_MODES)[number];
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const IMAGE_TYPES: Record<string, string> = {
   '.jpg': 'image/jpeg',
@@ -85,12 +87,18 @@ export const QuizFile = z
       .object({
         // Share of a correct answer's points lost by answering at the very last moment.
         speedFactor: z.number().min(0).max(1).default(0.5),
+        /** speed: faster scores more. flat: every correct answer scores the same. first: flat, plus a bonus for the first correct team. */
+        mode: z.enum(SCORING_MODES, { error: `must be one of: ${SCORING_MODES.join(', ')}` }).default('speed'),
+        /** Extra points for the first correct team in "first" mode. */
+        bonus: z.number().int().min(0).max(10_000).default(500),
+        /** Show the leaderboard after every question, or only at the end of each round. */
+        leaderboard: z.enum(['question', 'round'], { error: 'must be question or round' }).default('question'),
       })
       .strict()
-      .default({ speedFactor: 0.5 }),
+      .default({ speedFactor: 0.5, mode: 'speed', bonus: 500, leaderboard: 'question' }),
     rounds: z
       .array(
-        z.object({ name: text, questions: z.array(QuestionSchema, { error: 'needs a list of questions' }).min(1, 'needs at least one question') }).strict(),
+        z.object({ name: text, mode: z.enum(SCORING_MODES, { error: `must be one of: ${SCORING_MODES.join(', ')}` }).optional(), questions: z.array(QuestionSchema, { error: 'needs a list of questions' }).min(1, 'needs at least one question') }).strict(),
         { error: 'needs a list of rounds' },
       )
       .min(1, 'needs at least one round'),
@@ -101,6 +109,8 @@ export type Question = z.infer<typeof QuestionSchema> & {
   round: string;
   /** Position of the question's round, from 0. */
   roundIndex: number;
+  /** How this question is scored: its round's mode, or the quiz's. */
+  mode: ScoringMode;
   /** Where browsers load the image from, once resolved. */
   imageUrl?: string;
 };
@@ -114,6 +124,10 @@ export interface Media {
 export interface Quiz {
   title: string;
   speedFactor: number;
+  /** Extra points for the first correct team, in "first" mode. */
+  bonus: number;
+  /** When the leaderboard is shown. */
+  leaderboard: 'question' | 'round';
   questions: Question[];
   /** Round names, in order. */
   rounds: string[];
@@ -189,6 +203,8 @@ function quizFromData(file: QuizFileData): Quiz {
   return {
     title: file.title,
     speedFactor: file.scoring.speedFactor,
+    bonus: file.scoring.bonus,
+    leaderboard: file.scoring.leaderboard,
     rounds: file.rounds.map((round) => round.name),
     questions: file.rounds.flatMap((round, roundIndex) =>
       round.questions.map((q) => ({
@@ -196,6 +212,7 @@ function quizFromData(file: QuizFileData): Quiz {
         ...(q.type === 'letter' ? { letter: firstLetter(q.answer, q.letter) } : {}),
         round: round.name,
         roundIndex,
+        mode: round.mode ?? file.scoring.mode,
         imageUrl: q.image && isUrl(q.image) ? q.image : undefined,
       })),
     ),

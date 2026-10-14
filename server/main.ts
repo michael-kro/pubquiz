@@ -29,6 +29,7 @@ Options:
       --public-url <url> Use your own public address instead (e.g. a VPS or Tailscale Funnel)
       --public-host <h>  Address to put in the local join link (default: this laptop's Wi-Fi address)
       --quizzes <dir>    Where the quiz library lives (default ${DEFAULT_LIBRARY})
+      --host-pin <pin>   Let the host open /host by typing this PIN (6+ characters), e.g. from a phone
       --no-open          Don't open the host screen in a browser
       --fresh            Start over instead of resuming an unfinished quiz
   -h, --help             Show this help
@@ -90,6 +91,7 @@ async function main(): Promise<void> {
       tunnel: { type: 'string', default: 'cloudflare' },
       'public-url': { type: 'string' },
       quizzes: { type: 'string' },
+      'host-pin': { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
   });
@@ -104,6 +106,11 @@ async function main(): Promise<void> {
   const publicUrl = values['public-url']?.replace(/\/+$/, '');
   if (publicUrl && !/^https?:\/\//.test(publicUrl)) fail('--public-url must start with https:// (or http://).');
 
+  const hostPin = values['host-pin'];
+  if (hostPin !== undefined && hostPin.trim().length < 6) {
+    fail('--host-pin needs at least 6 characters. The quiz can be reached from the internet, so a short PIN could be guessed.');
+  }
+
   const quizPath = positionals[0];
   const single = quizPath ? await loadQuizArgument(quizPath, values.fresh) : undefined;
   const library = quizPath ? undefined : new Library(resolve(values.quizzes ?? DEFAULT_LIBRARY));
@@ -116,6 +123,7 @@ async function main(): Promise<void> {
       session: single?.session,
       library,
       hostKey: library ? await libraryHostKey(library.dir) : undefined,
+      hostPin: hostPin?.trim(),
       port,
       publicHost: values['public-host'],
       onNetworkAction(action) {
@@ -147,7 +155,7 @@ async function main(): Promise<void> {
   console.log(`
 ${heading}
 
-  Host screen:  ${server.hostUrl}${single ? `\n  ${values.lan ? 'Teams join: ' : 'Local link: '}  ${server.lanJoinUrl}\n  Room code:    ${server.roomCode}` : ''}
+  Host screen:  ${server.hostUrl}${hostPin ? `\n  Host on a phone: open /host on the same address and type the PIN` : ''}${single ? `\n  ${values.lan ? 'Teams join: ' : 'Local link: '}  ${server.lanJoinUrl}\n  Room code:    ${server.roomCode}` : ''}
 
 ${
   values.lan

@@ -2,7 +2,7 @@
 
 A self-hosted live pub quiz. The host runs it on a laptop. Each team joins on one phone by scanning a QR code, with nothing to install. Up to 30 teams.
 
-Status: milestones M0–M4 from [PLAN.md](PLAN.md) are done: all five question types, an in-app quiz editor, joining over the internet or local Wi-Fi, reconnects and crash recovery.
+Status: milestones M0–M4b from [PLAN.md](PLAN.md) are done: all five question types, an in-app quiz editor, joining over the internet or local Wi-Fi, reconnects and crash recovery.
 
 ## Run a quiz
 
@@ -24,6 +24,10 @@ The host screen opens in your browser. With no quiz file it shows **Your quizzes
 The host link stays the same between runs, so you can bookmark it.
 
 **TV screen:** the host screen has a **TV screen ↗** button. Open that link on the TV or projector and run the quiz from your phone or laptop. The TV shows the question, countdown, answer count, leaderboard (with points gained and places moved), a round break after each round, and a podium at the end. It never shows an answer before the reveal, and has no controls. The 🔇 button turns on sound effects.
+
+**Running the night:** during a question the host can **Pause** (the clock stops for every team, and resuming gives back exactly the time left; **P** also works), add **+10 s**, or **Skip question** (nobody scores on it). Teams with equal scores are separated by their quicker total answer time.
+
+**From a phone:** start with `--host-pin <pin>` (6 or more characters), open `/host` on the host's phone and type the PIN. The phone remembers it. Wrong guesses are limited, but if the quiz is on the internet link, choose a long PIN.
 
 **Results:** when a quiz finishes, a `…results-<date>.csv` is saved next to it, and the final screen has **Download results (CSV)** with one column per question. Put it on the projector, and teams scan the QR code to join. Use the yellow button (or Space, →, or a presentation clicker) to move through each question:
 
@@ -69,9 +73,28 @@ See [examples/sample-quiz.yaml](examples/sample-quiz.yaml), which has every ques
 
 Typed answers are matched ignoring case, punctuation, a leading "the" and small typos. When a picture or music question closes, you see every answer grouped together. Tick or untick each one, then reveal.
 
+Scoring is set for the whole quiz in a `scoring:` block, and can be overridden per round with `mode:`:
+
+```yaml
+scoring:
+  mode: speed          # speed (default): faster answers score more
+                       # flat: every correct answer scores the same
+                       # first: flat, plus `bonus` extra points for the first correct team
+  speedFactor: 0.5     # speed mode: a correct answer at the buzzer earns half the points
+  bonus: 500           # first mode
+  leaderboard: question  # or `round`: only show the leaderboard at the end of each round
+rounds:
+  - name: Music
+    mode: flat         # this round only
+```
+
 Every question can also set `seconds` (default 20), `points` (default 1000), `image`, and `speedBonus`. A correct answer earns its full points if instant, falling to half at the deadline. The speed bonus is off by default for music, because teams can't answer until they recognise the track. Set `scoring.speedFactor: 0` to turn it off everywhere. Ordering gives half the points for items in the right place and half for getting the whole order right.
 
 If the file has a mistake, the program says where, e.g. `Round 1, question 3, answer: must be the position of one of the options, counting from 0`.
+
+## How timing stays fair
+
+Each phone times its own answer, from the moment the question appears on its screen, so a slow connection never costs a team points. The server checks that figure against what it saw (the time since it sent the question, less the phone's measured round trip) and uses its own figure if the phone's doesn't fit, so a doctored page can't claim an instant answer.
 
 ## Development
 

@@ -13,6 +13,9 @@ export const MAX_TEXT_ANSWER = 100;
  * Capped so a team can't fake a huge delay to buy time.
  */
 export const MAX_LATENCY_MS = 1500;
+/** How far a phone's own answer time may stray below the server's bound before it's not trusted. */
+export const CLIENT_TIME_TOLERANCE_MS = 150;
+export const MAX_EXTEND_SECONDS = 120;
 
 export interface Answer {
   /** Multiple choice: option index. Text: what the team typed. Ordering: original item indices in the team's order. */
@@ -45,6 +48,8 @@ export interface GameSnapshot {
   endsAt: number;
   teams: { id: string; token: string; code: string; name: string; answers: [number, Answer][] }[];
   sentAt: [string, number][];
+  pausedAt?: number;
+  skipped?: number[];
   displayOrders: [number, number[]][];
   overrides: [number, [string, boolean][]][];
 }
@@ -108,6 +113,12 @@ export class Game {
   private timer: NodeJS.Timeout | undefined;
   /** Ordering questions: displayed position → original item index, per question. */
   private readonly displayOrders = new Map<number, number[]>();
+  /** Set while the host has the clock paused. */
+  private pausedAt: number | undefined;
+  /** Questions the host skipped: nobody scores on them. */
+  private readonly skipped = new Set<number>();
+  /** The first correct team per question ("first" scoring), cleared whenever anything changes. */
+  private firstCorrectMemo = new Map<number, string | undefined>();
   /** Host marking of typed answers, per question, keyed by normalised answer. */
   private readonly overrides = new Map<number, Map<string, boolean>>();
 
@@ -193,11 +204,12 @@ export class Game {
    * `latencyMs` is the team's measured round trip. The question took about half of it to reach the
    * phone and the answer the other half to come back, so it's removed from the answer time.
    */
-  answer(teamId: string, value: AnswerValue, latencyMs = 0): Result<null> {
+  answer(teamId: string, value: AnswerValue, latencyMs = 0, clientElapsedMs?: number): Result<null> {
     const team = this.teams.get(teamId);
     if (!team) return fail('Your team is not in this quiz.');
     const question = this.currentQuestion;
     if (this.phase !== 'open' || !question) return fail('This question is closed.');
+    if (this.pausedAt !== undefined) return fail('The quiz master has paused the quiz.');
     if (team.answers.has(this.questionIndex)) return fail('Your team has already answered.');
 
     const stored = this.validate(question, value);
@@ -206,7 +218,19 @@ export class Game {
     const receivedAt = this.now();
     if (receivedAt - latency > this.endsAt) return fail("Too late, time's up.");
 
-    const answerMs = Math.max(0, receivedAt - (this.sentAt.get(teamId) ?? this.openedAt) - latency);
+    // The phone times itself from when the question appeared on its screen, so delivery delay never
+    // counts against it. It is only trusted if it fits what the server saw: no more than the time since
+    // the question was sent, and no less than that minus the round trip (and a small tolerance).
+    const sinceSent = receivedAt - (this.sentAt.get(teamId) ?? this.openedAt);
+    let answerMs = Math.max(0, sinceSent - latency);
+    if (
+      clientElapsedMs !== undefined &&
+      Number.isFinite(clientElapsedMs) &&
+      clientElapsedMs >= Math.max(0, sinceSent - latency - CLIENT_TIME_TOLERANCE_MS) &&
+      clientElapsedMs <= sinceSent
+    ) {
+      answerMs = clientElapsedMs;
+    }
     team.answers.set(this.questionIndex, { value: stored.value, answerMs });
 
     if (this.everyoneAnswered()) this.closeQuestion();
@@ -278,6 +302,11 @@ export class Game {
         this.phase = 'reveal';
         break;
       case 'reveal':
+        // With round-by-round leaderboards, go straight on unless this was the end of a round.
+        if (this.quiz.leaderboard === 'round' && !this.isLastInRound(this.questionIndex)) {
+          this.openQuestion(this.questionIndex + 1);
+          return;
+        }
         this.phase = 'leaderboard';
         break;
       case 'leaderboard':
@@ -291,6 +320,67 @@ export class Game {
         return;
     }
     this.changed();
+  }
+
+  private isLastInRound(index: number): boolean {
+    return this.quiz.questions[index + 1]?.roundIndex !== this.quiz.questions[index]?.roundIndex;
+  }
+
+  // Host controls for a question in progress.
+
+  get paused(): boolean {
+    return this.pausedAt !== undefined;
+  }
+
+  /** Stops the clock for everyone. Teams can't answer until it's resumed. */
+  pause(): Result<null> {
+    if (this.phase !== 'open') return fail('There is no question to pause.');
+    if (this.pausedAt !== undefined) return fail('Already paused.');
+    this.pausedAt = this.now();
+    clearTimeout(this.timer);
+    this.timer = undefined;
+    this.changed();
+    return { ok: true, value: null };
+  }
+
+  /** Carries on from where it stopped: every deadline moves by the time spent paused. */
+  resume(): Result<null> {
+    if (this.pausedAt === undefined) return fail('Not paused.');
+    const shift = this.now() - this.pausedAt;
+    this.pausedAt = undefined;
+    this.openedAt += shift;
+    this.endsAt += shift;
+    for (const [teamId, at] of this.sentAt) this.sentAt.set(teamId, at + shift);
+    this.startTimer();
+    this.changed();
+    return { ok: true, value: null };
+  }
+
+  /** Adds time to the question in progress. */
+  extend(seconds: number): Result<null> {
+    if (this.phase !== 'open') return fail('There is no question to extend.');
+    if (!Number.isFinite(seconds) || seconds <= 0 || seconds > MAX_EXTEND_SECONDS) {
+      return fail(`Add between 1 and ${MAX_EXTEND_SECONDS} seconds.`);
+    }
+    this.endsAt += Math.round(seconds * 1000);
+    if (this.pausedAt === undefined) this.startTimer();
+    this.changed();
+    return { ok: true, value: null };
+  }
+
+  /** Throws the current question away (it scores nothing for anyone) and moves straight on. */
+  skip(): Result<null> {
+    if (this.phase !== 'open' && this.phase !== 'closed') return fail('Only a question that has not been revealed can be skipped.');
+    this.skipped.add(this.questionIndex);
+    this.pausedAt = undefined;
+    clearTimeout(this.timer);
+    this.timer = undefined;
+    if (this.questionIndex + 1 < this.quiz.questions.length) this.openQuestion(this.questionIndex + 1);
+    else {
+      this.phase = 'finished';
+      this.changed();
+    }
+    return { ok: true, value: null };
   }
 
   dispose(): void {
@@ -308,6 +398,8 @@ export class Game {
       endsAt: this.endsAt,
       teams: [...this.teams.values()].map((t) => ({ id: t.id, token: t.token, code: t.code, name: t.name, answers: [...t.answers] })),
       sentAt: [...this.sentAt],
+      pausedAt: this.pausedAt,
+      skipped: [...this.skipped],
       displayOrders: [...this.displayOrders],
       overrides: [...this.overrides].map(([index, marks]) => [index, [...marks]]),
     };
@@ -324,9 +416,11 @@ export class Game {
       game.teams.set(t.id, { ...t, connected: false, answers: new Map(t.answers) });
     }
     game.sentAt = new Map(snapshot.sentAt);
+    game.pausedAt = snapshot.pausedAt;
+    for (const index of snapshot.skipped ?? []) game.skipped.add(index);
     for (const [index, order] of snapshot.displayOrders) game.displayOrders.set(index, order);
     for (const [index, marks] of snapshot.overrides) game.overrides.set(index, new Map(marks));
-    if (game.phase === 'open') game.startTimer();
+    if (game.phase === 'open' && game.pausedAt === undefined) game.startTimer();
     return game;
   }
 
@@ -335,6 +429,7 @@ export class Game {
     if (!question) return;
     this.questionIndex = index;
     this.phase = 'open';
+    this.pausedAt = undefined;
     this.openedAt = this.now();
     this.endsAt = this.openedAt + question.seconds * 1000;
     if (question.type === 'ordering' && !this.displayOrders.has(index)) {
@@ -355,6 +450,7 @@ export class Game {
     if (this.phase !== 'open') return;
     clearTimeout(this.timer);
     this.timer = undefined;
+    this.pausedAt = undefined;
     this.phase = 'closed';
     this.changed();
   }
@@ -362,7 +458,8 @@ export class Game {
   /** A team that reconnects mid-question keeps its original start time, so reconnecting can't buy extra time. */
   private markSent(team: Team): void {
     if (this.phase === 'open' && team.connected && !this.sentAt.has(team.id)) {
-      this.sentAt.set(team.id, this.now());
+      // Joining while paused counts from the moment the clock restarts (resume shifts this forward).
+      this.sentAt.set(team.id, this.pausedAt ?? this.now());
     }
   }
 
@@ -372,6 +469,7 @@ export class Game {
   }
 
   private changed(): void {
+    this.firstCorrectMemo.clear();
     this.onChange();
   }
 
@@ -382,10 +480,37 @@ export class Game {
     return override ?? matchAnswer(given, accepted) !== 'none';
   }
 
-  private markAnswer(questionIndex: number, answer: Answer): Marked {
+  /** Points for an answer, including the first-correct bonus when the question is scored that way. */
+  private markAnswer(questionIndex: number, answer: Answer, team: Team): Marked {
+    const marked = this.baseMark(questionIndex, answer);
+    const q = this.quiz.questions[questionIndex]!;
+    if (q.mode === 'first' && marked.correct && this.firstCorrect(questionIndex) === team.id) {
+      return { ...marked, points: marked.points + this.quiz.bonus, detail: marked.detail ?? 'First correct answer: bonus!' };
+    }
+    return marked;
+  }
+
+  /** The team that answered a question correctly in the shortest time. */
+  private firstCorrect(questionIndex: number): string | undefined {
+    if (this.firstCorrectMemo.has(questionIndex)) return this.firstCorrectMemo.get(questionIndex);
+    let best: { id: string; ms: number } | undefined;
+    for (const team of this.teams.values()) {
+      const answer = team.answers.get(questionIndex);
+      if (answer && this.baseMark(questionIndex, answer).correct && (!best || answer.answerMs < best.ms)) {
+        best = { id: team.id, ms: answer.answerMs };
+      }
+    }
+    this.firstCorrectMemo.set(questionIndex, best?.id);
+    return best?.id;
+  }
+
+  private baseMark(questionIndex: number, answer: Answer): Marked {
+    if (this.skipped.has(questionIndex)) return { correct: false, points: 0, detail: 'Skipped by the quiz master' };
     const q = this.quiz.questions[questionIndex]!;
     const durationMs = q.seconds * 1000;
-    const speedFactor = (q.speedBonus ?? q.type !== 'music') ? this.quiz.speedFactor : 0;
+    // Only "speed" questions scale with time; music has no shared start, so it is flat unless asked.
+    const wantsSpeed = q.mode === 'speed' && (q.speedBonus ?? q.type !== 'music');
+    const speedFactor = wantsSpeed ? this.quiz.speedFactor : 0;
     const timed = (correct: boolean, points: number) =>
       scoreAnswer({ correct, points, answerMs: answer.answerMs, durationMs, speedFactor });
 
@@ -428,18 +553,29 @@ export class Game {
   scoreOf(team: Team, beforeQuestion = Infinity): number {
     let score = 0;
     for (const [index, answer] of team.answers) {
-      if (index < beforeQuestion && this.isRevealed(index)) score += this.markAnswer(index, answer).points;
+      if (index < beforeQuestion && this.isRevealed(index)) score += this.markAnswer(index, answer, team).points;
     }
     return score;
   }
 
-  /** Ranks with ties sharing a place (1, 1, 3). */
-  private rank<T extends { name: string }>(rows: T[], score: (row: T) => number): Map<T, number> {
-    const sorted = [...rows].sort((a, b) => score(b) - score(a) || a.name.localeCompare(b.name));
+  /** Total time a team took over the revealed questions; unanswered ones count as the full time limit. */
+  private timeOf(team: Team, beforeQuestion = Infinity): number {
+    let total = 0;
+    for (let i = 0; i < this.quiz.questions.length && i < beforeQuestion; i++) {
+      if (!this.isRevealed(i) || this.skipped.has(i)) continue;
+      total += team.answers.get(i)?.answerMs ?? this.quiz.questions[i]!.seconds * 1000;
+    }
+    return total;
+  }
+
+  /** Ranks with ties sharing a place (1, 1, 3). Equal scores are split by the quicker total time. */
+  private rank<T extends { name: string }>(rows: T[], score: (row: T) => number, time: (row: T) => number): Map<T, number> {
+    const sorted = [...rows].sort((a, b) => score(b) - score(a) || time(a) - time(b) || a.name.localeCompare(b.name));
     const ranks = new Map<T, number>();
     sorted.forEach((row, i) => {
       const previous = sorted[i - 1];
-      ranks.set(row, previous && score(previous) === score(row) ? ranks.get(previous)! : i + 1);
+      const tied = previous && score(previous) === score(row) && time(previous) === time(row);
+      ranks.set(row, tied ? ranks.get(previous)! : i + 1);
     });
     return ranks;
   }
@@ -447,11 +583,13 @@ export class Game {
   standings(): StandingRow[] {
     const teams = [...this.teams.values()];
     const scores = new Map(teams.map((t) => [t, this.scoreOf(t)]));
-    const ranks = this.rank(teams, (t) => scores.get(t)!);
+    const times = new Map(teams.map((t) => [t, this.timeOf(t)]));
+    const ranks = this.rank(teams, (t) => scores.get(t)!, (t) => times.get(t)!);
     // From the reveal on, also say how each team moved and what the question was worth to it.
     const showMovement = this.isRevealed(this.questionIndex) && this.questionIndex >= 0;
     const before = new Map(teams.map((t) => [t, this.scoreOf(t, this.questionIndex)]));
-    const previousRanks = showMovement ? this.rank(teams, (t) => before.get(t)!) : undefined;
+    const timesBefore = new Map(teams.map((t) => [t, this.timeOf(t, this.questionIndex)]));
+    const previousRanks = showMovement ? this.rank(teams, (t) => before.get(t)!, (t) => timesBefore.get(t)!) : undefined;
     return teams
       .map((t) => ({
         teamId: t.id,
@@ -462,7 +600,7 @@ export class Game {
         // Positive: moved up. Only meaningful once there was a previous question.
         moved: previousRanks && this.questionIndex > 0 ? previousRanks.get(t)! - ranks.get(t)! : undefined,
       }))
-      .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+      .sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
   }
 
   /** One row per team: points for each question revealed so far, and the total. For the host to keep. */
@@ -479,7 +617,7 @@ export class Game {
         String(row.score),
         ...questions.map((_, i) => {
           const answer = team.answers.get(i);
-          return answer ? String(this.markAnswer(i, answer).points) : '0';
+          return answer ? String(this.markAnswer(i, answer, team).points) : '0';
         }),
       ];
     });
@@ -504,7 +642,8 @@ export class Game {
       options: q.type === 'multiple-choice' ? q.options : undefined,
       items: q.type === 'ordering' ? this.displayOrders.get(this.questionIndex)!.map((i) => q.items[i]!) : undefined,
       seconds: q.seconds,
-      remainingMs: this.phase === 'open' ? Math.max(0, this.endsAt - this.now()) : undefined,
+      remainingMs: this.phase === 'open' ? Math.max(0, this.endsAt - (this.pausedAt ?? this.now())) : undefined,
+      paused: this.phase === 'open' && this.pausedAt !== undefined ? true : undefined,
     };
   }
 
@@ -533,7 +672,7 @@ export class Game {
     const mine = standings.find((row) => row.teamId === teamId);
     const question = this.currentQuestion;
     const answer = team.answers.get(this.questionIndex);
-    const marked = question && answer ? this.markAnswer(this.questionIndex, answer) : undefined;
+    const marked = question && answer ? this.markAnswer(this.questionIndex, answer, team) : undefined;
     const showQuestion = this.phase !== 'lobby' && this.phase !== 'finished';
 
     return {
@@ -609,7 +748,7 @@ export class Game {
           .map(([letter, count]) => `${letter} ×${count}`)
           .join('   ');
       } else {
-        const perfect = answered.filter(({ answer }) => this.markAnswer(this.questionIndex, answer).correct).length;
+        const perfect = answered.filter(({ answer }) => this.baseMark(this.questionIndex, answer).correct).length;
         summary = `${perfect} of ${answered.length} ${answered.length === 1 ? 'team' : 'teams'} got the order exactly right`;
       }
     }

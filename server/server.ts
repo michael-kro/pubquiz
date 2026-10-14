@@ -45,6 +45,8 @@ export interface ServerOptions {
   session?: SessionOptions;
   /** The host's quiz library: enables the editor and choosing a quiz to run. */
   library?: Library;
+  /** A short PIN the host can type at /host instead of using the secret link (for running the quiz from a phone). */
+  hostPin?: string;
   /** Keeps the host link the same across restarts. Defaults to the resumed session's key, or a new one. */
   hostKey?: string;
   port?: number;
@@ -360,7 +362,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
       case 'answer': {
         if (conn.role !== 'team' || !conn.teamId || !game) return send(conn, { t: 'error', message: 'Join a team first.' });
-        const result = game.answer(conn.teamId, msg.value, latencyOf(conn));
+        const result = game.answer(conn.teamId, msg.value, latencyOf(conn), msg.elapsedMs);
         if (!result.ok) send(conn, { t: 'error', message: result.error });
         return;
       }
@@ -375,6 +377,17 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       case 'advance':
         if (hostOnly()) game?.advance();
         return;
+
+      case 'pause':
+      case 'resume':
+      case 'extend':
+      case 'skip': {
+        if (!hostOnly() || !game) return;
+        const result =
+          msg.t === 'pause' ? game.pause() : msg.t === 'resume' ? game.resume() : msg.t === 'extend' ? game.extend(msg.seconds ?? 10) : game.skip();
+        if (!result.ok) send(conn, { t: 'error', message: result.error });
+        return;
+      }
 
       case 'end-quiz':
         if (!hostOnly()) return;
@@ -402,6 +415,51 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     }
   }
 
+  // PIN login: wrong guesses are limited per address, and overall, so a PIN can't be brute-forced.
+  const failures = new Map<string, { count: number; resetAt: number }>();
+  let totalFailures = { count: 0, resetAt: 0 };
+  const MAX_FAILURES_PER_ADDRESS = 5;
+  const MAX_FAILURES_TOTAL = 20;
+  const FAILURE_WINDOW_MS = 60_000;
+
+  async function handleLogin(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const json = (status: number, body: unknown) => {
+      res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      res.end(JSON.stringify(body));
+    };
+    if (req.method === 'GET') return json(200, { pin: Boolean(options.hostPin) });
+    if (req.method !== 'POST' || !options.hostPin) return json(404, { error: 'Not found.' });
+
+    const now = Date.now();
+    const address = req.socket.remoteAddress ?? 'unknown';
+    const mine = failures.get(address);
+    if (totalFailures.resetAt < now) totalFailures = { count: 0, resetAt: now + FAILURE_WINDOW_MS };
+    if ((mine && mine.resetAt > now && mine.count >= MAX_FAILURES_PER_ADDRESS) || totalFailures.count >= MAX_FAILURES_TOTAL) {
+      return json(429, { error: 'Too many wrong PINs. Wait a minute and try again.' });
+    }
+
+    let body = '';
+    for await (const chunk of req) {
+      body += chunk;
+      if (body.length > 1000) return json(413, { error: 'Too big.' });
+    }
+    let pin: unknown;
+    try {
+      pin = (JSON.parse(body) as { pin?: unknown }).pin;
+    } catch {
+      return json(400, { error: 'Expected JSON.' });
+    }
+    if (typeof pin === 'string' && keyIs(options.hostPin, pin.trim())) {
+      failures.delete(address);
+      return json(200, { key: hostKey });
+    }
+    const entry = mine && mine.resetAt > now ? mine : { count: 0, resetAt: now + FAILURE_WINDOW_MS };
+    entry.count++;
+    failures.set(address, entry);
+    totalFailures.count++;
+    return json(401, { error: 'Wrong PIN.' });
+  }
+
   async function handleHttp(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? '/', 'http://localhost');
     const { pathname } = url;
@@ -413,6 +471,11 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         runQuiz: runLibraryQuiz,
       });
       if (handled) return;
+    }
+
+    if (pathname === '/login') {
+      await handleLogin(req, res);
+      return;
     }
 
     if (req.method !== 'GET' && req.method !== 'HEAD') {

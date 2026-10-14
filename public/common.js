@@ -98,16 +98,21 @@ export function preload(url) {
 // Countdown: elements with data-countdown show the seconds left until the current deadline.
 let deadline = null;
 
-export function setDeadline(remainingMs) {
+let frozenMs = null; // While the host has the clock paused.
+
+export function setDeadline(remainingMs, paused = false) {
   deadline = remainingMs == null ? null : performance.now() + remainingMs;
+  frozenMs = paused ? remainingMs : null;
 }
 
 /** Call after rendering so new countdown elements show the time straight away. */
 export function tick() {
-  const seconds = deadline == null ? 0 : Math.max(0, Math.ceil((deadline - performance.now()) / 1000));
+  const left = frozenMs ?? (deadline == null ? 0 : deadline - performance.now());
+  const seconds = Math.max(0, Math.ceil(left / 1000));
   for (const el of document.querySelectorAll('[data-countdown]')) {
     el.textContent = String(seconds);
-    el.classList.toggle('urgent', seconds <= 5);
+    el.classList.toggle('urgent', seconds <= 5 && frozenMs === null);
+    el.classList.toggle('frozen', frozenMs !== null);
   }
 }
 

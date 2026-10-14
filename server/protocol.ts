@@ -16,9 +16,15 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({
     t: z.literal('answer'),
     value: z.union([z.number().int(), z.string().max(200), z.array(z.number().int()).max(10)]),
+    /** Milliseconds from the question appearing on the phone to the tap (performance.now), checked by the server. */
+    elapsedMs: z.number().min(0).max(1_000_000).optional(),
   }),
   // Host only.
   z.object({ t: z.literal('advance') }),
+  z.object({ t: z.literal('pause') }),
+  z.object({ t: z.literal('resume') }),
+  z.object({ t: z.literal('extend'), seconds: z.number().min(1).max(120).optional() }),
+  z.object({ t: z.literal('skip') }),
   z.object({ t: z.literal('kick'), teamId: z.string().max(200) }),
   z.object({ t: z.literal('mark'), key: z.string().max(400), correct: z.boolean() }),
   z.object({ t: z.literal('network'), action: z.enum(['use-lan', 'use-tunnel']) }),
@@ -67,6 +73,8 @@ export interface QuestionView {
   seconds: number;
   /** Only while the question is open. Clients count down from when they receive it. */
   remainingMs?: number;
+  /** The host has stopped the clock; remainingMs is frozen. */
+  paused?: boolean;
 }
 
 export interface TeamView {
