@@ -77,6 +77,15 @@ export function connectSocket({ onOpen, onMessage, onStatus }) {
   };
 }
 
+const preloaded = new Set();
+
+/** Fetches an image ahead of time so it appears instantly when its question opens. */
+export function preload(url) {
+  if (!url || preloaded.has(url)) return;
+  preloaded.add(url);
+  new Image().src = url;
+}
+
 // Countdown: elements with data-countdown show the seconds left until the current deadline.
 let deadline = null;
 

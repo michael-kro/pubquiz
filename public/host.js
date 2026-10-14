@@ -1,4 +1,4 @@
-import { connectSocket, h, LETTERS, ordinal, setDeadline, tick } from './common.js';
+import { connectSocket, h, LETTERS, ordinal, preload, setDeadline, tick } from './common.js';
 
 const app = document.getElementById('app');
 const statusBanner = document.getElementById('status');
@@ -21,6 +21,7 @@ const socket = key
         if (message.t === 'state') {
           state = message.view;
           setDeadline(state.question?.remainingMs);
+          preload(state.preloadImage);
         } else if (message.t === 'error') {
           if (state) showNotice(message.message);
           else {
@@ -123,7 +124,8 @@ function stage(s) {
 
     case 'open':
     case 'closed':
-    case 'reveal':
+    case 'reveal': {
+      const reveal = s.phase === 'reveal';
       return h(
         'div',
         { class: 'question-stage' },
@@ -135,24 +137,15 @@ function stage(s) {
             ? h('span', { class: 'countdown big', 'data-countdown': true })
             : h('span', { class: 'phase-label' }, s.phase === 'closed' ? "Time's up" : 'Answer'),
         ),
+        q.type === 'music' ? h('p', { class: 'music-badge' }, '🎵 Music round: play the track now') : null,
         h('h1', { class: 'question-text' }, q.text),
-        h(
-          'div',
-          { class: 'options' },
-          q.options.map((option, i) =>
-            h(
-              'div',
-              {
-                class: `option opt-${i}${s.phase === 'reveal' ? (i === q.answer ? ' correct' : ' dimmed') : ''}`,
-              },
-              h('span', { class: 'letter' }, LETTERS[i]),
-              h('span', { class: 'option-text' }, option),
-              s.distribution ? h('span', { class: 'count' }, s.distribution[i]) : null,
-            ),
-          ),
-        ),
+        q.image
+          ? h('img', { class: `question-image host-image${s.review ? ' small' : ''}`, src: q.image, alt: '' })
+          : null,
+        questionBody(s, q, reveal),
         h('p', { class: 'muted center' }, `${s.answeredCount} of ${s.connectedCount} connected teams answered`),
       );
+    }
 
     case 'leaderboard':
     case 'finished': {
@@ -181,6 +174,97 @@ function stage(s) {
     }
   }
   return h('div');
+}
+
+function questionBody(s, q, reveal) {
+  switch (q.type) {
+    case 'multiple-choice':
+      return h(
+        'div',
+        { class: 'options' },
+        q.options.map((option, i) =>
+          h(
+            'div',
+            { class: `option opt-${i}${reveal ? (i === q.answer ? ' correct' : ' dimmed') : ''}` },
+            h('span', { class: 'letter' }, LETTERS[i]),
+            h('span', { class: 'option-text' }, option),
+            s.distribution ? h('span', { class: 'count' }, s.distribution[i]) : null,
+          ),
+        ),
+      );
+
+    case 'ordering':
+      return h(
+        'div',
+        {},
+        h(
+          'ol',
+          { class: 'order-list' },
+          (reveal ? q.answerText.split(' → ') : q.items).map((item) => h('li', {}, item)),
+        ),
+        reveal ? null : h('p', { class: 'muted center' }, 'Teams put these in order.'),
+        s.summary ? h('p', { class: 'center big' }, s.summary) : null,
+      );
+
+    case 'letter':
+      return h(
+        'div',
+        { class: 'center' },
+        h('p', { class: 'muted' }, 'Teams tap the first letter of the answer.'),
+        reveal ? h('p', { class: 'letter-reveal' }, h('span', { class: 'big-letter' }, q.answerText[0]), q.answerText.slice(3)) : null,
+        s.summary ? h('p', { class: 'letter-counts' }, s.summary.split(/\s{2,}/).map((count) => h('span', {}, count))) : null,
+      );
+
+    case 'picture':
+    case 'music':
+      if (s.phase === 'open') return null;
+      return h(
+        'div',
+        {},
+        reveal ? h('p', { class: 'center big answer-reveal' }, 'Answer: ', h('strong', {}, q.answerText)) : null,
+        s.phase === 'closed' ? reviewPanel(s, q) : null,
+      );
+  }
+  return null;
+}
+
+/** Typed answers, grouped, for the host to tick or untick before revealing. */
+function reviewPanel(s, q) {
+  if (!s.review?.length) return h('p', { class: 'center muted' }, 'No answers to mark.');
+  return h(
+    'div',
+    { class: 'review' },
+    h(
+      'p',
+      { class: 'review-help' },
+      'Mark the answers, then reveal. Accepted: ',
+      h('strong', {}, q.answerText),
+      '. Exact and close matches start ticked.',
+    ),
+    h(
+      'ul',
+      {},
+      s.review.map((group) =>
+        h(
+          'li',
+          { class: group.correct ? 'is-correct' : 'is-wrong' },
+          h(
+            'button',
+            {
+              class: 'mark',
+              'aria-pressed': String(group.correct),
+              title: group.correct ? 'Marked right. Click to mark wrong.' : 'Marked wrong. Click to mark right.',
+              onclick: () => socket.send({ t: 'mark', key: group.key, correct: !group.correct }),
+            },
+            group.correct ? '✓' : '✗',
+          ),
+          h('span', { class: 'review-text' }, group.text),
+          group.match === 'close' ? h('span', { class: 'tag' }, 'close match') : null,
+          h('span', { class: 'review-teams muted' }, group.teams.join(', ')),
+        ),
+      ),
+    ),
+  );
 }
 
 function teamsPanel(s) {

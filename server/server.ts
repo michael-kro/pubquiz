@@ -150,7 +150,14 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
       case 'answer': {
         if (conn.role !== 'team' || !conn.teamId) return send(conn, { t: 'error', message: 'Join a team first.' });
-        const result = game.answer(conn.teamId, msg.choice);
+        const result = game.answer(conn.teamId, msg.value);
+        if (!result.ok) send(conn, { t: 'error', message: result.error });
+        return;
+      }
+
+      case 'mark': {
+        if (conn.role !== 'host') return send(conn, { t: 'error', message: 'Only the host can do that.' });
+        const result = game.mark(msg.key, msg.correct);
         if (!result.ok) send(conn, { t: 'error', message: result.error });
         return;
       }
@@ -186,6 +193,23 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     if (pathname === '/qr.svg') {
       res.writeHead(200, { 'content-type': CONTENT_TYPES['.svg'], 'cache-control': 'private, max-age=3600' });
       res.end(qrSvg);
+      return;
+    }
+
+    if (pathname.startsWith('/media/')) {
+      const media = options.quiz.media.get(pathname.slice('/media/'.length));
+      if (!media) {
+        res.writeHead(404).end('Not found');
+        return;
+      }
+      res.writeHead(200, {
+        'content-type': media.contentType,
+        'cache-control': 'public, max-age=86400',
+        // SVGs can carry scripts; never let one run with this site's permissions.
+        'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+        'x-content-type-options': 'nosniff',
+      });
+      res.end(media.data);
       return;
     }
 

@@ -2,7 +2,7 @@
 
 A self-hosted live pub quiz. The host runs it on a laptop. Each team joins on one phone by scanning a QR code, with nothing to install. Up to 30 teams.
 
-Status: milestones M0 and M1 from [PLAN.md](PLAN.md) are done: multiple-choice questions on the local network.
+Status: milestones M0, M1 and M1b from [PLAN.md](PLAN.md) are done: all five question types on the local network.
 
 ## Run a quiz
 
@@ -25,7 +25,19 @@ Options: `--port 3001`, `--public-host <address>` (overrides the address in the 
 
 ## Writing a quiz
 
-See [examples/sample-quiz.yaml](examples/sample-quiz.yaml). Each question needs `text`, 2–4 `options`, and `answer`, which is the position of the correct option counting from 0. `seconds` (default 20) and `points` (default 1000) are optional. A correct answer earns its full points if instant, falling to half at the deadline. Set `scoring.speedFactor: 0` to turn the speed bonus off.
+See [examples/sample-quiz.yaml](examples/sample-quiz.yaml), which has every question type:
+
+| Type | Teams see | You write |
+|---|---|---|
+| `multiple-choice` | 2–4 coloured buttons | `options`, and `answer`: the right option's position counting from 0 |
+| `picture` | The picture and a text box | `image` and `accept`: the answers to accept |
+| `music` | A text box (you play the track) | `accept` |
+| `ordering` | 5 shuffled items to tap into order | `items`, listed in the correct order |
+| `letter` | An A–Z keypad: tap the answer's first letter | `answer`, e.g. `John Lennon` (letter J). Skip "The"; people go first name first. |
+
+Typed answers are matched ignoring case, punctuation, a leading "the" and small typos. When a picture or music question closes, you see every answer grouped together. Tick or untick each one, then reveal.
+
+Every question can also set `seconds` (default 20), `points` (default 1000), `image`, and `speedBonus`. A correct answer earns its full points if instant, falling to half at the deadline. The speed bonus is off by default for music, because teams can't answer until they recognise the track. Set `scoring.speedFactor: 0` to turn it off everywhere. Ordering gives half the points for items in the right place and half for getting the whole order right.
 
 If the file has a mistake, the program says where, e.g. `Round 1, question 3, answer: must be the position of one of the options, counting from 0`.
 

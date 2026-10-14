@@ -171,6 +171,78 @@ input {
 .standings .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .standings .score { font-variant-numeric: tabular-nums; font-weight: 700; }
 
+.result.partial h1 { color: var(--accent); }
+
+.question-image {
+  display: block;
+  max-width: 100%;
+  max-height: 45vh;
+  margin: 0 auto 16px;
+  border-radius: var(--radius);
+  object-fit: contain;
+}
+.music-badge { color: var(--accent); font-weight: 700; margin: 0 0 6px; }
+
+.text-answer { display: grid; gap: 12px; margin: 16px 0; }
+.text-answer .primary { font-size: 1.15rem; }
+
+.ordering { display: grid; gap: 14px; margin: 12px 0; }
+.ordering .primary { font-size: 1.15rem; }
+.placed { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.slot.empty {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 14px;
+  border: 2px dashed var(--surface-2);
+  border-radius: var(--radius);
+  color: var(--muted);
+}
+.placed-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 14px;
+  background: var(--surface-2);
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-align: left;
+}
+.placed-item .remove { margin-left: auto; color: var(--muted); font-size: 1.3rem; }
+.slot-number {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.8em;
+  height: 1.8em;
+  border-radius: 50%;
+  background: var(--bg);
+  font-weight: 800;
+}
+.pool { display: flex; flex-wrap: wrap; gap: 8px; }
+.pool-item {
+  min-height: 48px;
+  padding: 0 16px;
+  background: var(--opt-1);
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.keypad { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 12px 0; }
+.key {
+  aspect-ratio: 1;
+  min-height: 48px;
+  background: var(--surface-2);
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+.key:active:not(:disabled) { background: var(--opt-1); }
+.key:disabled { opacity: 0.35; }
+.key.chosen { opacity: 1; background: var(--accent); color: var(--accent-text); }
+
 /* Host screen */
 
 .host-layout {
@@ -208,6 +280,28 @@ input {
 .qr { width: min(42vh, 420px); aspect-ratio: 1; background: #fff; border-radius: var(--radius); padding: 12px; }
 .lobby h1 { font-size: 3rem; }
 .room-code { font-size: 2.4rem; font-weight: 800; letter-spacing: 0.15em; color: var(--accent); }
+
+.host-image { max-height: 50vh; }
+.host-image.small { max-height: 22vh; }
+.letter-reveal { font-size: clamp(1.4rem, 2.5vw, 2.2rem); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 24px; }
+.big-letter { font-size: 2.5em; color: var(--right); }
+.letter-counts { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; font-size: 1.4rem; font-weight: 700; }
+.letter-counts span { padding: 4px 14px; border-radius: 999px; background: var(--surface); }
+.order-list { font-size: clamp(1.2rem, 2vw, 1.8rem); font-weight: 600; display: grid; gap: 10px; padding-left: 1.6em; }
+.order-list li { padding: 8px 14px; background: var(--surface); border-radius: 10px; }
+.answer-reveal strong { color: var(--right); }
+
+.review { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-top: 8px; }
+.review-help { color: var(--muted); }
+.review-help strong { color: var(--text); }
+.review ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.review li { display: flex; align-items: center; gap: 12px; padding: 6px 8px; border-radius: 10px; background: var(--bg); }
+.mark { width: 44px; height: 44px; flex: none; font-size: 1.3rem; font-weight: 800; }
+.is-correct .mark { background: var(--right); color: #06210f; }
+.is-wrong .mark { background: var(--surface-2); color: var(--wrong); }
+.review-text { font-weight: 700; font-size: 1.15rem; }
+.review-teams { margin-left: auto; text-align: right; font-size: 0.9rem; }
+.tag { font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--accent); color: var(--accent-text); }
 
 .standings.two-col { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); font-size: 1.25rem; }
 

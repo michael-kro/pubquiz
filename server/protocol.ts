@@ -1,16 +1,24 @@
 // Messages exchanged over the WebSocket. The browser clients in public/ follow these shapes.
 import { z } from 'zod';
+import type { QuestionType } from './quiz.ts';
 
 export type Phase = 'lobby' | 'open' | 'closed' | 'reveal' | 'leaderboard' | 'finished';
+
+/** Multiple choice: option index. Picture/music: typed text. Letter: one letter. Ordering: item indices as displayed, first to last. */
+export type AnswerValue = number | string | number[];
 
 const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('host'), key: z.string().max(200) }),
   z.object({ t: z.literal('join'), room: z.string().max(20), name: z.string().max(200) }),
   z.object({ t: z.literal('rejoin'), token: z.string().max(200) }),
-  z.object({ t: z.literal('answer'), choice: z.number().int() }),
+  z.object({
+    t: z.literal('answer'),
+    value: z.union([z.number().int(), z.string().max(200), z.array(z.number().int()).max(10)]),
+  }),
   // Host only.
   z.object({ t: z.literal('advance') }),
   z.object({ t: z.literal('kick'), teamId: z.string().max(200) }),
+  z.object({ t: z.literal('mark'), key: z.string().max(400), correct: z.boolean() }),
 ]);
 
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
@@ -32,12 +40,17 @@ export interface StandingRow {
   rank: number;
 }
 
-interface QuestionView {
+export interface QuestionView {
   index: number;
   total: number;
   round: string;
+  type: QuestionType;
   text: string;
-  options: string[];
+  image?: string;
+  /** Multiple choice. */
+  options?: string[];
+  /** Ordering: the items in the shuffled order every team sees. */
+  items?: string[];
   seconds: number;
   /** Only while the question is open. Clients count down from when they receive it. */
   remainingMs?: number;
@@ -52,11 +65,25 @@ export interface TeamView {
   rank: number;
   teamCount: number;
   question?: QuestionView;
-  myAnswer?: number;
+  /** Multiple choice only: the option the team picked. */
+  myChoice?: number;
+  /** The team's answer as readable text. */
+  myAnswerText?: string;
   /** From the reveal onwards. */
-  result?: { correctIndex: number; correct: boolean; points: number };
+  result?: { correct: boolean; points: number; answerText: string; detail?: string; correctIndex?: number };
   /** On the leaderboard and at the end. */
   standings?: StandingRow[];
+  /** Image for the next question, so phones can fetch it early. */
+  preloadImage?: string;
+}
+
+/** Typed answers grouped by their normalised text, for the host to mark. */
+export interface ReviewGroup {
+  key: string;
+  text: string;
+  teams: string[];
+  match: 'exact' | 'close' | 'none';
+  correct: boolean;
 }
 
 export interface HostView {
@@ -67,12 +94,17 @@ export interface HostView {
   roomCode: string;
   joinUrl: string;
   teams: { id: string; name: string; score: number; connected: boolean; answered: boolean }[];
-  question?: QuestionView & { answer: number };
+  question?: QuestionView & { answerText: string; answer?: number };
   answeredCount: number;
   connectedCount: number;
-  /** Answers per option, once the question has closed. */
+  /** Multiple choice: answers per option, once the question has closed. */
   distribution?: number[];
+  /** Picture and music: answers to mark, once the question has closed. */
+  review?: ReviewGroup[];
+  /** Ordering: e.g. "3 of 8 teams got the order exactly right". Letter: how many teams tapped each letter. */
+  summary?: string;
   standings: StandingRow[];
+  preloadImage?: string;
 }
 
 export type ServerMessage =

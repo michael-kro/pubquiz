@@ -1,0 +1,23 @@
+# One question of each type, used by the end-to-end test.
+title: All Types
+rounds:
+  - name: Mixed
+    questions:
+      - type: multiple-choice
+        text: Capital of Australia?
+        options: [Sydney, Canberra]
+        answer: 1
+        image: images/flag.svg
+      - type: picture
+        text: Which flag?
+        image: images/flag.svg
+        accept: [Japan]
+      - type: ordering
+        text: Smallest first
+        items: ["1", "2", "3", "4", "5"]
+      - type: music
+        text: Name the band
+        accept: [Queen]
+      - type: letter
+        text: Who sang Imagine?
+        answer: John Lennon

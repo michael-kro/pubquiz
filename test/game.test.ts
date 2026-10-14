@@ -11,6 +11,7 @@ const quiz: Quiz = {
     { type: 'multiple-choice', round: 'R1', text: 'Q1', options: ['a', 'b', 'c', 'd'], answer: 1, seconds: 20, points: 1000 },
     { type: 'multiple-choice', round: 'R1', text: 'Q2', options: ['a', 'b'], answer: 0, seconds: 10, points: 1000 },
   ],
+  media: new Map(),
 };
 
 function setup() {
@@ -71,9 +72,9 @@ test('plays a full quiz: timing-based points, scores hidden until reveal, ties s
 
   game.advance();
   assert.equal(game.phase, 'reveal');
-  assert.deepEqual(game.teamView(fast.id)!.result, { correctIndex: 1, correct: true, points: 950 });
-  assert.deepEqual(game.teamView(slow.id)!.result, { correctIndex: 1, correct: true, points: 750 });
-  assert.deepEqual(game.teamView(wrong.id)!.result, { correctIndex: 1, correct: false, points: 0 });
+  assert.deepEqual(game.teamView(fast.id)!.result, { correctIndex: 1, correct: true, points: 950, answerText: 'b', detail: undefined });
+  assert.deepEqual(game.teamView(slow.id)!.result, { correctIndex: 1, correct: true, points: 750, answerText: 'b', detail: undefined });
+  assert.deepEqual(game.teamView(wrong.id)!.result, { correctIndex: 1, correct: false, points: 0, answerText: 'b', detail: undefined });
 
   game.advance();
   assert.equal(game.phase, 'leaderboard');

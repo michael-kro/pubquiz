@@ -1,4 +1,4 @@
-import { connectSocket, h, LETTERS, ordinal, setDeadline, tick } from './common.js';
+import { connectSocket, h, LETTERS, ordinal, preload, setDeadline, tick } from './common.js';
 
 const TOKEN_KEY = 'pubquiz.team-token';
 const app = document.getElementById('app');
@@ -11,8 +11,14 @@ let ended = null; // Message shown when this device is done (kicked or replaced)
 let joinError = '';
 let notice = '';
 let noticeTimer;
-let pendingChoice = null;
+let lastRenderKey = '';
 const form = { room: (params.get('room') ?? '').toUpperCase(), name: '' };
+
+// Per-question drafts, reset when a new question opens.
+let draftFor = -1;
+let pending = null; // An answer sent but not yet confirmed by the server.
+let draftText = '';
+let draftOrder = []; // Ordering: displayed item indices in the order tapped.
 
 function readToken() {
   try {
@@ -53,13 +59,20 @@ const socket = connectSocket({
         break;
       case 'state':
         state = message.view;
-        if (state.phase !== 'open' || state.myAnswer != null) pendingChoice = null;
+        if (state.question && state.question.index !== draftFor) {
+          draftFor = state.question.index;
+          pending = null;
+          draftText = '';
+          draftOrder = [];
+        }
+        if (state.phase !== 'open' || state.myAnswerText != null) pending = null;
         setDeadline(state.question?.remainingMs);
+        preload(state.preloadImage);
         break;
       case 'error':
         if (state) showNotice(message.message);
         else joinError = message.message;
-        pendingChoice = null;
+        pending = null;
         break;
       case 'kicked':
         writeToken(null);
@@ -84,8 +97,34 @@ function showNotice(text) {
   }, 3000);
 }
 
+function sendAnswer(value) {
+  if (socket.send({ t: 'answer', value })) {
+    pending = value;
+    render();
+  } else {
+    showNotice('Not connected. Try again in a moment.');
+    render();
+  }
+}
+
+/**
+ * Re-renders only when something visible changed. Other teams' activity sends us updates too,
+ * and rebuilding the page would drop focus from the answer box and close the phone keyboard.
+ */
 function render() {
+  const { remainingMs, ...question } = state?.question ?? {};
+  const key = JSON.stringify([state && { ...state, question, preloadImage: 0 }, ended, joinError, notice, pending, draftOrder, !!token]);
+  if (key === lastRenderKey) return;
+  lastRenderKey = key;
+  // If the team is typing, keep the keyboard open across the rebuild.
+  const typing = document.activeElement?.matches?.('.text-answer input') ? document.activeElement : null;
+  const caret = typing?.selectionStart;
   app.replaceChildren(view(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '');
+  if (typing) {
+    const input = app.querySelector('.text-answer input');
+    input?.focus();
+    input?.setSelectionRange(caret, caret);
+  }
   tick();
 }
 
@@ -111,6 +150,7 @@ function joinForm() {
     event.preventDefault();
     joinError = '';
     if (!socket.send({ t: 'join', room: form.room, name: form.name })) joinError = 'Not connected yet. Try again in a moment.';
+    lastRenderKey = '';
     render();
   };
   const hasRoomFromLink = Boolean(params.get('room'));
@@ -157,6 +197,10 @@ function questionHeader(q) {
   return h('p', { class: 'question-meta' }, `${q.round} · Question ${q.index + 1} of ${q.total}`);
 }
 
+function questionImage(q) {
+  return q.image ? h('img', { class: 'question-image', src: q.image, alt: '' }) : null;
+}
+
 function phaseView(s) {
   const q = s.question;
   switch (s.phase) {
@@ -170,35 +214,25 @@ function phaseView(s) {
       );
 
     case 'open': {
-      const chosen = s.myAnswer ?? pendingChoice;
-      const locked = chosen != null;
+      const locked = s.myAnswerText != null || pending != null;
       return h(
         'section',
         { class: 'screen' },
         h('div', { class: 'question-top' }, questionHeader(q), h('span', { class: 'countdown', 'data-countdown': true })),
+        q.type === 'music' ? h('p', { class: 'music-badge' }, '🎵 Listen to the music') : null,
         h('h2', { class: 'question-text' }, q.text),
-        h(
-          'div',
-          { class: 'options' },
-          q.options.map((option, i) =>
-            h(
-              'button',
-              {
-                class: `option opt-${i}${chosen === i ? ' chosen' : ''}`,
-                disabled: locked,
-                onclick: () => {
-                  if (socket.send({ t: 'answer', choice: i })) {
-                    pendingChoice = i;
-                    render();
-                  }
-                },
-              },
-              h('span', { class: 'letter' }, LETTERS[i]),
-              h('span', {}, option),
-            ),
-          ),
-        ),
-        locked ? h('p', { class: 'center muted' }, 'Answer locked in. Waiting for the other teams…') : null,
+        questionImage(q),
+        answerInput(s, q, locked),
+        locked
+          ? h(
+              'p',
+              { class: 'center muted' },
+              s.myAnswerText && q.type !== 'multiple-choice' && q.type !== 'letter'
+                ? ['Locked in: ', h('strong', {}, s.myAnswerText), '. ']
+                : 'Answer locked in. ',
+              'Waiting for the other teams…',
+            )
+          : null,
       );
     }
 
@@ -208,21 +242,25 @@ function phaseView(s) {
         { class: 'screen center' },
         questionHeader(q),
         h('h1', {}, "Time's up!"),
-        s.myAnswer != null
-          ? h('p', {}, 'You answered ', h('strong', {}, `${LETTERS[s.myAnswer]}: ${q.options[s.myAnswer]}`))
+        s.myAnswerText != null
+          ? h('p', {}, 'You answered ', h('strong', {}, myAnswerLabel(s)))
           : h('p', {}, 'No answer from your team this time.'),
-        h('p', { class: 'muted' }, 'Waiting for the reveal…'),
+        h('p', { class: 'muted' }, q.type === 'picture' || q.type === 'music' ? 'The quiz master is marking answers…' : 'Waiting for the reveal…'),
       );
 
     case 'reveal': {
       const r = s.result;
-      const correctText = `${LETTERS[r.correctIndex]}: ${q.options[r.correctIndex]}`;
+      const answered = s.myAnswerText != null;
+      const answerLabel = r.correctIndex != null ? `${LETTERS[r.correctIndex]}: ${r.answerText}` : r.answerText;
       return h(
         'section',
-        { class: `screen center result ${r.correct ? 'right' : 'wrong'}` },
+        { class: `screen center result ${r.correct ? 'right' : r.points > 0 ? 'partial' : 'wrong'}` },
         questionHeader(q),
-        h('h1', {}, r.correct ? 'Correct!' : s.myAnswer == null ? 'No answer' : 'Wrong'),
-        r.correct ? h('p', { class: 'points' }, `+${r.points}`) : h('p', {}, 'The answer was ', h('strong', {}, correctText)),
+        h('h1', {}, r.correct ? 'Correct!' : !answered ? 'No answer' : r.points > 0 ? 'Close!' : 'Wrong'),
+        r.points > 0 ? h('p', { class: 'points' }, `+${r.points}`) : null,
+        r.detail && answered ? h('p', {}, r.detail) : null,
+        r.correct ? null : h('p', {}, q.type === 'ordering' ? 'The order was ' : 'The answer was ', h('strong', {}, answerLabel)),
+        answered && !r.correct ? h('p', { class: 'muted' }, 'You said ', myAnswerLabel(s)) : null,
       );
     }
 
@@ -239,6 +277,135 @@ function phaseView(s) {
     }
   }
   return h('section', { class: 'screen' });
+}
+
+function myAnswerLabel(s) {
+  return s.myChoice != null ? `${LETTERS[s.myChoice]}: ${s.myAnswerText}` : s.myAnswerText;
+}
+
+function answerInput(s, q, locked) {
+  switch (q.type) {
+    case 'multiple-choice': {
+      const chosen = s.myChoice ?? pending;
+      return h(
+        'div',
+        { class: 'options' },
+        q.options.map((option, i) =>
+          h(
+            'button',
+            { class: `option opt-${i}${chosen === i ? ' chosen' : ''}`, disabled: locked, onclick: () => sendAnswer(i) },
+            h('span', { class: 'letter' }, LETTERS[i]),
+            h('span', {}, option),
+          ),
+        ),
+      );
+    }
+
+    case 'picture':
+    case 'music': {
+      if (locked) return null;
+      const submit = (event) => {
+        event.preventDefault();
+        if (draftText.trim()) sendAnswer(draftText.trim());
+      };
+      return h(
+        'form',
+        { class: 'text-answer', onsubmit: submit },
+        h('input', {
+          'aria-label': 'Your answer',
+          placeholder: 'Type your answer',
+          value: draftText,
+          maxlength: '100',
+          autocomplete: 'off',
+          enterkeyhint: 'send',
+          oninput: (e) => (draftText = e.target.value),
+        }),
+        h('button', { class: 'primary', type: 'submit' }, 'Submit answer'),
+      );
+    }
+
+    case 'letter': {
+      const chosen = s.myAnswerText ?? pending;
+      return h(
+        'div',
+        {},
+        h('p', { class: 'muted small center' }, 'Tap the first letter of the answer. Skip "The"; people go by first name (J for John Lennon).'),
+        h(
+          'div',
+          { class: 'keypad' },
+          [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].map((letter) =>
+            h(
+              'button',
+              { class: `key${chosen === letter ? ' chosen' : ''}`, disabled: locked, onclick: () => sendAnswer(letter) },
+              letter,
+            ),
+          ),
+        ),
+      );
+    }
+
+    case 'ordering': {
+      if (locked) return null;
+      const remaining = q.items.map((_, i) => i).filter((i) => !draftOrder.includes(i));
+      return h(
+        'div',
+        { class: 'ordering' },
+        h('p', { class: 'muted small' }, 'Tap the items in order, first to last. Tap a placed item to take it back.'),
+        h(
+          'ol',
+          { class: 'placed' },
+          q.items.map((_, slot) => {
+            const item = draftOrder[slot];
+            return item == null
+              ? h('li', { class: 'slot empty' }, h('span', { class: 'slot-number' }, slot + 1))
+              : h(
+                  'li',
+                  { class: 'slot' },
+                  h(
+                    'button',
+                    {
+                      class: 'placed-item',
+                      'aria-label': `Position ${slot + 1}: ${q.items[item]}. Tap to remove.`,
+                      onclick: () => {
+                        draftOrder = draftOrder.filter((i) => i !== item);
+                        render();
+                      },
+                    },
+                    h('span', { class: 'slot-number' }, slot + 1),
+                    h('span', {}, q.items[item]),
+                    h('span', { class: 'remove', 'aria-hidden': 'true' }, '×'),
+                  ),
+                );
+          }),
+        ),
+        remaining.length
+          ? h(
+              'div',
+              { class: 'pool' },
+              remaining.map((i) =>
+                h(
+                  'button',
+                  {
+                    class: 'pool-item',
+                    onclick: () => {
+                      draftOrder = [...draftOrder, i];
+                      render();
+                    },
+                  },
+                  q.items[i],
+                ),
+              ),
+            )
+          : null,
+        h(
+          'button',
+          { class: 'primary', disabled: draftOrder.length !== q.items.length, onclick: () => sendAnswer(draftOrder) },
+          draftOrder.length === q.items.length ? 'Submit order' : `Place ${q.items.length - draftOrder.length} more`,
+        ),
+      );
+    }
+  }
+  return null;
 }
 
 function standingsList(rows, myTeamId, limit) {

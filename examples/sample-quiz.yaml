@@ -1,7 +1,22 @@
 # Sample quiz. Run it with: npm start -- examples/sample-quiz.yaml
 #
-# answer: the position of the correct option, counting from 0 (so 0 = A, 1 = B, 2 = C, 3 = D)
-# seconds: time limit (default 20). points: maximum points (default 1000).
+# Question types:
+#   multiple-choice  options (2-4) and answer: the position of the right option, counting from 0 (0 = A, 1 = B …)
+#   picture          image plus accept: the answers to accept. Teams type their answer.
+#   music            accept only. Play the track yourself; teams type their answer.
+#   ordering         items: exactly 5, listed in the CORRECT order. Teams see them shuffled.
+#   letter           answer: the full answer. Teams tap its first letter on an A-Z keypad
+#                    (classic style). "The" is skipped and people go by first name, so
+#                    write "John Lennon" and the letter is J. Add letter: X if it can't be worked out.
+#
+# Typed answers are matched ignoring case, punctuation, a leading "the" and small typos.
+# You confirm or change every mark before revealing.
+#
+# Every question can also have:
+#   seconds     time limit (default 20)
+#   points      maximum points (default 1000)
+#   image       a picture to show (path relative to this file, or a web address)
+#   speedBonus  true/false: faster answers earn more (default true, but false for music)
 title: Friday Night Quiz
 scoring:
   speedFactor: 0.5   # a correct answer at the buzzer earns half the points; 0 turns the speed bonus off
@@ -56,3 +71,49 @@ rounds:
         options: ["True", "False"]
         answer: 0
         seconds: 10
+
+  - name: Picture Round
+    questions:
+      - type: picture
+        text: Which country's flag is this?
+        image: images/flag-japan.svg
+        accept: [Japan]
+        seconds: 20
+      - type: picture
+        text: And this one?
+        image: images/flag-france.svg
+        accept: [France]
+        seconds: 20
+
+  - name: Put It In Order
+    questions:
+      - type: ordering
+        text: Put these planets in order, closest to the Sun first
+        items: [Mercury, Venus, Earth, Mars, Jupiter]
+        seconds: 45
+      - type: ordering
+        text: Oldest first
+        items: [Great Pyramid of Giza, Colosseum, Leaning Tower of Pisa, Eiffel Tower, Burj Khalifa]
+        seconds: 45
+
+  - name: Music Round
+    questions:
+      - type: music
+        text: "Track 1: name the band"
+        accept: [Queen]
+        seconds: 30
+      - type: music
+        text: "Track 2: name the song"
+        accept: [Bohemian Rhapsody]
+        seconds: 30
+
+  - name: First Letter
+    questions:
+      - type: letter
+        text: Which Beatle wrote "Imagine"?
+        answer: John Lennon
+        seconds: 15
+      - type: letter
+        text: Which Disney film features the song "Hakuna Matata"?
+        answer: The Lion King
+        seconds: 15
