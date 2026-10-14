@@ -9,6 +9,7 @@ import { handleApi } from './api.ts';
 import { readPublicFile } from './assets.ts';
 import { Game, type Team } from './game.ts';
 import type { Library } from './library.ts';
+import { clientAddress, TokenBucket, WindowCounter } from './limits.ts';
 import { lanAddress } from './net.ts';
 import { parseClientMessage, type HostIdleView, type HostView, type ServerMessage } from './protocol.ts';
 import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
@@ -30,6 +31,25 @@ const PING_INTERVAL_MS = 5_000;
 /** Pings in a row a connection can miss before it's treated as gone. */
 const MAX_MISSED_PINGS = 3;
 const RTT_SAMPLES = 5;
+/** Most connections one address may hold open, and in total (a pub's Wi-Fi shares one address, so this is generous). */
+const MAX_CONNECTIONS_PER_ADDRESS = 80;
+const MAX_CONNECTIONS = 600;
+/** A phone sends a message or two per question; this only stops floods. */
+const MESSAGE_BURST = 30;
+const MESSAGES_PER_SECOND = 10;
+const MAX_DROPPED_MESSAGES = 200;
+/** Wrong room codes and wrong team codes an address may try per minute. */
+const MAX_JOIN_GUESSES_PER_MINUTE = 20;
+
+/** Sent with every page: the host key lives in the host page's address, so nothing may leak it as a referrer. */
+const PAGE_HEADERS = {
+  'referrer-policy': 'no-referrer',
+  'x-content-type-options': 'nosniff',
+  'x-frame-options': 'DENY',
+  'content-security-policy':
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; " +
+    "connect-src 'self' ws: wss:; media-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+};
 
 export interface SessionOptions {
   path: string;
@@ -46,6 +66,8 @@ export interface ServerOptions {
   library?: Library;
   /** A short PIN the host can type at /host instead of using the secret link (for running the quiz from a phone). */
   hostPin?: string;
+  /** Turn off the team-name word filter. */
+  nameFilter?: boolean;
   /** Keeps the host link the same across restarts. Defaults to the resumed session's key, or a new one. */
   hostKey?: string;
   port?: number;
@@ -81,6 +103,9 @@ export interface QuizServer {
 interface Connection {
   ws: WebSocket;
   role?: 'host' | 'team' | 'screen';
+  address: string;
+  messages: TokenBucket;
+  dropped: number;
   teamId?: string;
   pingSentAt?: number;
   missedPings: number;
@@ -119,6 +144,8 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   const connections = new Set<Connection>();
   const teamConnections = new Map<string, Connection>();
   const instanceId = randomBytes(9).toString('base64url');
+  const joinGuesses = new WindowCounter(MAX_JOIN_GUESSES_PER_MINUTE, 60_000);
+  const perAddress = new Map<string, number>();
   // Derived from the host key, so a TV left on /screen reconnects after a restart.
   const screenKey = createHmac('sha256', hostKey).update('screen').digest('base64url').slice(0, 24);
   let active: ActiveQuiz | undefined;
@@ -240,6 +267,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     const resume = session?.resume;
     const roomCode = resume?.roomCode ?? newRoomCode();
     const gameOptions = {
+      nameFilter: options.nameFilter,
       onChange() {
         current.saver?.schedule();
         if (game.phase === 'finished' && session && !current.resultsWritten) {
@@ -249,7 +277,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         scheduleBroadcast();
       },
     };
-    const game = resume ? Game.restore(quiz, resume.game, gameOptions) : new Game(quiz, gameOptions);
+    const game = resume
+      ? Game.restore(quiz, resume.game, gameOptions)
+      : new Game(quiz, gameOptions);
     const current: ActiveQuiz = { quiz, game, roomCode };
     if (session) {
       current.saver = createSaver(() =>
@@ -310,6 +340,12 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   const isHostKey = (key: string | undefined) => keyIs(hostKey, key);
 
   function handleMessage(conn: Connection, raw: string): void {
+    if (!conn.messages.take()) {
+      // Too many messages too fast: ignore them, and hang up on a connection that keeps flooding.
+      if (conn.dropped++ === 0) send(conn, { t: 'error', message: 'Slow down.' });
+      if (conn.dropped > MAX_DROPPED_MESSAGES) conn.ws.terminate();
+      return;
+    }
     const msg = parseClientMessage(raw);
     if (!msg) return send(conn, { t: 'error', message: 'Unrecognised message.' });
     const game = active?.game;
@@ -343,7 +379,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       case 'join': {
         if (conn.role) return send(conn, { t: 'error', message: 'Already joined.' });
         if (!active || !game) return send(conn, { t: 'error', message: 'No quiz is running right now. Ask the quiz master.' });
+        if (joinGuesses.blocked(conn.address)) return send(conn, { t: 'error', message: 'Too many wrong tries. Wait a minute and try again.' });
         if (msg.room.trim().toUpperCase() !== active.roomCode) {
+          joinGuesses.add(conn.address);
           return send(conn, { t: 'error', message: 'No quiz with that room code. Check the code on the screen.' });
         }
         const result = game.join(msg.name);
@@ -354,8 +392,15 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
       case 'rejoin': {
         if (conn.role) return send(conn, { t: 'error', message: 'Already joined.' });
+        // Typed team codes can be guessed, so wrong ones are limited. A stale saved token isn't a guess.
+        if (msg.code !== undefined && joinGuesses.blocked(conn.address)) {
+          return send(conn, { t: 'error', message: 'Too many wrong tries. Wait a minute and try again.' });
+        }
         const team = game?.rejoin({ token: msg.token, code: msg.code });
-        if (!team) return send(conn, { t: 'rejoin-failed' });
+        if (!team) {
+          if (msg.token === undefined) joinGuesses.add(conn.address);
+          return send(conn, { t: 'rejoin-failed' });
+        }
         attachTeam(conn, team);
         return;
       }
@@ -431,7 +476,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     if (req.method !== 'POST' || !options.hostPin) return json(404, { error: 'Not found.' });
 
     const now = Date.now();
-    const address = req.socket.remoteAddress ?? 'unknown';
+    const address = clientAddress(req);
     const mine = failures.get(address);
     if (totalFailures.resetAt < now) totalFailures = { count: 0, resetAt: now + FAILURE_WINDOW_MS };
     if ((mine && mine.resetAt > now && mine.count >= MAX_FAILURES_PER_ADDRESS) || totalFailures.count >= MAX_FAILURES_TOTAL) {
@@ -541,6 +586,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     res.writeHead(200, {
       'content-type': CONTENT_TYPES[extname(relativePath)] ?? 'application/octet-stream',
       'cache-control': 'no-cache',
+      ...PAGE_HEADERS,
     });
     res.end(body);
   }
@@ -563,8 +609,15 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     conn.ws.ping();
   }
 
-  wss.on('connection', (ws) => {
-    const conn: Connection = { ws, missedPings: 0, rtts: [] };
+  wss.on('connection', (ws, req) => {
+    const address = clientAddress(req);
+    const open = perAddress.get(address) ?? 0;
+    if (open >= MAX_CONNECTIONS_PER_ADDRESS || connections.size >= MAX_CONNECTIONS) {
+      ws.close(1013, 'busy');
+      return;
+    }
+    perAddress.set(address, open + 1);
+    const conn: Connection = { ws, address, missedPings: 0, rtts: [], messages: new TokenBucket(MESSAGE_BURST, MESSAGES_PER_SECOND), dropped: 0 };
     connections.add(conn);
     ws.on('pong', () => {
       if (conn.pingSentAt === undefined) return;
@@ -575,6 +628,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     ping(conn);
     ws.on('message', (data) => handleMessage(conn, data.toString()));
     ws.on('close', () => {
+      const left = (perAddress.get(address) ?? 1) - 1;
+      if (left > 0) perAddress.set(address, left);
+      else perAddress.delete(address);
       connections.delete(conn);
       if (conn.role === 'team' && conn.teamId && teamConnections.get(conn.teamId) === conn) {
         teamConnections.delete(conn.teamId);

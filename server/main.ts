@@ -29,6 +29,7 @@ Options:
       --public-url <url> Use your own public address instead (e.g. a VPS or Tailscale Funnel)
       --public-host <h>  Address to put in the local join link (default: this laptop's Wi-Fi address)
       --quizzes <dir>    Where the quiz library lives (default ${DEFAULT_LIBRARY})
+      --no-name-filter   Allow any team name (the default blocks swearing; invisible characters are always removed)
       --host-pin <pin>   Let the host open /host by typing this PIN (6+ characters), e.g. from a phone
       --no-open          Don't open the host screen in a browser
       --fresh            Start over instead of resuming an unfinished quiz
@@ -92,6 +93,7 @@ async function main(): Promise<void> {
       'public-url': { type: 'string' },
       quizzes: { type: 'string' },
       'host-pin': { type: 'string' },
+      'no-name-filter': { type: 'boolean', default: false },
       help: { type: 'boolean', short: 'h', default: false },
     },
   });
@@ -124,6 +126,7 @@ async function main(): Promise<void> {
       library,
       hostKey: library ? await libraryHostKey(library.dir) : undefined,
       hostPin: hostPin?.trim(),
+      nameFilter: !values['no-name-filter'],
       port,
       publicHost: values['public-host'],
       onNetworkAction(action) {

@@ -2,7 +2,7 @@
 
 A self-hosted live pub quiz. The host runs it on a laptop. Each team joins on one phone by scanning a QR code, with nothing to install. Up to 30 teams.
 
-Status: milestones M0–M5 from [PLAN.md](PLAN.md) are done: all five question types, an in-app quiz editor, joining over the internet or local Wi-Fi, reconnects and crash recovery.
+Status: milestones M0–M6 from [PLAN.md](PLAN.md) are done: all five question types, an in-app quiz editor, joining over the internet or local Wi-Fi, reconnects and crash recovery.
 
 New here? Read [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md). Trouble at a venue? See [docs/VENUE-TROUBLESHOOTING.md](docs/VENUE-TROUBLESHOOTING.md).
 
@@ -25,17 +25,19 @@ The host screen opens in your browser. With no quiz file it shows **Your quizzes
 
 The host link stays the same between runs, so you can bookmark it.
 
+Show the QR code on a projector, and teams scan it to join. Use the yellow button (or Space, →, or a presentation clicker) to move through each question:
+
+**Start quiz → Close question → Reveal answer → Show leaderboard → Next question**
+
+A question also closes on its own when time runs out or every connected team has answered.
+
 **TV screen:** the host screen has a **TV screen ↗** button. Open that link on the TV or projector and run the quiz from your phone or laptop. The TV shows the question, countdown, answer count, leaderboard (with points gained and places moved), a round break after each round, and a podium at the end. It never shows an answer before the reveal, and has no controls. The 🔇 button turns on sound effects.
 
 **Running the night:** during a question the host can **Pause** (the clock stops for every team, and resuming gives back exactly the time left; **P** also works), add **+10 s**, or **Skip question** (nobody scores on it). Teams with equal scores are separated by their quicker total answer time.
 
 **From a phone:** start with `--host-pin <pin>` (6 or more characters), open `/host` on the host's phone and type the PIN. The phone remembers it. Wrong guesses are limited, but if the quiz is on the internet link, choose a long PIN.
 
-**Results:** when a quiz finishes, a `…results-<date>.csv` is saved next to it, and the final screen has **Download results (CSV)** with one column per question. Put it on the projector, and teams scan the QR code to join. Use the yellow button (or Space, →, or a presentation clicker) to move through each question:
-
-**Start quiz → Close question → Reveal answer → Show leaderboard → Next question**
-
-A question also closes on its own when time runs out or every connected team has answered.
+**Results:** when a quiz finishes, a `…results-<date>.csv` is saved next to it, and the final screen has **Download results (CSV)** with one column per question.
 
 ### How phones connect
 
@@ -93,6 +95,13 @@ rounds:
 Every question can also set `seconds` (default 20), `points` (default 1000), `image`, and `speedBonus`. A correct answer earns its full points if instant, falling to half at the deadline. The speed bonus is off by default for music, because teams can't answer until they recognise the track. Set `scoring.speedFactor: 0` to turn it off everywhere. Ordering gives half the points for items in the right place and half for getting the whole order right.
 
 If the file has a mistake, the program says where, e.g. `Round 1, question 3, answer: must be the position of one of the options, counting from 0`.
+
+## Hardening and load testing
+
+- Teams are limited to a burst of messages, then a steady rate; a connection that floods is dropped. Wrong room codes and wrong team codes are limited per address (through the internet link, per visitor), and the host PIN has its own lockout.
+- Team names have invisible and text-flipping characters removed, and swearing is blocked (`--no-name-filter` turns the word filter off).
+- Every page is sent with a content policy, no referrer and no framing, so the host key in the host link can't leak.
+- `node scripts/loadtest.ts` plays a whole quiz with 30 simulated teams on a slow, jittery network where connections keep dropping, and checks every score on every phone and on the host screen. `--help` lists the options. A smaller version runs in `npm test`.
 
 ## Packaging
 

@@ -1,11 +1,12 @@
 import { randomBytes, randomInt, randomUUID } from 'node:crypto';
+import { checkTeamName, MAX_NAME_LENGTH } from './limits.ts';
 import { matchAnswer, normalise } from './matching.ts';
 import type { AnswerValue, HostView, Phase, QuestionView, ReviewGroup, StandingRow, TeamView } from './protocol.ts';
 import { isTextAnswer, ORDERING_ITEMS, type Question, type Quiz } from './quiz.ts';
 import { scoreAnswer } from './scoring.ts';
 
 export const MAX_TEAMS = 30;
-export const MAX_NAME_LENGTH = 24;
+export { MAX_NAME_LENGTH };
 export const MAX_TEXT_ANSWER = 100;
 /**
  * Most network delay we'll subtract from a team's answer time. Also how long a question stays
@@ -60,6 +61,8 @@ export interface GameOptions {
   now?: () => number;
   /** Called after every state change, so the server can push fresh views. */
   onChange?: () => void;
+  /** Turn the team-name word filter off (invisible characters are always removed). Default on. */
+  nameFilter?: boolean;
 }
 
 // No I, O, 0 or 1, so codes can't be misread.
@@ -106,6 +109,7 @@ export class Game {
   private readonly teams = new Map<string, Team>();
   private readonly now: () => number;
   private readonly onChange: () => void;
+  private readonly nameFilter: boolean;
   private openedAt = 0;
   private endsAt = 0;
   /** When each team received the current question; answer time is measured from here. */
@@ -126,6 +130,7 @@ export class Game {
     this.quiz = quiz;
     this.now = options.now ?? Date.now;
     this.onChange = options.onChange ?? (() => {});
+    this.nameFilter = options.nameFilter ?? true;
   }
 
   get currentQuestion(): Question | undefined {
@@ -135,9 +140,9 @@ export class Game {
   // Teams
 
   join(rawName: string): Result<Team> {
-    const name = rawName.trim().replace(/\s+/g, ' ');
-    if (!name) return fail('Enter a team name.');
-    if (name.length > MAX_NAME_LENGTH) return fail(`Team names can be at most ${MAX_NAME_LENGTH} characters.`);
+    const checked = checkTeamName(rawName, { filterWords: this.nameFilter });
+    if (!checked.ok) return fail(checked.error);
+    const name = checked.name;
     if (this.phase === 'finished') return fail('This quiz has finished.');
     if (this.teams.size >= MAX_TEAMS) return fail(`This quiz is full (${MAX_TEAMS} teams).`);
     const lower = name.toLowerCase();
@@ -192,6 +197,10 @@ export class Game {
     if (this.phase === 'open' && this.everyoneAnswered()) this.closeQuestion();
     else this.changed();
     return true;
+  }
+
+  getTeamNames(): string[] {
+    return [...this.teams.values()].map((t) => t.name);
   }
 
   getTeam(teamId: string): Team | undefined {

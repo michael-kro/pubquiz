@@ -10,7 +10,13 @@
     "erasableSyntaxOnly": true,
     "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ]
   },
-  "include": ["server", "test"]
+  "include": [
+    "server",
+    "test",
+    "scripts"
+  ]
 }

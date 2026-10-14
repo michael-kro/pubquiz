@@ -97,7 +97,10 @@ function rememberKey() {
     localStorage.setItem(KEY_STORAGE, key);
   } catch {
     // The link still works; the host just has to type the PIN next time.
+    return;
   }
+  // Once the browser has it, the secret needn't sit in the address bar (screenshots, shoulder-surfers).
+  if (params.has('key')) history.replaceState(null, '', location.pathname + location.hash);
 }
 
 function forgetKey() {

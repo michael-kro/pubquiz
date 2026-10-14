@@ -1,0 +1,9 @@
+category: Example
+region: universal
+questions:
+  - { type: multiple-choice, text: "Which planet is closest to the Sun?", options: [Venus, Mercury, Mars, Earth], answer: 1, difficulty: easy, tags: [space] }
+  - { type: multiple-choice, text: "True or false? Sharks are mammals.", options: ["True", "False"], answer: 1, difficulty: easy }
+  - { type: letter, text: "Which Beatle wrote the song \"Imagine\"?", answer: John Lennon, difficulty: easy, tags: [music] }
+  - { type: number, text: "In what year did the Berlin Wall fall?", answer: 1989, difficulty: medium, tags: [history] }
+  - { type: nearest, text: "How tall is Mount Everest in metres (above sea level)?", answer: 8849, difficulty: medium, info: "Surveyors agreed a figure of 8,848.86 m in 2020." }
+  - { type: ordering, text: "Put these planets in order from the Sun, closest first.", items: [Mercury, Venus, Earth, Mars, Jupiter], difficulty: easy }

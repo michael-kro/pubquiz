@@ -11,6 +11,8 @@ export class Client {
 
   private constructor(ws: WebSocket) {
     this.ws = ws;
+    // A server that hangs up abruptly (on purpose, in some tests) can reset the connection; that is not a failure here.
+    ws.on('error', () => {});
     ws.on('message', (data) => {
       this.buffer.push(JSON.parse(data.toString()));
       for (const wake of this.waiters.splice(0)) wake();
