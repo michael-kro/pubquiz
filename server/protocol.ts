@@ -70,6 +70,8 @@ export interface QuestionView {
   type: QuestionType;
   text: string;
   image?: string;
+  /** A sound clip for the host and TV screens to play (never sent to phones). */
+  audio?: string;
   /** Multiple choice. */
   options?: string[];
   /** Ordering: the items in the shuffled order every team sees. */

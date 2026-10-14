@@ -83,6 +83,8 @@ See [examples/sample-quiz.yaml](examples/sample-quiz.yaml), which has every ques
 | `number` | A box to type a number | `answer`, and optionally `tolerance` (give or take) |
 | `nearest` | A box to type a number; the closest guess wins | `answer`. Good as a bonus question or tie-break. |
 
+Any question can also have `audio`, a sound clip (mp3, m4a, ogg or wav, up to 20 MB; a file next to the quiz, or a web address). It plays on the host or TV screen, never on phones: the clip bar has Play, Pause and Replay, it starts by itself when that screen's 🔊 sound is on, and pausing the game pauses the clip. Upload clips in the editor's **Audio clip** field. Zip exports and imports include them.
+
 Any question can also have `info`, a fun fact or source that is shown with the answer at the reveal.
 
 Typed answers are matched ignoring case, punctuation, a leading "the" and small typos. When a picture or music question closes, you see every answer grouped together. Tick or untick each one, then reveal.

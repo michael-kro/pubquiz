@@ -203,7 +203,7 @@ export function applyPalette(background, accent) {
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', background);
 }
 
-let branding = { name: '', tagline: '', accent: '#f5b83d', background: '#14161f' };
+let branding = { name: '', tagline: '', accent: '#f5b83d', background: '#14161f', showName: true };
 
 /** Loads and applies the branding. Never fails: a missing or slow answer just means the default look. */
 export async function loadBranding() {
@@ -244,7 +244,7 @@ export function brandBlock() {
     'div',
     { class: 'brand-block' },
     brandLogo('brand-logo big'),
-    !branding.logo && name ? h('p', { class: 'brand-name' }, name) : null,
+    name && branding.showName !== false ? h('p', { class: 'brand-name' }, name) : null,
     tagline ? h('p', { class: 'brand-tagline' }, tagline) : null,
   );
 }

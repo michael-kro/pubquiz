@@ -50,7 +50,7 @@ const PAGE_HEADERS = {
   'x-frame-options': 'DENY',
   'content-security-policy':
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; " +
-    "connect-src 'self' ws: wss:; media-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+    "connect-src 'self' ws: wss:; media-src 'self' https: http:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
 };
 
 export interface SessionOptions {
@@ -577,7 +577,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       const branding = options.branding;
       if (pathname === '/branding.json') {
         res.writeHead(200, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-cache', ...PAGE_HEADERS });
-        res.end(JSON.stringify(branding ? await branding.info() : { name: '', tagline: '', accent: '#f5b83d', background: '#14161f' }));
+        res.end(JSON.stringify(branding ? await branding.info() : { name: '', tagline: '', accent: '#f5b83d', background: '#14161f', showName: true }));
         return;
       }
       const logo = await branding?.logo();
@@ -671,13 +671,29 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         res.writeHead(404).end('Not found');
         return;
       }
-      res.writeHead(200, {
+      const headers = {
         'content-type': media.contentType,
         'cache-control': 'public, max-age=86400',
+        'accept-ranges': 'bytes',
         // SVGs can carry scripts; never let one run with this site's permissions.
         'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
         'x-content-type-options': 'nosniff',
-      });
+      };
+      // Safari only plays audio from a server that answers byte-range requests.
+      const range = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range ?? ''));
+      if (range && (range[1] || range[2])) {
+        const size = media.data.length;
+        const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
+        const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
+        if (start >= size || start > end) {
+          res.writeHead(416, { 'content-range': `bytes */${size}` }).end();
+          return;
+        }
+        res.writeHead(206, { ...headers, 'content-range': `bytes ${start}-${end}/${size}`, 'content-length': end - start + 1 });
+        res.end(media.data.subarray(start, end + 1));
+        return;
+      }
+      res.writeHead(200, { ...headers, 'content-length': media.data.length });
       res.end(media.data);
       return;
     }

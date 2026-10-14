@@ -18,6 +18,7 @@ test('validation: colours must be hex (so nothing can be injected into the page)
     tagline: 'Your Friendly your town Bar',
     accent: '#f9b233',
     background: '#004455',
+    showName: true,
   });
   for (const bad of ['red', 'rgb(0,0,0)', '#12', '#12345g', 'red;}body{display:none', 'url(http://x)', '#ffffff;', 7]) {
     assert.throws(() => validateBranding({ accent: bad }), BrandingError, String(bad));
@@ -26,6 +27,8 @@ test('validation: colours must be hex (so nothing can be injected into the page)
   assert.throws(() => validateBranding({ name: 'x'.repeat(41) }), /at most 40/);
   assert.throws(() => validateBranding({ tagline: 'x'.repeat(81) }), /at most 80/);
   assert.throws(() => validateBranding({ name: 5 }), /must be text/);
+  assert.equal(validateBranding({ showName: false }).showName, false);
+  assert.throws(() => validateBranding({ showName: 'no' }), /true or false/);
   assert.throws(() => validateBranding(null), BrandingError);
   assert.throws(() => validateBranding([1]), BrandingError);
 });
@@ -34,7 +37,7 @@ test('the store saves and reads back, and falls back to the default look when no
   const store = await fresh();
   assert.deepEqual(await store.info(), DEFAULT_BRANDING);
   await store.save({ name: 'Pub', accent: '#f9b233', background: '#004516' });
-  assert.deepEqual(await store.config(), { name: 'Pub', tagline: '', accent: '#f9b233', background: '#004516' });
+  assert.deepEqual(await store.config(), { name: 'Pub', tagline: '', accent: '#f9b233', background: '#004516', showName: true });
 });
 
 test('logos: one at a time, images only, size limited, and versioned so browsers refresh them', async () => {

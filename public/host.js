@@ -254,6 +254,7 @@ function render() {
     notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '',
   );
   tick();
+  refreshClipBar();
 }
 
 const NETWORK_LABELS = {
@@ -487,7 +488,59 @@ const SOUNDS = {
   finished: () => [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, i * 0.16, 0.35)),
 };
 
+// The question's audio clip is one element that lives outside the page, so redrawing the screen never restarts it.
+const clip = new Audio();
+clip.preload = 'auto';
+let clipFor = -1; // Index of the question the clip was loaded for.
+let clipWasPlayingBeforePause = false;
+for (const event of ['play', 'pause', 'ended', 'timeupdate']) clip.addEventListener(event, () => document.querySelector('.clip-bar') && refreshClipBar());
+
+function refreshClipBar() {
+  const bar = document.querySelector('.clip-bar');
+  if (!bar) return;
+  bar.querySelector('.clip-toggle').textContent = clip.paused ? '▶ Play clip' : '⏸ Pause clip';
+  const t = (n) => `${Math.floor(n / 60)}:${String(Math.floor(n % 60)).padStart(2, '0')}`;
+  bar.querySelector('.clip-time').textContent = Number.isFinite(clip.duration) ? `${t(clip.currentTime)} / ${t(clip.duration)}` : '';
+}
+
+/** Loads the clip for a new question, plays it by itself if this screen's sound is on, and follows pause and resume. */
+function followClip(before, after) {
+  const q = after.question;
+  if (after.phase === 'idle' || !q?.audio || ['leaderboard', 'finished'].includes(after.phase)) {
+    if (!clip.paused) clip.pause();
+    if (!q?.audio) clipFor = -1;
+    return;
+  }
+  if (clipFor !== q.index) {
+    clipFor = q.index;
+    clip.src = q.audio;
+    clip.currentTime = 0;
+    if (soundOn && after.phase === 'open') clip.play().catch(() => {});
+  }
+  const wasPaused = before?.question?.paused === true;
+  if (q.paused && !wasPaused) {
+    clipWasPlayingBeforePause = !clip.paused;
+    clip.pause();
+  } else if (!q.paused && wasPaused && clipWasPlayingBeforePause) {
+    clip.play().catch(() => {});
+    clipWasPlayingBeforePause = false;
+  }
+}
+
+function clipBar(q) {
+  if (!q.audio) return null;
+  return h(
+    'div',
+    { class: 'clip-bar' },
+    h('span', { class: 'clip-title' }, '🎵 Audio clip'),
+    h('button', { type: 'button', class: 'clip-toggle', onclick: () => (clip.paused ? clip.play().catch(() => {}) : clip.pause()) }, clip.paused ? '▶ Play clip' : '⏸ Pause clip'),
+    h('button', { type: 'button', onclick: () => { clip.currentTime = 0; void clip.play().catch(() => {}); } }, '⟲ Replay clip'),
+    h('span', { class: 'clip-time' }),
+  );
+}
+
 function playSoundsFor(before, after) {
+  followClip(before, after);
   if (!soundOn || !audio || after.phase === 'idle' || before?.phase === after.phase) return;
   SOUNDS[after.phase]?.();
 }
@@ -592,7 +645,8 @@ function stage(s) {
             : h('span', { class: 'phase-label' }, s.phase === 'closed' ? "Time's up" : 'Answer'),
         ),
         q.paused ? h('p', { class: 'paused-banner', role: 'status' }, '⏸ Paused') : null,
-        q.type === 'music' ? h('p', { class: 'music-badge' }, '🎵 Music round: play the track now') : null,
+        q.type === 'music' && !q.audio ? h('p', { class: 'music-badge' }, '🎵 Music round: play the track now') : null,
+        clipBar(q),
         h('h1', { class: 'question-text' }, q.text),
         q.image
           ? h('img', { class: `question-image host-image${s.review ? ' small' : ''}`, src: q.image, alt: '' })

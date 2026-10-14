@@ -8,6 +8,17 @@ export const ORDERING_ITEMS = 5;
 export const SCORING_MODES = ['speed', 'flat', 'first'] as const;
 export type ScoringMode = (typeof SCORING_MODES)[number];
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+export const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
+/** Clips are played by the host or TV screen, so any format a browser can play will do. */
+export const AUDIO_TYPES: Record<string, string> = {
+  '.mp3': 'audio/mpeg',
+  '.m4a': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.ogg': 'audio/ogg',
+  '.oga': 'audio/ogg',
+  '.opus': 'audio/ogg',
+  '.wav': 'audio/wav',
+};
 export const IMAGE_TYPES: Record<string, string> = {
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
@@ -25,6 +36,8 @@ const common = {
   points: z.number({ error: 'must be a number' }).int('must be a whole number').min(0, "can't be negative").max(10_000, 'can be at most 10,000').default(1000),
   /** A file path relative to the quiz file, or an http(s) URL. */
   image: text.optional(),
+  /** A sound clip, played on the host or TV screen (never on phones): a file path or an http(s) URL. */
+  audio: text.optional(),
   /** Faster correct answers earn more. Defaults to on, except for music. */
   speedBonus: z.boolean().optional(),
   /** Shown with the answer once it's revealed: a fun fact, or where it comes from. */
@@ -125,6 +138,8 @@ export type Question = z.infer<typeof QuestionSchema> & {
   mode: ScoringMode;
   /** Where browsers load the image from, once resolved. */
   imageUrl?: string;
+  /** Where the host and TV screens load the audio clip from, once resolved. */
+  audioUrl?: string;
 };
 export type QuestionType = Question['type'];
 
@@ -231,6 +246,7 @@ function quizFromData(file: QuizFileData): Quiz {
         roundIndex,
         mode: round.mode ?? file.scoring.mode,
         imageUrl: q.image && isUrl(q.image) ? q.image : undefined,
+        audioUrl: q.audio && isUrl(q.audio) ? q.audio : undefined,
       })),
     ),
     media: new Map(),
@@ -241,6 +257,24 @@ function quizFromData(file: QuizFileData): Quiz {
 export async function loadMedia(quiz: Quiz, baseDir: string): Promise<void> {
   const issues: string[] = [];
   for (const [index, q] of quiz.questions.entries()) {
+    if (q.audio && !isUrl(q.audio)) {
+      const label = `Question ${index + 1} ("${q.text}"), audio`;
+      const ext = extname(q.audio).toLowerCase();
+      const contentType = AUDIO_TYPES[ext];
+      if (!contentType) issues.push(`${label}: use a ${Object.keys(AUDIO_TYPES).join(', ')} file`);
+      else {
+        try {
+          if ((await stat(resolve(baseDir, q.audio))).size > MAX_AUDIO_BYTES) issues.push(`${label}: ${q.audio} is over 20 MB.`);
+          else {
+            const key = `q${index + 1}-audio${ext}`;
+            quiz.media.set(key, { data: await readFile(resolve(baseDir, q.audio)), contentType });
+            q.audioUrl = `/media/${key}`;
+          }
+        } catch {
+          issues.push(`${label}: can't find ${q.audio} (looked in ${baseDir})`);
+        }
+      }
+    }
     if (!q.image || isUrl(q.image)) continue;
     const label = `Question ${index + 1} ("${q.text}"), image`;
     const ext = extname(q.image).toLowerCase();

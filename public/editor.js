@@ -398,6 +398,54 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
     changed({ structure: true });
   }
 
+  const audioUrl = (path) =>
+    /^https?:\/\//i.test(path) ? path : `/api/quizzes/${encodeURIComponent(id)}/audio/${encodeURIComponent(path.replace(/^audio\//, ''))}?key=${encodeURIComponent(hostKey)}`;
+
+  async function uploadAudio(question, file) {
+    const status = container.querySelector('[data-problem="audio"]');
+    if (status) status.textContent = 'Uploading…';
+    try {
+      const result = await api('POST', `/quizzes/${id}/audio?name=${encodeURIComponent(file.name)}`, file);
+      question.audio = result.path;
+      changed({ structure: true });
+    } catch (error) {
+      if (status) status.textContent = error.message;
+    }
+  }
+
+  function audioField(q) {
+    return field(
+      'Audio clip (optional)',
+      h(
+        'div',
+        { class: 'audio-field' },
+        q.audio ? h('audio', { controls: true, preload: 'none', src: audioUrl(q.audio), 'aria-label': 'Preview of the audio clip' }) : null,
+        h(
+          'div',
+          { class: 'image-actions' },
+          h('input', {
+            type: 'file',
+            accept: 'audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/wav,.mp3,.m4a,.aac,.ogg,.opus,.wav',
+            'aria-label': 'Upload an audio clip',
+            onchange: (e) => e.target.files[0] && uploadAudio(q, e.target.files[0]),
+          }),
+          textInput(/^https?:/.test(q.audio ?? '') ? q.audio : '', (v) => {
+            q.audio = v.trim() || undefined;
+            changed();
+          }, { placeholder: 'or paste an audio web address', 'aria-label': 'Audio web address' }),
+          q.audio
+            ? h('button', { type: 'button', class: 'link-button', onclick: () => {
+                delete q.audio;
+                changed({ structure: true });
+              } }, 'Remove clip')
+            : null,
+        ),
+      ),
+      'audio',
+      'Played on the host or TV screen, never on phones. mp3, m4a, ogg or wav, up to 20 MB.',
+    );
+  }
+
   function typeFields(q) {
     switch (q.type) {
       case 'multiple-choice':
@@ -587,6 +635,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
       ),
       typeFields(q),
       imageField(q),
+      audioField(q),
       field('Fun fact or source (optional, shown with the answer)', textInput(q.info, (v) => {
         q.info = v.trim() ? v : undefined;
         changed();

@@ -746,6 +746,7 @@ export class Game {
       type: q.type,
       text: q.text,
       image: q.imageUrl,
+      audio: q.audioUrl,
       options: q.type === 'multiple-choice' ? q.options : undefined,
       items: q.type === 'ordering' ? this.displayOrders.get(this.questionIndex)!.map((i) => q.items[i]!) : undefined,
       seconds: q.seconds,
@@ -796,7 +797,11 @@ export class Game {
       score: mine?.score ?? 0,
       rank: mine?.rank ?? standings.length,
       teamCount: this.teams.size,
-      question: this.questionView(),
+      // Phones never play the clip; the host or TV does.
+      question: (() => {
+        const view = this.questionView();
+        return view ? { ...view, audio: undefined } : undefined;
+      })(),
       myChoice: showQuestion && question?.type === 'multiple-choice' ? (answer?.value as number | undefined) : undefined,
       myAnswerText: showQuestion && question && answer ? this.describeAnswer(question, answer) : undefined,
       result:

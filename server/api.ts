@@ -5,7 +5,7 @@ import { buildEntries, filterEntries, sample, summarise, type BankEntry } from '
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { BrandingError, MAX_LOGO_BYTES, type BrandingStore } from './branding.ts';
-import { Library, LibraryError, MAX_IMAGE_UPLOAD, MAX_IMPORT, type QuizDraft } from './library.ts';
+import { Library, LibraryError, MAX_AUDIO_UPLOAD, MAX_IMAGE_UPLOAD, MAX_IMPORT, type QuizDraft } from './library.ts';
 
 export interface ApiContext {
   library: Library;
@@ -130,6 +130,18 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
       if (action === 'images' && parts.length === 3 && method === 'POST') {
         const path = await library.addImage(id, url.searchParams.get('name') ?? '', await readBody(req, MAX_IMAGE_UPLOAD));
         return void sendJson(res, 201, { path }), true;
+      }
+
+      if (action === 'audio' && parts.length === 3 && method === 'POST') {
+        const path = await library.addAudio(id, url.searchParams.get('name') ?? '', await readBody(req, MAX_AUDIO_UPLOAD));
+        return void sendJson(res, 201, { path }), true;
+      }
+
+      if (action === 'audio' && parts[3] && method === 'GET') {
+        const clip = await library.audio(id, parts[3]);
+        res.writeHead(200, { 'content-type': clip.contentType, 'cache-control': 'private, max-age=3600', 'x-content-type-options': 'nosniff', 'content-length': clip.data.length });
+        res.end(clip.data);
+        return true;
       }
 
       if (action === 'images' && parts[3] && method === 'GET') {

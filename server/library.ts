@@ -1,15 +1,16 @@
 // The host's quiz library: one folder per quiz (quiz.yaml plus images/), which is also the zip export format.
 import { randomBytes } from 'node:crypto';
 import { mkdir, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
-import { extname, join } from 'node:path';
+import { dirname, extname, join } from 'node:path';
 import { strFromU8, unzipSync, zipSync } from 'fflate';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
-import { checkQuiz, IMAGE_TYPES, type QuizIssue } from './quiz.ts';
+import { AUDIO_TYPES, checkQuiz, IMAGE_TYPES, MAX_AUDIO_BYTES, type QuizIssue } from './quiz.ts';
 import { readSession } from './session.ts';
 
 const ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
 const IMAGE_NAME = /^[A-Za-z0-9][A-Za-z0-9._ -]{0,99}$/;
 export const MAX_IMAGE_UPLOAD = 10 * 1024 * 1024;
+export const MAX_AUDIO_UPLOAD = MAX_AUDIO_BYTES;
 export const MAX_IMPORT = 60 * 1024 * 1024;
 const QUIZ_FILE = 'quiz.yaml';
 const SESSION_FILE = 'quiz.session.json';
@@ -62,15 +63,16 @@ function slugify(text: string): string {
   );
 }
 
-/** Image paths a draft refers to, relative to its folder. */
-function referencedImages(draft: QuizDraft): string[] {
-  const images = new Set<string>();
+/** Picture and sound files a draft refers to, relative to its folder. */
+function referencedFiles(draft: QuizDraft): string[] {
+  const files = new Set<string>();
   for (const round of Array.isArray(draft.rounds) ? draft.rounds : []) {
     for (const q of Array.isArray(round?.questions) ? round.questions : []) {
-      if (typeof q?.image === 'string' && q.image.startsWith('images/')) images.add(q.image);
+      if (typeof q?.image === 'string' && q.image.startsWith('images/')) files.add(q.image);
+      if (typeof q?.audio === 'string' && q.audio.startsWith('audio/')) files.add(q.audio);
     }
   }
-  return [...images];
+  return [...files];
 }
 
 export class Library {
@@ -191,9 +193,9 @@ export class Library {
     const title = typeof draft.title === 'string' ? draft.title : 'quiz';
     const copy = await this.newId(title);
     await this.write(copy, { ...draft, title: `${title} (copy)` });
-    for (const image of referencedImages(draft)) {
-      const data = await readFile(join(this.folder(id), image)).catch(() => undefined);
-      if (data) await this.putFile(copy, image, data);
+    for (const file of referencedFiles(draft)) {
+      const data = await readFile(join(this.folder(id), file)).catch(() => undefined);
+      if (data) await this.putFile(copy, file, data);
     }
     return copy;
   }
@@ -207,9 +209,33 @@ export class Library {
   }
 
   private async putFile(id: string, relative: string, data: Uint8Array): Promise<void> {
-    const dir = join(this.folder(id), 'images');
-    await mkdir(dir, { recursive: true });
-    await writeFile(join(this.folder(id), relative), data);
+    const path = join(this.folder(id), relative);
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, data);
+  }
+
+  async addAudio(id: string, filename: string, data: Uint8Array): Promise<string> {
+    if (!(await this.exists(id))) throw new LibraryError('No such quiz.', 404);
+    const ext = extname(filename).toLowerCase();
+    if (!AUDIO_TYPES[ext]) throw new LibraryError(`Use a ${Object.keys(AUDIO_TYPES).join(', ')} file.`);
+    if (data.length === 0) throw new LibraryError('That file is empty.');
+    if (data.length > MAX_AUDIO_UPLOAD) throw new LibraryError('Audio clips can be at most 20 MB.', 413);
+    const stem = slugify(filename.slice(0, -ext.length)).slice(0, 40) || 'clip';
+    const existing = new Set(await readdir(join(this.folder(id), 'audio')).catch(() => [] as string[]));
+    let name = `${stem}${ext}`;
+    for (let n = 2; existing.has(name); n++) name = `${stem}-${n}${ext}`;
+    await this.putFile(id, `audio/${name}`, data);
+    return `audio/${name}`;
+  }
+
+  async audio(id: string, name: string): Promise<{ data: Buffer; contentType: string }> {
+    const contentType = AUDIO_TYPES[extname(name).toLowerCase()];
+    if (!IMAGE_NAME.test(name) || !contentType) throw new LibraryError('No such clip.', 404);
+    try {
+      return { data: await readFile(join(this.folder(id), 'audio', name)), contentType };
+    } catch {
+      throw new LibraryError('No such clip.', 404);
+    }
   }
 
   async addImage(id: string, filename: string, data: Uint8Array): Promise<string> {
@@ -246,9 +272,9 @@ export class Library {
     const source = await this.exportYaml(id);
     const { draft } = await this.read(id);
     const files: Record<string, Uint8Array> = { [QUIZ_FILE]: new TextEncoder().encode(source) };
-    for (const image of referencedImages(draft)) {
-      const data = await readFile(join(this.folder(id), image)).catch(() => undefined);
-      if (data) files[image] = data;
+    for (const file of referencedFiles(draft)) {
+      const data = await readFile(join(this.folder(id), file)).catch(() => undefined);
+      if (data) files[file] = data;
     }
     return zipSync(files, { level: 6 });
   }
@@ -265,7 +291,10 @@ export class Library {
       try {
         entries = unzipSync(data, {
           // Only take the files a quiz bundle can contain; nothing else is extracted.
-          filter: (file) => file.originalSize <= MAX_IMAGE_UPLOAD && this.bundlePath(file.name) !== undefined,
+          filter: (file) => {
+            const path = this.bundlePath(file.name);
+            return path !== undefined && file.originalSize <= (path.startsWith('audio/') ? MAX_AUDIO_UPLOAD : MAX_IMAGE_UPLOAD);
+          },
         });
       } catch {
         throw new LibraryError("That zip file couldn't be read.");
@@ -308,12 +337,16 @@ export class Library {
   private bundlePath(name: string): string | undefined {
     const parts = name.replace(/\\/g, '/').split('/').filter(Boolean);
     if (parts.some((p) => p === '..' || p.startsWith('.'))) return undefined;
-    const rest = parts.length >= 2 && parts[0] !== 'images' ? parts.slice(1) : parts;
+    const rest = parts.length >= 2 && parts[0] !== 'images' && parts[0] !== 'audio' ? parts.slice(1) : parts;
     if (rest.length === 1 && rest[0] === QUIZ_FILE) return QUIZ_FILE;
     if (rest.length === 2 && rest[0] === 'images') {
       // Keep the name exactly as quiz.yaml refers to it.
       const file = rest[1]!;
       if (IMAGE_NAME.test(file) && IMAGE_TYPES[extname(file).toLowerCase()]) return `images/${file}`;
+    }
+    if (rest.length === 2 && rest[0] === 'audio') {
+      const file = rest[1]!;
+      if (IMAGE_NAME.test(file) && AUDIO_TYPES[extname(file).toLowerCase()]) return `audio/${file}`;
     }
     return undefined;
   }

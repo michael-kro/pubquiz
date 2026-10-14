@@ -15,7 +15,7 @@ export async function mountBranding(container, { api, onExit }) {
     return;
   }
   const editable = info.editable !== false;
-  const form = { name: info.name, tagline: info.tagline, accent: info.accent, background: info.background };
+  const form = { name: info.name, tagline: info.tagline, accent: info.accent, background: info.background, showName: info.showName !== false };
   let status = 'saved';
   let message = '';
   let timer;
@@ -72,8 +72,8 @@ export async function mountBranding(container, { api, onExit }) {
       .filter(([k]) => k.startsWith('--'))
       .map(([k, v]) => `${k}:${v}`)
       .join(';');
-    // Like the real pages: the name is only written out when there's no logo (a logo usually has it in).
-    box.querySelector('.brand-name')?.replaceChildren(info.logo ? '' : form.name || 'Your venue');
+    // Like the real pages: the name is written out under the logo unless that is switched off.
+    box.querySelector('.brand-name')?.replaceChildren(form.showName ? form.name || 'Your venue' : '');
     box.querySelector('.brand-tagline')?.replaceChildren(form.tagline);
     const warn = container.querySelector('.contrast-note');
     if (warn) warn.textContent = contrastNote();
@@ -178,6 +178,20 @@ export async function mountBranding(container, { api, onExit }) {
             'div',
             { class: 'branding-form' },
             textField('Name', 'name', 40, 'Shown on the team phones and as the page title.'),
+            h(
+              'label',
+              { class: 'check' },
+              h('input', {
+                type: 'checkbox',
+                checked: form.showName,
+                disabled: !editable,
+                onchange: (e) => {
+                  form.showName = e.target.checked;
+                  changed();
+                },
+              }),
+              ' Show the name under the logo (untick if your logo already says it)',
+            ),
             textField('Tagline', 'tagline', 80),
             colourField('Accent colour (buttons and highlights)', 'accent'),
             colourField('Background colour', 'background'),

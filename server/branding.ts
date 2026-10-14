@@ -12,6 +12,8 @@ export interface BrandingConfig {
   accent: string;
   /** Page background, as #rgb or #rrggbb. */
   background: string;
+  /** Write the name out under the logo. Turn off if the logo already has the name in it. */
+  showName: boolean;
 }
 
 /** What pages are told: the config plus where the logo is (if there is one). */
@@ -19,7 +21,7 @@ export interface BrandingInfo extends BrandingConfig {
   logo?: string;
 }
 
-export const DEFAULT_BRANDING: BrandingConfig = { name: '', tagline: '', accent: '#f5b83d', background: '#14161f' };
+export const DEFAULT_BRANDING: BrandingConfig = { name: '', tagline: '', accent: '#f5b83d', background: '#14161f', showName: true };
 
 export const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 const MAX_NAME = 40;
@@ -33,6 +35,10 @@ export class BrandingError extends Error {
     super(message);
     this.status = status;
   }
+}
+
+function bad(message: string): never {
+  throw new BrandingError(message);
 }
 
 /** Tidies text for display: no control or invisible characters, single spaces. */
@@ -61,6 +67,7 @@ export function validateBranding(input: unknown): BrandingConfig {
     tagline: tidy(raw.tagline, MAX_TAGLINE, 'The tagline'),
     accent: colour(raw.accent, DEFAULT_BRANDING.accent, 'The accent colour'),
     background: colour(raw.background, DEFAULT_BRANDING.background, 'The background colour'),
+    showName: raw.showName === undefined || raw.showName === null ? true : typeof raw.showName === 'boolean' ? raw.showName : bad('showName must be true or false.'),
   };
 }
 
