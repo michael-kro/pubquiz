@@ -12,7 +12,9 @@ let joinError = '';
 let notice = '';
 let noticeTimer;
 let lastRenderKey = '';
-const form = { room: (params.get('room') ?? '').toUpperCase(), name: '' };
+let pendingJoin = null; // A join or rejoin tapped before the connection was ready.
+let connected = false;
+const form = { room: (params.get('room') ?? '').toUpperCase(), name: '', code: '', rejoining: false };
 
 // Per-question drafts, reset when a new question opens.
 let draftFor = -1;
@@ -41,10 +43,15 @@ function writeToken(value) {
 const socket = connectSocket({
   onOpen() {
     if (token) socket.send({ t: 'rejoin', token });
+    else if (pendingJoin) socket.send(pendingJoin);
+    pendingJoin = null;
     render();
   },
-  onStatus(connected) {
-    statusBanner.hidden = connected || Boolean(ended);
+  onStatus(isConnected) {
+    connected = isConnected;
+    statusBanner.hidden = isConnected || Boolean(ended);
+    lastRenderKey = '';
+    render();
   },
   onMessage(message) {
     switch (message.t) {
@@ -53,9 +60,13 @@ const socket = connectSocket({
         joinError = '';
         break;
       case 'rejoin-failed':
-        // The quiz was restarted or the team was removed: start again.
-        writeToken(null);
-        state = null;
+        if (form.rejoining) {
+          joinError = 'No team with that code. Check it on your other phone, or ask the quiz master.';
+        } else {
+          // The quiz was restarted or the team was removed: start again.
+          writeToken(null);
+          state = null;
+        }
         break;
       case 'state':
         state = message.view;
@@ -113,15 +124,15 @@ function sendAnswer(value) {
  */
 function render() {
   const { remainingMs, ...question } = state?.question ?? {};
-  const key = JSON.stringify([state && { ...state, question, preloadImage: 0 }, ended, joinError, notice, pending, draftOrder, !!token]);
+  const key = JSON.stringify([state && { ...state, question, preloadImage: 0 }, ended, joinError, notice, pending, draftOrder, !!token, pendingJoin, connected]);
   if (key === lastRenderKey) return;
   lastRenderKey = key;
-  // If the team is typing, keep the keyboard open across the rebuild.
-  const typing = document.activeElement?.matches?.('.text-answer input') ? document.activeElement : null;
+  // If someone is typing, keep the keyboard open across the rebuild.
+  const typing = document.activeElement?.matches?.('input[name]') ? document.activeElement : null;
   const caret = typing?.selectionStart;
   app.replaceChildren(view(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '');
   if (typing) {
-    const input = app.querySelector('.text-answer input');
+    const input = app.querySelector(`input[name="${typing.name}"]`);
     input?.focus();
     input?.setSelectionRange(caret, caret);
   }
@@ -142,14 +153,72 @@ function view() {
       h('span', { class: 'team-score' }, `${state.score} pts`),
     ),
     phaseView(state),
+    h(
+      'p',
+      { class: 'team-code' },
+      'Team code ',
+      h('strong', {}, state.teamCode),
+      ': enter it on another phone to carry on as this team.',
+    ),
   );
 }
 
-function joinForm() {
+function rejoinForm() {
   const submit = (event) => {
     event.preventDefault();
     joinError = '';
-    if (!socket.send({ t: 'join', room: form.room, name: form.name })) joinError = 'Not connected yet. Try again in a moment.';
+    submitWhenConnected({ t: 'rejoin', code: form.code });
+    lastRenderKey = '';
+    render();
+  };
+  return h(
+    'form',
+    { class: 'screen join', onsubmit: submit },
+    h('h1', {}, 'Rejoin your team'),
+    h('p', { class: 'muted' }, 'Your team code is at the bottom of the screen on the phone your team was using.'),
+    h(
+      'label',
+      {},
+      'Team code',
+      h('input', {
+        name: 'team-code',
+        value: form.code,
+        autocomplete: 'off',
+        autocapitalize: 'characters',
+        maxlength: '6',
+        required: true,
+        autofocus: true,
+        oninput: (e) => (form.code = e.target.value.toUpperCase()),
+      }),
+    ),
+    joinError ? h('p', { class: 'error', role: 'alert' }, joinError) : null,
+    h('button', { class: 'primary', type: 'submit', disabled: Boolean(pendingJoin) }, joinButtonLabel('Rejoin')),
+    h('button', { class: 'link-button', type: 'button', onclick: () => switchForm(false) }, 'Join as a new team instead'),
+  );
+}
+
+/** Sends now, or as soon as the connection opens: a slow phone shouldn't make the team tap twice. */
+function submitWhenConnected(message) {
+  if (!socket.send(message)) pendingJoin = message;
+}
+
+function joinButtonLabel(label) {
+  return pendingJoin ? 'Connecting…' : label;
+}
+
+function switchForm(rejoining) {
+  form.rejoining = rejoining;
+  joinError = '';
+  lastRenderKey = '';
+  render();
+}
+
+function joinForm() {
+  if (form.rejoining) return rejoinForm();
+  const submit = (event) => {
+    event.preventDefault();
+    joinError = '';
+    submitWhenConnected({ t: 'join', room: form.room, name: form.name });
     lastRenderKey = '';
     render();
   };
@@ -166,6 +235,7 @@ function joinForm() {
           {},
           'Room code',
           h('input', {
+            name: 'room',
             value: form.room,
             autocomplete: 'off',
             autocapitalize: 'characters',
@@ -179,6 +249,7 @@ function joinForm() {
       {},
       'Team name',
       h('input', {
+        name: 'team-name',
         value: form.name,
         autocomplete: 'off',
         maxlength: '24',
@@ -188,8 +259,9 @@ function joinForm() {
       }),
     ),
     joinError ? h('p', { class: 'error', role: 'alert' }, joinError) : null,
-    h('button', { class: 'primary', type: 'submit' }, 'Join'),
+    h('button', { class: 'primary', type: 'submit', disabled: Boolean(pendingJoin) }, joinButtonLabel('Join')),
     h('p', { class: 'muted small' }, 'One phone per team.'),
+    h('button', { class: 'link-button', type: 'button', onclick: () => switchForm(true) }, 'Already joined? Rejoin with your team code'),
   );
 }
 
@@ -312,6 +384,7 @@ function answerInput(s, q, locked) {
         'form',
         { class: 'text-answer', onsubmit: submit },
         h('input', {
+          name: 'answer',
           'aria-label': 'Your answer',
           placeholder: 'Type your answer',
           value: draftText,

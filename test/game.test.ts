@@ -143,12 +143,12 @@ test('a team that reconnects mid-question keeps its original start time', () => 
   clock.advance(10_000);
   game.disconnect(a.id);
   assert.equal(game.hostView().connectedCount, 1);
-  assert.equal(game.rejoin(a.token)?.id, a.id);
+  assert.equal(game.rejoin({ token: a.token })?.id, a.id);
   game.answer(a.id, 1);
   game.advance();
   game.advance();
   assert.equal(game.teamView(a.id)!.result!.points, 750);
-  assert.equal(game.rejoin('bad-token'), undefined);
+  assert.equal(game.rejoin({ token: "bad-token" }), undefined);
   game.dispose();
 });
 
@@ -242,7 +242,7 @@ test('a snapshot restores teams, answers, scores and the open question', () => {
     assert.equal(restored.questionIndex, 1);
     assert.deepEqual(restored.standings(), before);
     assert.equal(restored.hostView().connectedCount, 0, 'everyone is offline until they rejoin');
-    assert.equal(restored.rejoin(a.token)?.name, 'A');
+    assert.equal(restored.rejoin({ token: a.token })?.name, 'A');
     assert.equal(restored.answer(a.id, 1).ok, false, 'answers survive the restart');
     assert.ok(restored.answer(b.id, 1).ok);
     mock.timers.tick(10_000 + MAX_LATENCY_MS);

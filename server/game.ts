@@ -23,6 +23,8 @@ export interface Answer {
 export interface Team {
   id: string;
   token: string;
+  /** Short code a team can type to rejoin from another phone or a new link. */
+  code: string;
   name: string;
   connected: boolean;
   /** Keyed by question index. */
@@ -41,7 +43,7 @@ export interface GameSnapshot {
   questionIndex: number;
   openedAt: number;
   endsAt: number;
-  teams: { id: string; token: string; name: string; answers: [number, Answer][] }[];
+  teams: { id: string; token: string; code: string; name: string; answers: [number, Answer][] }[];
   sentAt: [string, number][];
   displayOrders: [number, number[]][];
   overrides: [number, [string, boolean][]][];
@@ -54,6 +56,10 @@ export interface GameOptions {
   /** Called after every state change, so the server can push fresh views. */
   onChange?: () => void;
 }
+
+// No I, O, 0 or 1, so codes can't be misread.
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export const TEAM_CODE_LENGTH = 6;
 
 const fail = (error: string): { ok: false; error: string } => ({ ok: false, error });
 
@@ -131,6 +137,7 @@ export class Game {
     const team: Team = {
       id: randomUUID(),
       token: randomBytes(18).toString('base64url'),
+      code: this.newTeamCode(),
       name,
       connected: true,
       answers: new Map(),
@@ -141,8 +148,19 @@ export class Game {
     return { ok: true, value: team };
   }
 
-  rejoin(token: string): Team | undefined {
-    const team = [...this.teams.values()].find((t) => t.token === token);
+  private newTeamCode(): string {
+    for (;;) {
+      const code = Array.from({ length: TEAM_CODE_LENGTH }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join('');
+      if (![...this.teams.values()].some((t) => t.code === code)) return code;
+    }
+  }
+
+  /** Finds a team by the token its phone saved, or by the team code typed in. */
+  rejoin(credential: { token?: string; code?: string }): Team | undefined {
+    const code = credential.code?.trim().toUpperCase();
+    const team = [...this.teams.values()].find(
+      (t) => (credential.token !== undefined && t.token === credential.token) || (code !== undefined && t.code === code),
+    );
     if (!team) return undefined;
     team.connected = true;
     this.markSent(team);
@@ -288,7 +306,7 @@ export class Game {
       questionIndex: this.questionIndex,
       openedAt: this.openedAt,
       endsAt: this.endsAt,
-      teams: [...this.teams.values()].map((t) => ({ id: t.id, token: t.token, name: t.name, answers: [...t.answers] })),
+      teams: [...this.teams.values()].map((t) => ({ id: t.id, token: t.token, code: t.code, name: t.name, answers: [...t.answers] })),
       sentAt: [...this.sentAt],
       displayOrders: [...this.displayOrders],
       overrides: [...this.overrides].map(([index, marks]) => [index, [...marks]]),
@@ -303,7 +321,7 @@ export class Game {
     game.openedAt = snapshot.openedAt;
     game.endsAt = snapshot.endsAt;
     for (const t of snapshot.teams) {
-      game.teams.set(t.id, { id: t.id, token: t.token, name: t.name, connected: false, answers: new Map(t.answers) });
+      game.teams.set(t.id, { ...t, connected: false, answers: new Map(t.answers) });
     }
     game.sentAt = new Map(snapshot.sentAt);
     for (const [index, order] of snapshot.displayOrders) game.displayOrders.set(index, order);
@@ -476,6 +494,7 @@ export class Game {
       quizTitle: this.quiz.title,
       teamId: team.id,
       teamName: team.name,
+      teamCode: team.code,
       score: mine?.score ?? 0,
       rank: mine?.rank ?? standings.length,
       teamCount: this.teams.size,
@@ -497,7 +516,7 @@ export class Game {
     };
   }
 
-  hostView(): Omit<HostView, 'roomCode' | 'joinUrl'> {
+  hostView(): Omit<HostView, 'roomCode' | 'joinUrl' | 'lanJoinUrl' | 'qrVersion' | 'network'> {
     const teams = [...this.teams.values()];
     const standings = this.standings();
     const scores = new Map(standings.map((row) => [row.teamId, row.score]));

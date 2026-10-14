@@ -9,6 +9,7 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { Game, type Team } from './game.ts';
 import { createSaver, writeSession, type Session } from './session.ts';
 import { lanAddress } from './net.ts';
+import type { NetworkStatus } from './tunnel.ts';
 import { parseClientMessage, type HostView, type ServerMessage } from './protocol.ts';
 import type { Quiz } from './quiz.ts';
 
@@ -38,6 +39,8 @@ export interface ServerOptions {
   publicHost?: string;
   /** Where to save the quiz as it runs, and optionally a saved session to carry on from. */
   session?: { path: string; quizHash: string; resume?: Session };
+  /** Called when the host asks to switch between the internet link and local Wi-Fi. */
+  onNetworkAction?: (action: 'use-lan' | 'use-tunnel') => void;
   pingIntervalMs?: number;
 }
 
@@ -47,7 +50,12 @@ export interface QuizServer {
   roomCode: string;
   hostKey: string;
   hostUrl: string;
-  joinUrl: string;
+  /** The link teams use right now: the internet link when it's up, otherwise the local address. */
+  readonly joinUrl: string;
+  lanJoinUrl: string;
+  /** Random per run; /healthz returns it, so a tunnel check knows it reached this server. */
+  instanceId: string;
+  setNetwork(status: NetworkStatus): void;
   close(): Promise<void>;
 }
 
@@ -74,8 +82,12 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   const hostKey = resume?.hostKey ?? randomBytes(18).toString('base64url');
   const connections = new Set<Connection>();
   const teamConnections = new Map<string, Connection>();
+  const instanceId = randomBytes(9).toString('base64url');
+  let lanJoinUrl = '';
   let joinUrl = '';
   let qrSvg = '';
+  let qrVersion = 0;
+  let network: NetworkStatus = { mode: 'lan' };
 
   const sessionOptions = options.session;
   const saver = sessionOptions
@@ -111,7 +123,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   }
 
   function hostView(): HostView {
-    return { ...game.hostView(), roomCode, joinUrl };
+    return { ...game.hostView(), roomCode, joinUrl, lanJoinUrl, qrVersion, network };
   }
 
   function sendState(conn: Connection): void {
@@ -176,7 +188,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
       case 'rejoin': {
         if (conn.role) return send(conn, { t: 'error', message: 'Already joined.' });
-        const team = game.rejoin(msg.token);
+        const team = game.rejoin({ token: msg.token, code: msg.code });
         if (!team) return send(conn, { t: 'rejoin-failed' });
         attachTeam(conn, team);
         return;
@@ -201,6 +213,11 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         game.advance();
         return;
 
+      case 'network':
+        if (conn.role !== 'host') return send(conn, { t: 'error', message: 'Only the host can do that.' });
+        options.onNetworkAction?.(msg.action);
+        return;
+
       case 'kick': {
         if (conn.role !== 'host') return send(conn, { t: 'error', message: 'Only the host can do that.' });
         const teamConn = teamConnections.get(msg.teamId);
@@ -223,6 +240,12 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       return;
     }
     const { pathname } = new URL(req.url ?? '/', 'http://localhost');
+
+    if (pathname === '/healthz') {
+      res.writeHead(200, { 'content-type': 'text/plain', 'cache-control': 'no-store' });
+      res.end(instanceId);
+      return;
+    }
 
     if (pathname === '/qr.svg') {
       res.writeHead(200, { 'content-type': CONTENT_TYPES['.svg'], 'cache-control': 'private, max-age=3600' });
@@ -312,8 +335,20 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   const port = (httpServer.address() as AddressInfo).port;
   let closing: Promise<void> | undefined;
   const publicHost = options.publicHost ?? lanAddress() ?? 'localhost';
-  joinUrl = `http://${publicHost}:${port}/?room=${roomCode}`;
-  qrSvg = await QRCode.toString(joinUrl, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
+  lanJoinUrl = `http://${publicHost}:${port}/?room=${roomCode}`;
+
+  async function updateJoinUrl(): Promise<void> {
+    const url =
+      network.mode === 'tunnel' && network.state === 'up' && network.publicUrl
+        ? `${network.publicUrl}/?room=${roomCode}`
+        : lanJoinUrl;
+    if (url === joinUrl) return;
+    const svg = await QRCode.toString(url, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
+    joinUrl = url;
+    qrSvg = svg;
+    qrVersion++;
+  }
+  await updateJoinUrl();
 
   return {
     game,
@@ -321,7 +356,15 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     roomCode,
     hostKey,
     hostUrl: `http://localhost:${port}/host?key=${hostKey}`,
-    joinUrl,
+    get joinUrl() {
+      return joinUrl;
+    },
+    lanJoinUrl,
+    instanceId,
+    setNetwork(status) {
+      network = status;
+      void updateJoinUrl().then(broadcast);
+    },
     close() {
       closing ??= (async () => {
         clearInterval(heartbeat);

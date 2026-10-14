@@ -2,7 +2,7 @@
 
 A self-hosted live pub quiz. The host runs it on a laptop. Each team joins on one phone by scanning a QR code, with nothing to install. Up to 30 teams.
 
-Status: milestones M0, M1, M1b and M2 from [PLAN.md](PLAN.md) are done: all five question types on the local network, with reconnects and crash recovery.
+Status: milestones M0, M1, M1b, M2 and M3 from [PLAN.md](PLAN.md) are done: all five question types, joining over the internet or local Wi-Fi, reconnects and crash recovery.
 
 ## Run a quiz
 
@@ -19,9 +19,25 @@ The host screen opens in your browser. Put it on the projector, and teams scan t
 
 A question also closes on its own when time runs out or every connected team has answered.
 
-Teams' phones must be on the same Wi-Fi as the laptop. Some pub and guest Wi-Fi blocks this. If phones can't load the join page, run the quiz on the laptop's own hotspot. Internet tunnel mode comes in M3.
+### How phones connect
 
-Options: `--port 3001`, `--public-host <address>` (overrides the address in the join link), `--no-open`, `--fresh`.
+By default the quiz gets a free public `https://` link from Cloudflare (no account needed), and the QR code points to it. Teams can use 4G or any Wi-Fi, and pub Wi-Fi that stops devices seeing each other doesn't matter. The first run downloads Cloudflare's `cloudflared` tool (checksum-verified) to `~/.pubquiz/bin`. The host screen shows **🌐 Internet link** when it's ready, usually within 15 seconds. The QR code only switches to it once the link is confirmed working.
+
+If the link drops, the app keeps trying to restore it, and the host screen offers **Switch to local Wi-Fi**. A restored link has a new address. Teams rejoin by scanning the new QR code and tapping **Rejoin with your team code**: the 6-character code is at the bottom of every team's screen. The same code moves a team to another phone if a battery dies.
+
+No internet at the venue? Run with `--lan`, and put the phones on the same Wi-Fi as the laptop, or on the laptop's own hotspot.
+
+Options:
+
+| Option | What it does |
+|---|---|
+| `--lan` | Local Wi-Fi only, no internet link |
+| `--tunnel ngrok` | Use ngrok instead of Cloudflare (needs ngrok installed and signed in) |
+| `--public-url <url>` | Use your own public address, e.g. a VPS or Tailscale Funnel |
+| `--port 3001` | Use a different port |
+| `--public-host <address>` | Override the laptop address in the local join link |
+| `--no-open` | Don't open the host screen automatically |
+| `--fresh` | Start over instead of resuming an unfinished quiz |
 
 **If something goes wrong mid-quiz:** phones that lose signal or lock rejoin automatically with their score. The quiz is saved to `<quiz name>.session.json` as it runs. If the laptop crashes or you close the program, run the same command again: it carries on from where it was, with the same room code and host link. Use `--fresh` to start over.
 

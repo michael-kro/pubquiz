@@ -1,6 +1,7 @@
 // Messages exchanged over the WebSocket. The browser clients in public/ follow these shapes.
 import { z } from 'zod';
 import type { QuestionType } from './quiz.ts';
+import type { NetworkStatus } from './tunnel.ts';
 
 export type Phase = 'lobby' | 'open' | 'closed' | 'reveal' | 'leaderboard' | 'finished';
 
@@ -10,7 +11,7 @@ export type AnswerValue = number | string | number[];
 const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('host'), key: z.string().max(200) }),
   z.object({ t: z.literal('join'), room: z.string().max(20), name: z.string().max(200) }),
-  z.object({ t: z.literal('rejoin'), token: z.string().max(200) }),
+  z.object({ t: z.literal('rejoin'), token: z.string().max(200).optional(), code: z.string().max(20).optional() }),
   z.object({
     t: z.literal('answer'),
     value: z.union([z.number().int(), z.string().max(200), z.array(z.number().int()).max(10)]),
@@ -19,6 +20,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('advance') }),
   z.object({ t: z.literal('kick'), teamId: z.string().max(200) }),
   z.object({ t: z.literal('mark'), key: z.string().max(400), correct: z.boolean() }),
+  z.object({ t: z.literal('network'), action: z.enum(['use-lan', 'use-tunnel']) }),
 ]);
 
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
@@ -61,6 +63,8 @@ export interface TeamView {
   quizTitle: string;
   teamId: string;
   teamName: string;
+  /** Typed on another phone (or a new link) to carry on as this team. */
+  teamCode: string;
   score: number;
   rank: number;
   teamCount: number;
@@ -93,6 +97,11 @@ export interface HostView {
   maxTeams: number;
   roomCode: string;
   joinUrl: string;
+  /** The local-network link, offered as a fallback. */
+  lanJoinUrl: string;
+  /** Changes whenever the QR code does, so the page reloads the image. */
+  qrVersion: number;
+  network: NetworkStatus;
   teams: { id: string; name: string; score: number; connected: boolean; answered: boolean }[];
   question?: QuestionView & { answerText: string; answer?: number };
   answeredCount: number;

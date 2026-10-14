@@ -29,12 +29,19 @@ export function connectSocket({ onOpen, onMessage, onStatus }) {
   let attempt = 0;
   let retryTimer;
   let stopped = false;
+  let connectTimer;
 
   function open() {
     clearTimeout(retryTimer);
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     ws = new WebSocket(`${protocol}//${location.host}/ws`);
+    // On patchy mobile data a connection attempt can hang; give up and try again.
+    const attemptSocket = ws;
+    connectTimer = setTimeout(() => {
+      if (attemptSocket.readyState === WebSocket.CONNECTING) attemptSocket.close();
+    }, 10_000);
     ws.onopen = () => {
+      clearTimeout(connectTimer);
       attempt = 0;
       onStatus?.(true);
       onOpen?.();
@@ -49,6 +56,8 @@ export function connectSocket({ onOpen, onMessage, onStatus }) {
       onMessage(message);
     };
     ws.onclose = () => {
+      clearTimeout(connectTimer);
+      if (attemptSocket !== ws) return;
       onStatus?.(false);
       if (stopped) return;
       retryTimer = setTimeout(open, Math.min(5000, 500 * 2 ** attempt++));

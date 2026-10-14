@@ -262,6 +262,25 @@ input {
 }
 .quiz-title { font-weight: 800; font-size: 1.2rem; }
 .join-hint { flex: 1; color: var(--muted); }
+.network-pill { font-size: 0.9rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: var(--surface-2); white-space: nowrap; }
+.network-pill.down { background: var(--wrong); color: #fff; }
+.network-pill.starting { color: var(--accent); }
+.network-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: var(--wrong);
+  color: #fff;
+}
+.network-banner.calm { background: var(--surface-2); color: var(--text); }
+.network-banner button { background: #fff; color: #111; font-weight: 700; padding: 0.6em 1em; flex: none; }
+.team-code { margin-top: auto; padding: 16px; text-align: center; font-size: 0.85rem; color: var(--muted); }
+.team-code strong { color: var(--text); letter-spacing: 0.12em; }
+.link-button { background: none; color: var(--accent); text-decoration: underline; padding: 4px; font-size: 0.95rem; }
 .join-hint strong { color: var(--text); }
 .next { font-size: 1.15rem; min-width: 12em; }
 

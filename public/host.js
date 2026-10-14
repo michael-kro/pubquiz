@@ -82,7 +82,7 @@ function render() {
       'div',
       { class: 'host-layout' },
       topBar(state),
-      h('section', { class: 'stage' }, stage(state)),
+      h('section', { class: 'stage' }, networkBanner(state), stage(state)),
       teamsPanel(state),
     ),
     notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '',
@@ -90,11 +90,46 @@ function render() {
   tick();
 }
 
+const NETWORK_LABELS = {
+  lan: '📶 Local Wi-Fi',
+  starting: '🌐 Connecting to the internet…',
+  up: '🌐 Internet link',
+  down: '⚠️ Internet link down',
+};
+
+function networkPill(network) {
+  const key = network.mode === 'lan' ? 'lan' : network.state;
+  return h('span', { class: `network-pill ${key}`, title: network.message ?? '' }, NETWORK_LABELS[key]);
+}
+
+/** Warning with a way out when the internet link is down, or a way back when the host chose local Wi-Fi. */
+function networkBanner(s) {
+  const n = s.network;
+  if (n.mode === 'tunnel' && n.state === 'down') {
+    return h(
+      'div',
+      { class: 'network-banner', role: 'alert' },
+      h('span', {}, h('strong', {}, 'The internet link is down. '), n.message ?? ''),
+      h('button', { onclick: () => socket.send({ t: 'network', action: 'use-lan' }) }, 'Switch to local Wi-Fi'),
+    );
+  }
+  if (n.mode === 'lan' && n.tunnelAvailable) {
+    return h(
+      'div',
+      { class: 'network-banner calm' },
+      h('span', {}, "Local Wi-Fi only: teams' phones must be on the same Wi-Fi as this laptop."),
+      h('button', { onclick: () => socket.send({ t: 'network', action: 'use-tunnel' }) }, 'Use the internet link'),
+    );
+  }
+  return null;
+}
+
 function topBar(s) {
   return h(
     'header',
     { class: 'host-bar' },
     h('span', { class: 'quiz-title' }, s.quizTitle),
+    networkPill(s.network),
     h('span', { class: 'join-hint' }, 'Join: ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)),
     h(
       'button',
@@ -111,7 +146,7 @@ function stage(s) {
       return h(
         'div',
         { class: 'lobby' },
-        h('img', { class: 'qr', src: `/qr.svg?room=${s.roomCode}`, alt: `QR code for ${s.joinUrl}` }),
+        h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }),
         h(
           'div',
           {},
@@ -119,6 +154,9 @@ function stage(s) {
           h('p', { class: 'big' }, s.joinUrl.replace(/^https?:\/\//, '')),
           h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
           h('p', { class: 'muted' }, `One phone per team. ${s.teams.length} of ${s.maxTeams} teams joined.`),
+          s.network.mode === 'tunnel' && s.network.state === 'starting'
+            ? h('p', { class: 'muted small' }, 'Setting up the internet link. Until then, teams need to be on the same Wi-Fi as this laptop.')
+            : null,
         ),
       );
 
