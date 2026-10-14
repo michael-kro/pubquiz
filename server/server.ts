@@ -1,8 +1,8 @@
-import { randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
+import { readFile, rename, writeFile } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { extname, resolve } from 'node:path';
+import { basename, dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
 import { WebSocketServer, type WebSocket } from 'ws';
@@ -16,7 +16,7 @@ import { createSaver, hashQuiz, readSession, writeSession, type Session } from '
 import type { NetworkStatus } from './tunnel.ts';
 
 const PUBLIC_DIR = fileURLToPath(new URL('../public/', import.meta.url));
-const ROUTES: Record<string, string> = { '/': 'play.html', '/host': 'host.html' };
+const ROUTES: Record<string, string> = { '/': 'play.html', '/host': 'host.html', '/screen': 'screen.html' };
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -64,6 +64,7 @@ export interface QuizServer {
   readonly roomCode: string;
   port: number;
   hostKey: string;
+  screenKey: string;
   hostUrl: string;
   /** The link teams use right now: the internet link when it's up, otherwise the local address. */
   readonly joinUrl: string;
@@ -78,7 +79,7 @@ export interface QuizServer {
 
 interface Connection {
   ws: WebSocket;
-  role?: 'host' | 'team';
+  role?: 'host' | 'team' | 'screen';
   teamId?: string;
   pingSentAt?: number;
   missedPings: number;
@@ -91,6 +92,16 @@ interface ActiveQuiz {
   game: Game;
   roomCode: string;
   saver?: ReturnType<typeof createSaver>;
+  resultsWritten?: boolean;
+}
+
+/** CSV for spreadsheets. Cells that could be read as formulas are made plain text, since team names are typed by anyone. */
+export function toCsv(rows: string[][]): string {
+  const cell = (value: string) => {
+    const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+    return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+  };
+  return '\uFEFF' + rows.map((row) => row.map(cell).join(',')).join('\r\n') + '\r\n';
 }
 
 /** Median of recent round trips: steady against the odd slow ping. */
@@ -107,6 +118,8 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   const connections = new Set<Connection>();
   const teamConnections = new Map<string, Connection>();
   const instanceId = randomBytes(9).toString('base64url');
+  // Derived from the host key, so a TV left on /screen reconnects after a restart.
+  const screenKey = createHmac('sha256', hostKey).update('screen').digest('base64url').slice(0, 24);
   let active: ActiveQuiz | undefined;
   let baseUrl = '';
   let joinUrl = '';
@@ -139,12 +152,29 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       qrVersion,
       network,
       canEnd: Boolean(options.library),
+      screenKey,
+    };
+  }
+
+  /** What the TV sees: the host's view without anything that gives the answer away early. */
+  function screenView(): HostView | HostIdleView {
+    const view = hostView();
+    if (view.phase === 'idle') return view;
+    const revealed = ['reveal', 'leaderboard', 'finished'].includes(view.phase);
+    return {
+      ...view,
+      question: view.question && !revealed ? { ...view.question, answerText: '', answer: undefined } : view.question,
+      review: revealed ? view.review : undefined,
+      screenKey: '',
+      canEnd: false,
     };
   }
 
   function sendState(conn: Connection): void {
     if (conn.role === 'host') {
       send(conn, { t: 'state', view: hostView() });
+    } else if (conn.role === 'screen') {
+      send(conn, { t: 'state', view: screenView() });
     } else if (conn.role === 'team' && conn.teamId) {
       const view = active?.game.teamView(conn.teamId);
       if (view) send(conn, { t: 'state', view });
@@ -167,6 +197,19 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     joinUrl = url;
     qrSvg = svg;
     qrVersion++;
+  }
+
+  /** Keeps the final scores as a CSV next to the quiz, so they survive the host closing the page. */
+  async function saveResults(sessionPath: string, game: Game): Promise<void> {
+    const stamp = new Date().toISOString().slice(0, 10);
+    const prefix = basename(sessionPath).replace(/session\.json$/, '');
+    const path = join(dirname(sessionPath), `${prefix}results-${stamp}.csv`);
+    try {
+      await writeFile(`${path}.tmp`, toCsv(game.resultsTable()));
+      await rename(`${path}.tmp`, path);
+    } catch (error) {
+      console.error(`Couldn't save the results file: ${(error as Error).message}`);
+    }
   }
 
   /** Disconnects every team from the running quiz, e.g. because the host ended it. */
@@ -197,6 +240,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     const gameOptions = {
       onChange() {
         current.saver?.schedule();
+        if (game.phase === 'finished' && session && !current.resultsWritten) {
+          current.resultsWritten = true;
+          void saveResults(session.path, game);
+        }
         scheduleBroadcast();
       },
     };
@@ -252,12 +299,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     send(conn, { t: 'joined', token: team.token, teamName: team.name });
   }
 
-  function isHostKey(key: string | undefined): boolean {
+  function keyIs(expected: string, key: string | undefined): boolean {
     if (key === undefined) return false;
     const a = Buffer.from(key);
-    const b = Buffer.from(hostKey);
+    const b = Buffer.from(expected);
     return a.length === b.length && timingSafeEqual(a, b);
   }
+  const isHostKey = (key: string | undefined) => keyIs(hostKey, key);
 
   function handleMessage(conn: Connection, raw: string): void {
     const msg = parseClientMessage(raw);
@@ -277,6 +325,16 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
           return;
         }
         conn.role = 'host';
+        sendState(conn);
+        return;
+
+      case 'screen':
+        if (!keyIs(screenKey, msg.key)) {
+          send(conn, { t: 'error', message: 'Wrong screen link. Open the TV link from the host screen.' });
+          conn.ws.close(4001, 'bad key');
+          return;
+        }
+        conn.role = 'screen';
         sendState(conn);
         return;
 
@@ -365,6 +423,20 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     if (pathname === '/healthz') {
       res.writeHead(200, { 'content-type': 'text/plain', 'cache-control': 'no-store' });
       res.end(instanceId);
+      return;
+    }
+
+    if (pathname === '/results.csv') {
+      if (!isHostKey(url.searchParams.get('key') ?? undefined) || !active) {
+        res.writeHead(404).end('Not found');
+        return;
+      }
+      res.writeHead(200, {
+        'content-type': 'text/csv; charset=utf-8',
+        'content-disposition': `attachment; filename="${active.quiz.title.replace(/[^\w -]+/g, '').trim() || 'quiz'} results.csv"`,
+        'cache-control': 'no-store',
+      });
+      res.end(toCsv(active.game.resultsTable()));
       return;
     }
 
@@ -471,6 +543,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     },
     port,
     hostKey,
+    screenKey,
     hostUrl: `http://localhost:${port}/host?key=${hostKey}`,
     get joinUrl() {
       return joinUrl;

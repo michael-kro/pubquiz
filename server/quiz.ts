@@ -99,6 +99,8 @@ export const QuizFile = z
 
 export type Question = z.infer<typeof QuestionSchema> & {
   round: string;
+  /** Position of the question's round, from 0. */
+  roundIndex: number;
   /** Where browsers load the image from, once resolved. */
   imageUrl?: string;
 };
@@ -113,6 +115,8 @@ export interface Quiz {
   title: string;
   speedFactor: number;
   questions: Question[];
+  /** Round names, in order. */
+  rounds: string[];
   /** Images served at /media/<key>. */
   media: Map<string, Media>;
 }
@@ -185,11 +189,13 @@ function quizFromData(file: QuizFileData): Quiz {
   return {
     title: file.title,
     speedFactor: file.scoring.speedFactor,
-    questions: file.rounds.flatMap((round) =>
+    rounds: file.rounds.map((round) => round.name),
+    questions: file.rounds.flatMap((round, roundIndex) =>
       round.questions.map((q) => ({
         ...q,
         ...(q.type === 'letter' ? { letter: firstLetter(q.answer, q.letter) } : {}),
         round: round.name,
+        roundIndex,
         imageUrl: q.image && isUrl(q.image) ? q.image : undefined,
       })),
     ),

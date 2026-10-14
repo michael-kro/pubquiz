@@ -4,9 +4,15 @@ import { mountEditor } from './editor.js';
 const app = document.getElementById('app');
 const statusBanner = document.getElementById('status');
 const key = new URLSearchParams(location.search).get('key');
+/** The TV screen: the same page without any controls, and without answers before the reveal. */
+const TV = document.body.classList.contains('tv');
 
 let state = null;
-let fatal = key ? null : 'This page needs the host link printed in the terminal when the quiz started.';
+let fatal = key
+  ? null
+  : TV
+    ? 'Open the TV link from the host screen.'
+    : 'This page needs the host link printed in the terminal when the quiz started.';
 let notice = '';
 let noticeTimer;
 let library = { items: null, error: '' };
@@ -44,7 +50,7 @@ async function loadLibrary() {
 const socket = key
   ? connectSocket({
       onOpen() {
-        socket.send({ t: 'host', key });
+        socket.send({ t: TV ? 'screen' : 'host', key });
       },
       onStatus(connected) {
         statusBanner.hidden = connected || Boolean(fatal);
@@ -52,6 +58,7 @@ const socket = key
       onMessage(message) {
         if (message.t === 'state') {
           if (message.view.phase === 'idle' && state?.phase !== 'idle' && message.view.library) void loadLibrary();
+          playSoundsFor(state, message.view);
           state = message.view;
           setDeadline(state.question?.remainingMs);
           preload(state.preloadImage);
@@ -82,7 +89,7 @@ function advance() {
 
 // Space, → and PageDown (what presentation clickers send) all move on.
 document.addEventListener('keydown', (event) => {
-  if (!state || state.phase === 'idle' || editingId() || event.target !== document.body) return;
+  if (TV || !state || state.phase === 'idle' || editingId() || event.target !== document.body) return;
   if ([' ', 'ArrowRight', 'PageDown', 'Enter'].includes(event.key)) {
     event.preventDefault();
     advance();
@@ -119,6 +126,10 @@ function render() {
     app.replaceChildren(h('section', { class: 'screen center' }, h('p', { class: 'muted' }, 'Connecting…')));
     return;
   }
+  if (TV && state.phase === 'idle') {
+    app.replaceChildren(h('section', { class: 'screen center' }, h('h1', {}, 'Quiz night'), h('p', { class: 'muted' }, 'Waiting for the quiz master to start a quiz…')));
+    return;
+  }
   if (state.phase === 'idle') {
     app.replaceChildren(libraryView(state), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '');
     return;
@@ -128,7 +139,7 @@ function render() {
       'div',
       { class: 'host-layout' },
       topBar(state),
-      h('section', { class: 'stage' }, networkBanner(state), stage(state)),
+      h('section', { class: 'stage' }, TV ? null : networkBanner(state), stage(state)),
       teamsPanel(state),
     ),
     notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '',
@@ -327,12 +338,91 @@ function libraryView(s) {
   );
 }
 
+// Sounds: short tones made in the browser, off until someone turns them on (browsers need a click first).
+const SOUND_KEY = TV ? 'pubquiz.sound.tv' : 'pubquiz.sound.host';
+let soundOn = false;
+try {
+  soundOn = localStorage.getItem(SOUND_KEY) === '1';
+} catch {
+  // Sound just starts off.
+}
+let audio;
+
+function tone(freq, start, length, volume = 0.15, type = 'sine') {
+  const osc = audio.createOscillator();
+  const gain = audio.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.0001, audio.currentTime + start);
+  gain.gain.exponentialRampToValueAtTime(volume, audio.currentTime + start + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + start + length);
+  osc.connect(gain).connect(audio.destination);
+  osc.start(audio.currentTime + start);
+  osc.stop(audio.currentTime + start + length + 0.05);
+}
+
+const SOUNDS = {
+  open: () => [660, 880].forEach((f, i) => tone(f, i * 0.12, 0.2)),
+  closed: () => tone(180, 0, 0.5, 0.2, 'square'),
+  reveal: () => [523, 659, 784].forEach((f, i) => tone(f, i * 0.1, 0.3)),
+  finished: () => [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, i * 0.16, 0.35)),
+};
+
+function playSoundsFor(before, after) {
+  if (!soundOn || !audio || after.phase === 'idle' || before?.phase === after.phase) return;
+  SOUNDS[after.phase]?.();
+}
+
+function toggleSound() {
+  soundOn = !soundOn;
+  try {
+    localStorage.setItem(SOUND_KEY, soundOn ? '1' : '0');
+  } catch {
+    // Not remembered.
+  }
+  if (soundOn) {
+    audio ??= new AudioContext();
+    void audio.resume();
+    SOUNDS.open();
+  }
+  render();
+}
+
+// A saved "on" setting still needs one click before the browser allows sound.
+document.addEventListener(
+  'pointerdown',
+  () => {
+    if (soundOn && !audio) audio = new AudioContext();
+    void audio?.resume();
+  },
+  { once: false },
+);
+
+function soundButton() {
+  return h(
+    'button',
+    { class: 'sound-toggle', title: soundOn ? 'Sound on' : 'Sound off', 'aria-label': soundOn ? 'Turn sound off' : 'Turn sound on', 'aria-pressed': String(soundOn), onclick: toggleSound },
+    soundOn ? '🔊' : '🔇',
+  );
+}
+
 function topBar(s) {
+  if (TV) {
+    return h(
+      'header',
+      { class: 'host-bar' },
+      h('span', { class: 'quiz-title' }, s.quizTitle),
+      h('span', { class: 'join-hint' }, 'Join: ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)),
+      soundButton(),
+    );
+  }
   return h(
     'header',
     { class: 'host-bar' },
     h('span', { class: 'quiz-title' }, s.quizTitle),
     networkPill(s.network),
+    soundButton(),
+    h('a', { class: 'button', href: `/screen?key=${encodeURIComponent(s.screenKey)}`, target: '_blank', rel: 'noopener', title: 'Open this on the TV or projector' }, 'TV screen ↗'),
     h('span', { class: 'join-hint' }, 'Join: ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)),
     s.canEnd ? h('button', { class: 'end', onclick: () => endQuiz(s) }, s.phase === 'finished' ? 'Back to quizzes' : 'End quiz') : null,
     h(
@@ -385,37 +475,107 @@ function stage(s) {
           ? h('img', { class: `question-image host-image${s.review ? ' small' : ''}`, src: q.image, alt: '' })
           : null,
         questionBody(s, q, reveal),
-        h('p', { class: 'muted center' }, `${s.answeredCount} of ${s.connectedCount} connected teams answered`),
+        s.phase === 'open' ? timerBar(q) : null,
+        answerProgress(s),
       );
     }
 
     case 'leaderboard':
     case 'finished': {
-      const winners = s.standings.filter((row) => row.rank === 1);
+      const final = s.phase === 'finished';
+      const roundBreak = !final && q?.lastInRound;
       return h(
         'div',
-        {},
-        h('h1', { class: 'center' }, s.phase === 'finished' ? 'Final results' : 'Leaderboard'),
-        s.phase === 'finished' && winners.length
-          ? h('p', { class: 'center big' }, `🏆 ${winners.map((w) => w.name).join(' & ')} ${winners.length > 1 ? 'win' : 'wins'}!`)
-          : null,
+        { class: 'board' },
+        h(
+          'h1',
+          { class: 'center' },
+          final ? 'Final results' : roundBreak ? `End of round ${q.roundNumber}: ${q.round}` : 'Leaderboard',
+        ),
+        final ? podium(s.standings) : null,
         h(
           'ol',
           { class: 'standings two-col' },
-          s.standings.map((row) =>
+          s.standings.slice(final ? podiumSize(s.standings) : 0).map((row, i) =>
             h(
               'li',
-              {},
+              { style: `animation-delay: ${Math.min(i, 20) * 60}ms` },
               h('span', { class: 'rank' }, ordinal(row.rank)),
               h('span', { class: 'name' }, row.name),
+              movement(row),
               h('span', { class: 'score' }, row.score),
             ),
           ),
         ),
+        final && !TV
+          ? h(
+              'p',
+              { class: 'center' },
+              h('a', { class: 'button', href: `/results.csv?key=${encodeURIComponent(key)}`, download: '' }, 'Download results (CSV)'),
+            )
+          : null,
       );
     }
   }
   return h('div');
+}
+
+/** "+950" and an arrow for how far a team moved. */
+function movement(row) {
+  const parts = [];
+  if (row.gained) parts.push(h('span', { class: 'gained' }, `+${row.gained}`));
+  if (row.moved) {
+    parts.push(
+      h(
+        'span',
+        { class: row.moved > 0 ? 'up' : 'down', 'aria-label': `${row.moved > 0 ? 'up' : 'down'} ${Math.abs(row.moved)}` },
+        `${row.moved > 0 ? '▲' : '▼'}${Math.abs(row.moved)}`,
+      ),
+    );
+  }
+  return h('span', { class: 'movement' }, parts);
+}
+
+/** Teams on the podium: everyone ranked 1st to 3rd, so ties are never left off. */
+function podiumSize(standings) {
+  return standings.filter((row) => row.rank <= 3).length;
+}
+
+function podium(standings) {
+  const places = [2, 1, 3]; // Shown 2nd, 1st, 3rd, with the winner in the middle.
+  return h(
+    'div',
+    { class: 'podium' },
+    places.map((place) => {
+      const teams = standings.filter((row) => row.rank === place);
+      if (teams.length === 0) return h('div', { class: 'podium-spot empty' });
+      return h(
+        'div',
+        { class: `podium-spot place-${place}` },
+        h('div', { class: 'podium-names' }, teams.map((t) => h('div', { class: 'podium-name' }, t.name))),
+        h('div', { class: 'podium-score' }, `${teams[0].score} pts`),
+        h('div', { class: 'podium-step' }, ordinal(place)),
+      );
+    }),
+  );
+}
+
+function answerProgress(s) {
+  const total = Math.max(s.connectedCount, 1);
+  return h(
+    'div',
+    { class: 'progress-wrap' },
+    h('div', { class: 'progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(total), 'aria-valuenow': String(s.answeredCount) },
+      h('div', { class: 'progress-fill', style: `width: ${Math.min(100, (s.answeredCount / total) * 100)}%` })),
+    h('p', { class: 'muted center' }, `${s.answeredCount} of ${s.connectedCount} connected teams answered`),
+  );
+}
+
+function timerBar(q) {
+  if (q.remainingMs == null) return null;
+  const total = q.seconds * 1000;
+  // Start part-way through the animation, so the bar is right after any re-render.
+  return h('div', { class: 'timer-bar' }, h('div', { class: 'timer-fill', style: `animation-duration: ${total}ms; animation-delay: -${Math.max(0, total - q.remainingMs)}ms` }));
 }
 
 function questionBody(s, q, reveal) {
@@ -464,7 +624,7 @@ function questionBody(s, q, reveal) {
         'div',
         {},
         reveal ? h('p', { class: 'center big answer-reveal' }, 'Answer: ', h('strong', {}, q.answerText)) : null,
-        s.phase === 'closed' ? reviewPanel(s, q) : null,
+        s.phase === 'closed' && !TV ? reviewPanel(s, q) : null,
       );
   }
   return null;
@@ -526,7 +686,7 @@ function teamsPanel(s) {
           h('span', { class: 'name' }, team.name),
           s.phase === 'open' && team.answered ? h('span', { class: 'tick', 'aria-label': 'answered' }, '✓') : null,
           h('span', { class: 'score' }, team.score),
-          h(
+          TV ? null : h(
             'button',
             {
               class: 'kick',

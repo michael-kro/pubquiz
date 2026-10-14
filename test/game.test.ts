@@ -8,9 +8,10 @@ const quiz: Quiz = {
   title: 'Test',
   speedFactor: 0.5,
   questions: [
-    { type: 'multiple-choice', round: 'R1', text: 'Q1', options: ['a', 'b', 'c', 'd'], answer: 1, seconds: 20, points: 1000 },
-    { type: 'multiple-choice', round: 'R1', text: 'Q2', options: ['a', 'b'], answer: 0, seconds: 10, points: 1000 },
+    { type: 'multiple-choice', round: 'R1', roundIndex: 0, text: 'Q1', options: ['a', 'b', 'c', 'd'], answer: 1, seconds: 20, points: 1000 },
+    { type: 'multiple-choice', round: 'R1', roundIndex: 0, text: 'Q2', options: ['a', 'b'], answer: 0, seconds: 10, points: 1000 },
   ],
+  rounds: ['R1'],
   media: new Map(),
 };
 

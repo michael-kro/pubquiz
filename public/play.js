@@ -3,6 +3,31 @@ import { connectSocket, h, LETTERS, ordinal, preload, setDeadline, tick } from '
 const TOKEN_KEY = 'pubquiz.team-token';
 const app = document.getElementById('app');
 const statusBanner = document.getElementById('status');
+const live = document.getElementById('live');
+let announced = '';
+
+/** Tells screen readers about the big changes: a new question, time up, the result, the standings. */
+function announce() {
+  let text = '';
+  if (ended) text = ended;
+  else if (state) {
+    const q = state.question;
+    const r = state.result;
+    text = {
+      lobby: "You're in. Waiting for the quiz master to start.",
+      open: q && `Question ${q.index + 1} of ${q.total}. ${q.text}`,
+      closed: "Time's up.",
+      reveal: r && `${r.correct ? 'Correct' : 'Not correct'}. ${r.points} points. The answer was ${r.answerText}.`,
+      leaderboard: `You are ${ordinal(state.rank)} of ${state.teamCount}.`,
+      finished: `Final results. You finished ${ordinal(state.rank)} of ${state.teamCount}.`,
+    }[state.phase] ?? '';
+    text = `${state.phase}:${q?.index}:${text}`;
+  }
+  if (text && text !== announced) {
+    announced = text;
+    live.textContent = text.replace(/^[a-z]+:[\d]*:/, '');
+  }
+}
 const params = new URLSearchParams(location.search);
 
 let token = readToken();
@@ -141,6 +166,7 @@ function render() {
   const typing = document.activeElement?.matches?.('input[name]') ? document.activeElement : null;
   const caret = typing?.selectionStart;
   app.replaceChildren(view(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '');
+  announce();
   if (typing) {
     const input = app.querySelector(`input[name="${typing.name}"]`);
     input?.focus();

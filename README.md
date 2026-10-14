@@ -2,7 +2,7 @@
 
 A self-hosted live pub quiz. The host runs it on a laptop. Each team joins on one phone by scanning a QR code, with nothing to install. Up to 30 teams.
 
-Status: milestones M0–M3b from [PLAN.md](PLAN.md) are done: all five question types, an in-app quiz editor, joining over the internet or local Wi-Fi, reconnects and crash recovery.
+Status: milestones M0–M4 from [PLAN.md](PLAN.md) are done: all five question types, an in-app quiz editor, joining over the internet or local Wi-Fi, reconnects and crash recovery.
 
 ## Run a quiz
 
@@ -21,7 +21,11 @@ The host screen opens in your browser. With no quiz file it shows **Your quizzes
 - **Export:** a `.zip` you can back up, share or import elsewhere.
 - **Run ▶:** start the quiz. **End quiz** takes you back. An unfinished quiz can be resumed later or started over.
 
-The host link stays the same between runs, so you can bookmark it. Put it on the projector, and teams scan the QR code to join. Use the yellow button (or Space, →, or a presentation clicker) to move through each question:
+The host link stays the same between runs, so you can bookmark it.
+
+**TV screen:** the host screen has a **TV screen ↗** button. Open that link on the TV or projector and run the quiz from your phone or laptop. The TV shows the question, countdown, answer count, leaderboard (with points gained and places moved), a round break after each round, and a podium at the end. It never shows an answer before the reveal, and has no controls. The 🔇 button turns on sound effects.
+
+**Results:** when a quiz finishes, a `…results-<date>.csv` is saved next to it, and the final screen has **Download results (CSV)** with one column per question. Put it on the projector, and teams scan the QR code to join. Use the yellow button (or Space, →, or a presentation clicker) to move through each question:
 
 **Start quiz → Close question → Reveal answer → Show leaderboard → Next question**
 

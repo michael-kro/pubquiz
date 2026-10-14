@@ -10,6 +10,7 @@ export type AnswerValue = number | string | number[];
 
 const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('host'), key: z.string().max(200) }),
+  z.object({ t: z.literal('screen'), key: z.string().max(200) }),
   z.object({ t: z.literal('join'), room: z.string().max(20), name: z.string().max(200) }),
   z.object({ t: z.literal('rejoin'), token: z.string().max(200).optional(), code: z.string().max(20).optional() }),
   z.object({
@@ -41,12 +42,21 @@ export interface StandingRow {
   score: number;
   /** Tied teams share a rank (1, 1, 3). */
   rank: number;
+  /** Points the current question was worth to this team, from the reveal onwards. */
+  gained?: number;
+  /** Places moved up (positive) or down since the previous question. */
+  moved?: number;
 }
 
 export interface QuestionView {
   index: number;
   total: number;
   round: string;
+  /** 1-based, for "Round 2 of 4". */
+  roundNumber: number;
+  roundTotal: number;
+  /** The last question of its round: the leaderboard after it is a round break. */
+  lastInRound: boolean;
   type: QuestionType;
   text: string;
   image?: string;
@@ -117,6 +127,8 @@ export interface HostView {
   preloadImage?: string;
   /** The host can end this quiz and go back to the library. */
   canEnd: boolean;
+  /** Key for the read-only TV screen at /screen?key=…, safe to put on a TV. */
+  screenKey: string;
 }
 
 /** What the host sees when no quiz is running. */

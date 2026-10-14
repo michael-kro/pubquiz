@@ -425,21 +425,65 @@ export class Game {
     return questionIndex === this.questionIndex && ['reveal', 'leaderboard', 'finished'].includes(this.phase);
   }
 
-  scoreOf(team: Team): number {
+  scoreOf(team: Team, beforeQuestion = Infinity): number {
     let score = 0;
-    for (const [index, answer] of team.answers) if (this.isRevealed(index)) score += this.markAnswer(index, answer).points;
+    for (const [index, answer] of team.answers) {
+      if (index < beforeQuestion && this.isRevealed(index)) score += this.markAnswer(index, answer).points;
+    }
     return score;
   }
 
-  standings(): StandingRow[] {
-    const rows = [...this.teams.values()]
-      .map((t) => ({ teamId: t.id, name: t.name, score: this.scoreOf(t), rank: 0 }))
-      .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
-    rows.forEach((row, i) => {
-      const previous = rows[i - 1];
-      row.rank = previous && previous.score === row.score ? previous.rank : i + 1;
+  /** Ranks with ties sharing a place (1, 1, 3). */
+  private rank<T extends { name: string }>(rows: T[], score: (row: T) => number): Map<T, number> {
+    const sorted = [...rows].sort((a, b) => score(b) - score(a) || a.name.localeCompare(b.name));
+    const ranks = new Map<T, number>();
+    sorted.forEach((row, i) => {
+      const previous = sorted[i - 1];
+      ranks.set(row, previous && score(previous) === score(row) ? ranks.get(previous)! : i + 1);
     });
-    return rows;
+    return ranks;
+  }
+
+  standings(): StandingRow[] {
+    const teams = [...this.teams.values()];
+    const scores = new Map(teams.map((t) => [t, this.scoreOf(t)]));
+    const ranks = this.rank(teams, (t) => scores.get(t)!);
+    // From the reveal on, also say how each team moved and what the question was worth to it.
+    const showMovement = this.isRevealed(this.questionIndex) && this.questionIndex >= 0;
+    const before = new Map(teams.map((t) => [t, this.scoreOf(t, this.questionIndex)]));
+    const previousRanks = showMovement ? this.rank(teams, (t) => before.get(t)!) : undefined;
+    return teams
+      .map((t) => ({
+        teamId: t.id,
+        name: t.name,
+        score: scores.get(t)!,
+        rank: ranks.get(t)!,
+        gained: showMovement ? scores.get(t)! - before.get(t)! : undefined,
+        // Positive: moved up. Only meaningful once there was a previous question.
+        moved: previousRanks && this.questionIndex > 0 ? previousRanks.get(t)! - ranks.get(t)! : undefined,
+      }))
+      .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+  }
+
+  /** One row per team: points for each question revealed so far, and the total. For the host to keep. */
+  resultsTable(): string[][] {
+    const upTo = this.questionIndex >= 0 && this.isRevealed(this.questionIndex) ? this.questionIndex : this.questionIndex - 1;
+    const questions = this.quiz.questions.slice(0, upTo + 1);
+    const header = ['Rank', 'Team', 'Total', ...questions.map((q, i) => `Q${i + 1} (${q.round})`)];
+    const teams = this.standings();
+    const rows = teams.map((row) => {
+      const team = this.teams.get(row.teamId)!;
+      return [
+        String(row.rank),
+        row.name,
+        String(row.score),
+        ...questions.map((_, i) => {
+          const answer = team.answers.get(i);
+          return answer ? String(this.markAnswer(i, answer).points) : '0';
+        }),
+      ];
+    });
+    return [header, ...rows];
   }
 
   // Views
@@ -451,6 +495,9 @@ export class Game {
       index: this.questionIndex,
       total: this.quiz.questions.length,
       round: q.round,
+      roundNumber: q.roundIndex + 1,
+      roundTotal: this.quiz.rounds.length,
+      lastInRound: this.quiz.questions[this.questionIndex + 1]?.roundIndex !== q.roundIndex,
       type: q.type,
       text: q.text,
       image: q.imageUrl,
@@ -516,7 +563,7 @@ export class Game {
     };
   }
 
-  hostView(): Omit<HostView, 'roomCode' | 'joinUrl' | 'lanJoinUrl' | 'qrVersion' | 'network' | 'canEnd'> {
+  hostView(): Omit<HostView, 'roomCode' | 'joinUrl' | 'lanJoinUrl' | 'qrVersion' | 'network' | 'canEnd' | 'screenKey'> {
     const teams = [...this.teams.values()];
     const standings = this.standings();
     const scores = new Map(standings.map((row) => [row.teamId, row.score]));
