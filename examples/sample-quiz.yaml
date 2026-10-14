@@ -1,0 +1,58 @@
+# Sample quiz. Run it with: npm start -- examples/sample-quiz.yaml
+#
+# answer: the position of the correct option, counting from 0 (so 0 = A, 1 = B, 2 = C, 3 = D)
+# seconds: time limit (default 20). points: maximum points (default 1000).
+title: Friday Night Quiz
+scoring:
+  speedFactor: 0.5   # a correct answer at the buzzer earns half the points; 0 turns the speed bonus off
+
+rounds:
+  - name: General Knowledge
+    questions:
+      - type: multiple-choice
+        text: What is the capital of Australia?
+        options: [Sydney, Canberra, Melbourne, Perth]
+        answer: 1
+      - type: multiple-choice
+        text: How many players are on the pitch for one football team?
+        options: ["9", "10", "11", "12"]
+        answer: 2
+        seconds: 15
+      - type: multiple-choice
+        text: Which planet is known as the Red Planet?
+        options: [Venus, Jupiter, Mars, Mercury]
+        answer: 2
+        seconds: 15
+      - type: multiple-choice
+        text: What is the chemical symbol for gold?
+        options: [Go, Gd, Au, Ag]
+        answer: 2
+      - type: multiple-choice
+        text: In which year did the Berlin Wall fall?
+        options: ["1987", "1989", "1991", "1993"]
+        answer: 1
+
+  - name: Pot Luck
+    questions:
+      - type: multiple-choice
+        text: Which of these is NOT a primary colour of light?
+        options: [Red, Green, Yellow, Blue]
+        answer: 2
+      - type: multiple-choice
+        text: How many sides does a hexagon have?
+        options: ["5", "6", "7", "8"]
+        answer: 1
+        seconds: 10
+      - type: multiple-choice
+        text: Who painted the Mona Lisa?
+        options: [Michelangelo, Raphael, Leonardo da Vinci, Donatello]
+        answer: 2
+      - type: multiple-choice
+        text: What is the largest ocean on Earth?
+        options: [Atlantic, Indian, Arctic, Pacific]
+        answer: 3
+      - type: multiple-choice
+        text: True or false? A tomato is a fruit.
+        options: ["True", "False"]
+        answer: 0
+        seconds: 10
