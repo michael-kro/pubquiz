@@ -2,7 +2,7 @@
 
 A self-hosted live pub quiz. The host runs it on a laptop. Each team joins on one phone by scanning a QR code, with nothing to install. Up to 30 teams.
 
-Status: milestones M0–M6 from [PLAN.md](PLAN.md) are done: all five question types, an in-app quiz editor, joining over the internet or local Wi-Fi, reconnects and crash recovery.
+Status: milestones M0–M6 and parts of M8 from [PLAN.md](PLAN.md) are done: all five question types, an in-app quiz editor, joining over the internet or local Wi-Fi, reconnects and crash recovery.
 
 New here? Read [docs/GETTING-STARTED.md](docs/GETTING-STARTED.md). Trouble at a venue? See [docs/VENUE-TROUBLESHOOTING.md](docs/VENUE-TROUBLESHOOTING.md).
 
@@ -73,11 +73,15 @@ See [examples/sample-quiz.yaml](examples/sample-quiz.yaml), which has every ques
 
 | Type | Teams see | You write |
 |---|---|---|
-| `multiple-choice` | 2–4 coloured buttons | `options`, and `answer`: the right option's position counting from 0 |
+| `multiple-choice` | 2–6 coloured buttons | `options`, and `answer`: the right option's position counting from 0 |
 | `picture` | The picture and a text box | `image` and `accept`: the answers to accept |
 | `music` | A text box (you play the track) | `accept` |
 | `ordering` | 5 shuffled items to tap into order | `items`, listed in the correct order |
 | `letter` | An A–Z keypad: tap the answer's first letter | `answer`, e.g. `John Lennon` (letter J). Skip "The"; people go first name first. |
+| `number` | A box to type a number | `answer`, and optionally `tolerance` (give or take) |
+| `nearest` | A box to type a number; the closest guess wins | `answer`. Good as a bonus question or tie-break. |
+
+Any question can also have `info`, a fun fact or source that is shown with the answer at the reveal.
 
 Typed answers are matched ignoring case, punctuation, a leading "the" and small typos. When a picture or music question closes, you see every answer grouped together. Tick or untick each one, then reveal.
 
@@ -101,6 +105,14 @@ rounds:
 Every question can also set `seconds` (default 20), `points` (default 1000), `image`, and `speedBonus`. A correct answer earns its full points if instant, falling to half at the deadline. The speed bonus is off by default for music, because teams can't answer until they recognise the track. Set `scoring.speedFactor: 0` to turn it off everywhere. Ordering gives half the points for items in the right place and half for getting the whole order right.
 
 If the file has a mistake, the program says where, e.g. `Round 1, question 3, answer: must be the position of one of the options, counting from 0`.
+
+## Question bank
+
+The editor's **📚 Question bank** button opens about 1,100 ready-made questions in 20 categories (general knowledge, science, geography, history, film, TV, music, sport, food and drink, literature, art, animals, technology and gaming, maths, words, mythology, business, 90s and 00s, space), each with a difficulty. Filter by category, type, difficulty or search words; each question shows its answer before you add it; questions already in your quiz are marked; **Add 10 random from these** builds a round in one click. Added questions are copies, so edit them freely.
+
+Your own questions can live in the bank too: put YAML files in a `bank` folder inside your quiz library (same format as the files in [bank/](bank/), see [bank/example.yaml](bank/example.yaml)) and they appear marked "mine". Check any bank file with `node scripts/validate-bank.ts <file>`.
+
+The bank was written by AI and then checked by separate AI reviewers working from memory, who fixed or removed anything doubtful. It has not been checked against sources, so skim the answers on the preview before a big night, and tell us about any that are wrong.
 
 ## Hardening and load testing
 

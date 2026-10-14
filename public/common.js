@@ -16,7 +16,7 @@ export function h(tag, attrs = {}, ...children) {
   return el;
 }
 
-export const LETTERS = ['A', 'B', 'C', 'D'];
+export const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 export function ordinal(n) {
   const suffix = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th';

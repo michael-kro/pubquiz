@@ -1,0 +1,68 @@
+category: Art & Culture
+region: universal
+questions:
+  - { type: multiple-choice, text: "Who painted the Mona Lisa?", options: ["Michelangelo", "Leonardo da Vinci", "Raphael", "Botticelli"], answer: 1, difficulty: easy, tags: [painting] }
+  - { type: multiple-choice, text: "Who painted The Starry Night?", options: ["Claude Monet", "Paul Cezanne", "Vincent van Gogh", "Edgar Degas"], answer: 2, difficulty: easy, tags: [painting] }
+  - { type: multiple-choice, text: "Which Norwegian artist painted The Scream?", options: ["Edvard Munch", "Egon Schiele", "Gustav Klimt", "Wassily Kandinsky"], answer: 0, difficulty: easy, tags: [painting] }
+  - { type: multiple-choice, text: "Who painted the ceiling of the Sistine Chapel?", options: ["Leonardo da Vinci", "Donatello", "Raphael", "Michelangelo"], answer: 3, difficulty: easy, tags: [painting] }
+  - { type: multiple-choice, text: "In which city is the Louvre museum?", options: ["Paris", "Rome", "Madrid", "Vienna"], answer: 0, difficulty: easy, tags: [museums] }
+  - { type: multiple-choice, text: "Which French sculptor created The Thinker?", options: ["Auguste Rodin", "Edgar Degas", "Henri Matisse", "Camille Claudel"], answer: 0, difficulty: medium, tags: [sculpture] }
+  - { type: multiple-choice, text: "Picasso's Guernica protests the bombing of a town during which war?", options: ["First World War", "Spanish Civil War", "Second World War", "Franco-Prussian War"], answer: 1, difficulty: medium, tags: [painting] }
+  - { type: multiple-choice, text: "Which art movement is Salvador Dali most associated with?", options: ["Cubism", "Impressionism", "Surrealism", "Pop Art"], answer: 2, difficulty: easy, tags: [movements] }
+  - { type: multiple-choice, text: "Salvador Dali's famous melting-clocks painting is called The Persistence of what?", options: ["Time", "Dreams", "Reality", "Memory"], answer: 3, difficulty: medium, tags: [painting] }
+  - { type: multiple-choice, text: "Claude Monet's Water Lilies belongs to which art movement?", options: ["Impressionism", "Baroque", "Realism", "Futurism"], answer: 0, difficulty: easy, tags: [movements] }
+  - { type: multiple-choice, text: "Andy Warhol is best known for which art movement?", options: ["Cubism", "Pop Art", "Dada", "Romanticism"], answer: 1, difficulty: easy, tags: [movements] }
+  - { type: multiple-choice, text: "Which Dutch painter created Girl with a Pearl Earring?", options: ["Rembrandt", "Frans Hals", "Johannes Vermeer", "Pieter Bruegel"], answer: 2, difficulty: medium, tags: [painting] }
+  - { type: multiple-choice, text: "Who composed the ballet Swan Lake?", options: ["Sergei Prokofiev", "Igor Stravinsky", "Johann Strauss", "Pyotr Ilyich Tchaikovsky"], answer: 3, difficulty: medium, tags: [ballet] }
+  - { type: multiple-choice, text: "Who composed the opera The Magic Flute?", options: ["Wolfgang Amadeus Mozart", "Giuseppe Verdi", "Richard Wagner", "Giacomo Puccini"], answer: 0, difficulty: medium, tags: [opera] }
+  - { type: multiple-choice, text: "In which Italian city is the famous opera house La Scala?", options: ["Naples", "Milan", "Venice", "Turin"], answer: 1, difficulty: medium, tags: [opera] }
+  - { type: multiple-choice, text: "In which Italian city can you see Michelangelo's statue of David?", options: ["Rome", "Venice", "Florence", "Naples"], answer: 2, difficulty: medium, tags: [sculpture] }
+  - { type: multiple-choice, text: "In which London museum is the Rosetta Stone displayed?", options: ["Natural History Museum", "Victoria and Albert Museum", "Science Museum", "British Museum"], answer: 3, difficulty: medium, tags: [museums] }
+  - { type: multiple-choice, text: "Which architect designed the Guggenheim Museum in Bilbao?", options: ["Frank Gehry", "Norman Foster", "Zaha Hadid", "Renzo Piano"], answer: 0, difficulty: hard, tags: [architecture] }
+  - { type: multiple-choice, text: "Which architect designed the Sagrada Familia in Barcelona?", options: ["Le Corbusier", "Antoni Gaudi", "Frank Lloyd Wright", "Santiago Calatrava"], answer: 1, difficulty: medium, tags: [architecture] }
+  - { type: multiple-choice, text: "Who painted The Birth of Venus?", options: ["Titian", "Caravaggio", "Sandro Botticelli", "Giotto"], answer: 2, difficulty: medium, tags: [painting] }
+  - { type: multiple-choice, text: "Which Dutch master painted The Night Watch?", options: ["Vermeer", "Van Eyck", "Hals", "Rembrandt"], answer: 3, difficulty: medium, tags: [painting] }
+  - { type: multiple-choice, text: "What is the term for painting onto wet plaster?", options: ["Fresco", "Gouache", "Tempera", "Impasto"], answer: 0, difficulty: medium, tags: [techniques] }
+  - { type: multiple-choice, text: "Origami is the traditional Japanese art of doing what?", options: ["Flower arranging", "Folding paper", "Brush writing", "Carving wood"], answer: 1, difficulty: easy, tags: [japan] }
+  - { type: multiple-choice, text: "In which Indian city is the Taj Mahal?", options: ["Delhi", "Jaipur", "Agra", "Mumbai"], answer: 2, difficulty: easy, tags: [architecture] }
+  - { type: multiple-choice, text: "Which dance style originated in Argentina?", options: ["Salsa", "Flamenco", "Samba", "Tango"], answer: 3, difficulty: easy, tags: [dance] }
+  - { type: multiple-choice, text: "Which Spanish dance style is associated with castanets and passionate guitar music?", options: ["Flamenco", "Polka", "Waltz", "Bolero"], answer: 0, difficulty: easy, tags: [dance] }
+  - { type: multiple-choice, text: "Which American artist was famous for his drip paintings?", options: ["Mark Rothko", "Jackson Pollock", "Edward Hopper", "Willem de Kooning"], answer: 1, difficulty: medium, tags: [painting] }
+  - { type: multiple-choice, text: "Which ancient temple of Athena stands on the Acropolis in Athens?", options: ["Pantheon", "Colosseum", "Parthenon", "Erechtheion Gate"], answer: 2, difficulty: easy, tags: [architecture] }
+  - { type: multiple-choice, text: "Which civilisation built the mountain-top city of Machu Picchu?", options: ["Aztec", "Maya", "Olmec", "Inca"], answer: 3, difficulty: easy, tags: [history] }
+  - { type: multiple-choice, text: "Which Mexican artist is famous for her many self-portraits?", options: ["Frida Kahlo", "Diego Rivera", "Georgia O'Keeffe", "Remedios Varo"], answer: 0, difficulty: easy, tags: [painting] }
+  - { type: multiple-choice, text: "Which London gallery is housed in a former power station on the South Bank?", options: ["National Gallery", "Tate Modern", "Saatchi Gallery", "Courtauld Gallery"], answer: 1, difficulty: medium, tags: [museums] }
+  - { type: multiple-choice, text: "Which composer continued writing music after going deaf and completed nine symphonies?", options: ["Johann Sebastian Bach", "Franz Schubert", "Ludwig van Beethoven", "Joseph Haydn"], answer: 2, difficulty: easy, tags: [classical] }
+  - { type: multiple-choice, text: "What is the syllable pattern of a traditional haiku?", options: ["7-5-7", "5-5-5", "3-5-3", "5-7-5"], answer: 3, difficulty: medium, tags: [poetry] }
+  - { type: multiple-choice, text: "Which Brazilian city is world-famous for its Carnival and the Sambadrome?", options: ["Rio de Janeiro", "Sao Paulo", "Brasilia", "Salvador"], answer: 0, difficulty: easy, tags: [festivals] }
+  - { type: multiple-choice, text: "Which musical features the song Memory?", options: ["Evita", "Cats", "Les Miserables", "Oliver!"], answer: 1, difficulty: easy, tags: [musicals] }
+  - { type: multiple-choice, text: "Which composer wrote The Four Seasons?", options: ["Handel", "Haydn", "Antonio Vivaldi", "Brahms"], answer: 2, difficulty: medium, tags: [classical] }
+  - { type: multiple-choice, text: "The Terracotta Army was built to guard the tomb of the first emperor of which Chinese dynasty?", options: ["Han", "Ming", "Tang", "Qin"], answer: 3, difficulty: hard, tags: [history] }
+  - { type: multiple-choice, text: "Which traditional Japanese theatre is known for elaborate make-up, costumes and all-male casts?", options: ["Kabuki", "Noh masks", "Bunraku", "Rakugo"], answer: 0, difficulty: hard, tags: [theatre] }
+  - { type: multiple-choice, text: "The Statue of Liberty was a gift to the United States from which country?", options: ["Britain", "France", "Italy", "Spain"], answer: 1, difficulty: easy, tags: [monuments] }
+  - { type: multiple-choice, text: "Which of these instruments is a woodwind?", options: ["Trumpet", "Cello", "Oboe", "Timpani"], answer: 2, difficulty: easy, tags: [music] }
+  - { type: multiple-choice, text: "Which composer wrote the orchestral piece Bolero?", options: ["Claude Debussy", "Erik Satie", "Gabriel Faure", "Maurice Ravel"], answer: 3, difficulty: hard, tags: [classical] }
+  - { type: multiple-choice, text: "True or false? Leonardo da Vinci painted the ceiling of the Sistine Chapel.", options: ["True", "False"], answer: 1, difficulty: easy, tags: [painting] }
+  - { type: multiple-choice, text: "True or false? Pablo Picasso was born in France.", options: ["True", "False"], answer: 1, difficulty: medium, tags: [painting], info: "He was born in Malaga, Spain, in 1881." }
+  - { type: multiple-choice, text: "True or false? Beethoven wrote his Ninth Symphony after he had become almost completely deaf.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [classical] }
+  - { type: letter, text: "Which Austrian artist painted the golden work The Kiss?", answer: Gustav Klimt, difficulty: medium, tags: [painting] }
+  - { type: letter, text: "Which English architect designed St Paul's Cathedral in London after the Great Fire?", answer: Christopher Wren, difficulty: medium, tags: [architecture] }
+  - { type: letter, text: "Which Dutch painter created the fantastical triptych The Garden of Earthly Delights?", answer: Hieronymus Bosch, difficulty: hard, tags: [painting] }
+  - { type: letter, text: "Which American painter created the diner scene Nighthawks?", answer: Edward Hopper, difficulty: hard, tags: [painting] }
+  - { type: letter, text: "Which American sculptor is famous for inventing the hanging mobile?", answer: Alexander Calder, difficulty: hard, tags: [sculpture] }
+  - { type: letter, text: "Which French Impressionist is famous for his paintings and sculptures of ballet dancers?", answer: Edgar Degas, difficulty: medium, tags: [painting] }
+  - { type: letter, text: "Which Russian composer wrote The Rite of Spring?", answer: Igor Stravinsky, difficulty: hard, tags: [classical] }
+  - { type: letter, text: "Which Japanese artist created the woodblock print The Great Wave off Kanagawa?", answer: Hokusai, difficulty: medium, tags: [japan] }
+  - { type: letter, text: "Which Spanish court painter created Las Meninas?", answer: Diego Velazquez, difficulty: hard, tags: [painting] }
+  - { type: number, text: "In what year was the Eiffel Tower completed?", answer: 1889, difficulty: medium, tags: [monuments] }
+  - { type: number, text: "How many strings does a standard violin have?", answer: 4, difficulty: easy, tags: [music] }
+  - { type: number, text: "How many symphonies did Beethoven complete?", answer: 9, difficulty: medium, tags: [classical] }
+  - { type: number, text: "How many lines does a traditional sonnet have?", answer: 14, difficulty: medium, tags: [poetry] }
+  - { type: number, text: "In what year was the Mona Lisa stolen from the Louvre?", answer: 1911, difficulty: hard, tags: [painting], info: "It was recovered two years later in Italy." }
+  - { type: nearest, text: "How old was Wolfgang Amadeus Mozart when he died?", answer: 35, difficulty: medium, tags: [classical] }
+  - { type: nearest, text: "How old was Vincent van Gogh when he died?", answer: 37, difficulty: hard, tags: [painting] }
+  - { type: ordering, text: "Put these art movements in order, earliest first.", items: ["Renaissance", "Baroque", "Impressionism", "Cubism", "Pop Art"], difficulty: medium, tags: [movements] }
+  - { type: ordering, text: "Put these composers in order of birth, earliest first.", items: ["Johann Sebastian Bach", "Wolfgang Amadeus Mozart", "Ludwig van Beethoven", "Pyotr Ilyich Tchaikovsky", "Igor Stravinsky"], difficulty: medium, tags: [classical] }
+  - { type: ordering, text: "Put these painters in order of birth, earliest first.", items: ["Leonardo da Vinci", "Rembrandt", "Claude Monet", "Pablo Picasso", "Andy Warhol"], difficulty: medium, tags: [painting] }
+  - { type: ordering, text: "Put these landmarks in order of when they were completed, oldest first.", items: ["Parthenon", "Colosseum", "Taj Mahal", "Eiffel Tower", "Sydney Opera House"], difficulty: medium, tags: [architecture] }
+  - { type: ordering, text: "Put these musical groupings in order of number of performers, fewest first.", items: ["Duet", "Trio", "Quartet", "Quintet", "Octet"], difficulty: easy, tags: [music] }

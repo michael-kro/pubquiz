@@ -1,0 +1,60 @@
+category: Animals
+region: universal
+questions:
+  - { type: multiple-choice, text: "What is the largest living land animal?", options: ["White rhinoceros", "African elephant", "Hippopotamus", "Giraffe"], answer: 1, difficulty: easy, tags: [mammals] }
+  - { type: multiple-choice, text: "Which is the fastest land animal?", options: ["Lion", "Greyhound", "Pronghorn antelope", "Cheetah"], answer: 3, difficulty: easy, tags: [mammals] }
+  - { type: multiple-choice, text: "What is a group of lions called?", options: ["A pride", "A pack", "A herd", "A troop"], answer: 0, difficulty: easy, tags: [mammals] }
+  - { type: multiple-choice, text: "Which of these mammals lays eggs?", options: ["Opossum", "Platypus", "Armadillo", "Hedgehog"], answer: 1, difficulty: medium, tags: [mammals] }
+  - { type: multiple-choice, text: "What is the largest animal that has ever lived?", options: ["Megalodon", "Spinosaurus", "Blue whale", "Argentinosaurus"], answer: 2, difficulty: easy, tags: [ocean] }
+  - { type: multiple-choice, text: "What is a baby kangaroo called?", options: ["A cub", "A kit", "A pup", "A joey"], answer: 3, difficulty: easy, tags: [mammals] }
+  - { type: multiple-choice, text: "Which animal is the tallest in the world?", options: ["Giraffe", "Ostrich", "Elephant", "Camel"], answer: 0, difficulty: easy, tags: [mammals] }
+  - { type: multiple-choice, text: "Which flightless bird is the national symbol of New Zealand?", options: ["Emu", "Kiwi", "Kakapo", "Penguin"], answer: 1, difficulty: easy, tags: [birds] }
+  - { type: multiple-choice, text: "What is a group of crows traditionally called?", options: ["A flock", "A parliament", "A murder", "A charm"], answer: 2, difficulty: medium, tags: [birds] }
+  - { type: multiple-choice, text: "What is the main food of the giant panda?", options: ["Fish", "Eucalyptus", "Berries", "Bamboo"], answer: 3, difficulty: easy, tags: [mammals] }
+  - { type: multiple-choice, text: "Which of these animals is a marsupial?", options: ["Koala", "Sloth", "Lemur", "Meerkat"], answer: 0, difficulty: easy, tags: [mammals] }
+  - { type: multiple-choice, text: "What does a camel's hump mainly store?", options: ["Water", "Air", "Fat", "Milk"], answer: 2, difficulty: easy, tags: [mammals] }
+  - { type: multiple-choice, text: "Which is the largest of the big cats?", options: ["Lion", "Leopard", "Jaguar", "Tiger"], answer: 3, difficulty: easy, tags: [mammals] }
+  - { type: multiple-choice, text: "Which is the only mammal capable of true, sustained flight?", options: ["Bat", "Flying squirrel", "Sugar glider", "Colugo"], answer: 0, difficulty: medium, tags: [mammals] }
+  - { type: multiple-choice, text: "What is a baby swan called?", options: ["Gosling", "Cygnet", "Duckling", "Fledgling"], answer: 1, difficulty: easy, tags: [birds] }
+  - { type: multiple-choice, text: "On which continent do emperor penguins live?", options: ["Africa", "Australia", "Antarctica", "South America"], answer: 2, difficulty: easy, tags: [birds] }
+  - { type: multiple-choice, text: "What is the largest fish in the world?", options: ["Great white shark", "Manta ray", "Ocean sunfish", "Whale shark"], answer: 3, difficulty: medium, tags: [ocean] }
+  - { type: multiple-choice, text: "The axolotl, a salamander that keeps its larval features, is native to which country?", options: ["Mexico", "Brazil", "Spain", "Japan"], answer: 0, difficulty: hard, tags: [amphibians] }
+  - { type: multiple-choice, text: "What is the name of the protective case a butterfly caterpillar forms before becoming an adult?", options: ["Cocoon", "Chrysalis", "Larva", "Nymph"], answer: 1, difficulty: medium, tags: [insects] }
+  - { type: multiple-choice, text: "What is the largest living species of lizard?", options: ["Green iguana", "Nile monitor", "Komodo dragon", "Gila monster"], answer: 2, difficulty: medium, tags: [reptiles] }
+  - { type: multiple-choice, text: "Which bird lays the largest egg?", options: ["Albatross", "Emu", "Condor", "Ostrich"], answer: 3, difficulty: medium, tags: [birds] }
+  - { type: multiple-choice, text: "What is the largest living rodent?", options: ["Capybara", "Beaver", "Porcupine", "Coypu"], answer: 0, difficulty: medium, tags: [mammals] }
+  - { type: multiple-choice, text: "What is a female fox called?", options: ["Doe", "Vixen", "Jill", "Bitch fox"], answer: 1, difficulty: easy, tags: [mammals] }
+  - { type: multiple-choice, text: "What is a group of fish swimming together called?", options: ["A herd", "A flock", "A school", "A pack"], answer: 2, difficulty: easy, tags: [ocean] }
+  - { type: multiple-choice, text: "Which of these big cats has neither spots nor stripes as an adult?", options: ["Leopard", "Jaguar", "Cheetah", "Lion"], answer: 3, difficulty: medium, tags: [mammals] }
+  - { type: multiple-choice, text: "Which living bird has the greatest wingspan?", options: ["Wandering albatross", "Golden eagle", "Andean condor", "Brown pelican"], answer: 0, difficulty: hard, tags: [birds] }
+  - { type: multiple-choice, text: "Cashmere wool comes from which animal?", options: ["Sheep", "Goat", "Alpaca", "Rabbit"], answer: 1, difficulty: medium, tags: [farm] }
+  - { type: multiple-choice, text: "Lemurs are native to which island?", options: ["Sri Lanka", "Borneo", "Madagascar", "Tasmania"], answer: 2, difficulty: medium, tags: [mammals] }
+  - { type: multiple-choice, text: "Which large flightless bird is native to Australia?", options: ["Rhea", "Ostrich", "Penguin", "Emu"], answer: 3, difficulty: medium, tags: [birds] }
+  - { type: multiple-choice, text: "The long spiral tusk of a narwhal is actually a what?", options: ["Tooth", "Horn", "Bone spur", "Fin"], answer: 0, difficulty: medium, tags: [ocean] }
+  - { type: multiple-choice, text: "A tadpole is the young stage of which animal?", options: ["Butterfly", "Frog", "Lizard", "Snail"], answer: 1, difficulty: easy, tags: [amphibians] }
+  - { type: multiple-choice, text: "Which bird can turn its head about 270 degrees?", options: ["Eagle", "Duck", "Owl", "Parrot"], answer: 2, difficulty: medium, tags: [birds] }
+  - { type: multiple-choice, text: "Which animal is known for performing a \"waggle dance\" to share where food is?", options: ["Ant", "Wasp", "Butterfly", "Honeybee"], answer: 3, difficulty: medium, tags: [insects] }
+  - { type: multiple-choice, text: "Which of these is a monotreme, an egg-laying mammal, besides the platypus?", options: ["Echidna", "Tapir", "Pangolin", "Aardvark"], answer: 0, difficulty: hard, tags: [mammals] }
+  - { type: multiple-choice, text: "Which animal is a herbivore?", options: ["Crocodile", "Zebra", "Eagle", "Shark"], answer: 1, difficulty: easy, tags: [mammals] }
+  - { type: multiple-choice, text: "Which animal is the closest living relative of the whale?", options: ["Shark", "Seal", "Hippopotamus", "Walrus"], answer: 2, difficulty: hard, tags: [ocean] }
+  - { type: multiple-choice, text: "True or false? Dolphins are mammals.", options: ["True", "False"], answer: 0, difficulty: easy, tags: [ocean] }
+  - { type: multiple-choice, text: "True or false? Bats are blind.", options: ["True", "False"], answer: 1, difficulty: easy, tags: [mammals], info: "All bat species can see, and many fruit bats have excellent eyesight." }
+  - { type: multiple-choice, text: "True or false? In seahorses, it is the male that carries the eggs and gives birth.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [ocean] }
+  - { type: letter, text: "Which is the largest member of the deer family?", answer: Moose, difficulty: medium, tags: [mammals] }
+  - { type: letter, text: "Which African animal has black and white stripes?", answer: Zebra, difficulty: easy, tags: [mammals] }
+  - { type: letter, text: "Which large, semi-aquatic African mammal has a name meaning \"river horse\"?", answer: Hippopotamus, difficulty: medium, tags: [mammals] }
+  - { type: letter, text: "Which seabird with a colourful beak is nicknamed the sea parrot?", answer: Puffin, difficulty: medium, tags: [birds] }
+  - { type: letter, text: "Which Australian marsupial hops and carries its young in a pouch?", answer: Kangaroo, difficulty: easy, tags: [mammals] }
+  - { type: letter, text: "Which insect produces light to attract a mate on summer nights?", answer: Firefly, difficulty: medium, tags: [insects] }
+  - { type: letter, text: "Which big cat is often called the king of the jungle?", answer: Lion, difficulty: easy, tags: [mammals] }
+  - { type: number, text: "How many hearts does an octopus have?", answer: 3, difficulty: medium, tags: [ocean] }
+  - { type: number, text: "How many legs does a spider have?", answer: 8, difficulty: easy, tags: [insects] }
+  - { type: number, text: "How many legs does an adult insect have?", answer: 6, difficulty: easy, tags: [insects] }
+  - { type: number, text: "How many compartments does a cow's stomach have?", answer: 4, difficulty: hard, tags: [farm] }
+  - { type: number, text: "How many humps does a Bactrian camel have?", answer: 2, difficulty: easy, tags: [mammals] }
+  - { type: nearest, text: "Roughly how many months is an elephant pregnant for?", answer: 22, difficulty: hard, tags: [mammals] }
+  - { type: nearest, text: "How many days does it take a chicken egg to hatch?", answer: 21, difficulty: hard, tags: [farm] }
+  - { type: ordering, text: "Put these adult animals in order of typical body weight, lightest first.", items: ["House mouse", "Rabbit", "Wolf", "Polar bear", "Blue whale"], difficulty: easy, tags: [mammals] }
+  - { type: ordering, text: "Put these animals in order of typical pregnancy length, shortest first.", items: ["Mouse", "Dog", "Cow", "Giraffe", "Elephant"], difficulty: hard, tags: [mammals] }
+  - { type: ordering, text: "Put these animals in order of top running speed, slowest first.", items: ["Giant tortoise", "Pig", "Elephant", "Lion", "Cheetah"], difficulty: medium, tags: [mammals] }
+  - { type: ordering, text: "Put these biological classification ranks in order from the broadest group to the most specific.", items: ["Kingdom", "Phylum", "Class", "Order", "Family"], difficulty: medium, tags: [science] }

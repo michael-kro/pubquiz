@@ -1,0 +1,73 @@
+category: Literature
+region: universal
+questions:
+  - { type: multiple-choice, text: "Who wrote the dystopian novel Nineteen Eighty-Four?", options: ["Aldous Huxley", "H. G. Wells", "Ray Bradbury", "George Orwell"], answer: 3, difficulty: easy, tags: [novels] }
+  - { type: multiple-choice, text: "In which Shakespeare play does the sorcerer Prospero appear?", options: ["The Tempest", "Macbeth", "Hamlet", "Othello"], answer: 0, difficulty: medium, tags: [shakespeare] }
+  - { type: multiple-choice, text: "Which wizard guides Bilbo Baggins on his adventure in The Hobbit?", options: ["Saruman", "Merlin", "Gandalf", "Dumbledore"], answer: 2, difficulty: easy, tags: [fantasy] }
+  - { type: multiple-choice, text: "Who created the detective Sherlock Holmes?", options: ["Agatha Christie", "Arthur Conan Doyle", "Edgar Allan Poe", "Wilkie Collins"], answer: 1, difficulty: easy, tags: [crime] }
+  - { type: multiple-choice, text: "Which novel opens with the line \"Call me Ishmael\"?", options: ["Treasure Island", "Robinson Crusoe", "Moby-Dick", "Billy Budd"], answer: 2, difficulty: medium, tags: [novels] }
+  - { type: multiple-choice, text: "Who wrote The Great Gatsby?", options: ["Ernest Hemingway", "F. Scott Fitzgerald", "John Steinbeck", "William Faulkner"], answer: 1, difficulty: easy, tags: [novels] }
+  - { type: multiple-choice, text: "Who wrote Frankenstein, first published in 1818?", options: ["Mary Shelley", "Emily Bronte", "Jane Austen", "Elizabeth Gaskell"], answer: 0, difficulty: easy, tags: [novels] }
+  - { type: multiple-choice, text: "What is Ron Weasley's best friend's name in the Harry Potter books?", options: ["Neville Longbottom", "Draco Malfoy", "Harry Potter", "Sirius Black"], answer: 2, difficulty: easy, tags: [children] }
+  - { type: multiple-choice, text: "Who wrote The Catcher in the Rye?", options: ["J. D. Salinger", "Jack Kerouac", "Kurt Vonnegut", "Truman Capote"], answer: 0, difficulty: medium, tags: [novels] }
+  - { type: multiple-choice, text: "Which Dickens character famously asks for \"more\" gruel?", options: ["David Copperfield", "Pip", "Oliver Twist", "Nicholas Nickleby"], answer: 2, difficulty: easy, tags: [dickens] }
+  - { type: multiple-choice, text: "Who wrote To Kill a Mockingbird?", options: ["Harper Lee", "Toni Morrison", "Maya Angelou", "Flannery O'Connor"], answer: 0, difficulty: easy, tags: [novels] }
+  - { type: multiple-choice, text: "Who wrote The Lion, the Witch and the Wardrobe?", options: ["J. R. R. Tolkien", "Roald Dahl", "C. S. Lewis", "Enid Blyton"], answer: 2, difficulty: easy, tags: [children] }
+  - { type: multiple-choice, text: "Who wrote Don Quixote?", options: ["Miguel de Cervantes", "Gabriel Garcia Marquez", "Federico Garcia Lorca", "Lope de Vega"], answer: 0, difficulty: medium, tags: [classics] }
+  - { type: multiple-choice, text: "Who wrote Les Miserables?", options: ["Alexandre Dumas", "Victor Hugo", "Gustave Flaubert", "Emile Zola"], answer: 1, difficulty: medium, tags: [classics] }
+  - { type: multiple-choice, text: "Who wrote the epic poem The Divine Comedy?", options: ["Virgil", "Petrarch", "Boccaccio", "Dante Alighieri"], answer: 3, difficulty: medium, tags: [poetry] }
+  - { type: multiple-choice, text: "In Alice's Adventures in Wonderland, which animal does Alice follow down the hole?", options: ["A white rabbit", "A cat", "A mouse", "A caterpillar"], answer: 0, difficulty: easy, tags: [children] }
+  - { type: multiple-choice, text: "Who wrote Wuthering Heights?", options: ["Charlotte Bronte", "Anne Bronte", "Emily Bronte", "Jane Austen"], answer: 2, difficulty: medium, tags: [novels] }
+  - { type: multiple-choice, text: "Which Roald Dahl book features the factory owner Willy Wonka?", options: ["Matilda", "The BFG", "James and the Giant Peach", "Charlie and the Chocolate Factory"], answer: 3, difficulty: easy, tags: [children] }
+  - { type: multiple-choice, text: "Who wrote the epic novel War and Peace?", options: ["Fyodor Dostoevsky", "Leo Tolstoy", "Anton Chekhov", "Ivan Turgenev"], answer: 1, difficulty: medium, tags: [classics] }
+  - { type: multiple-choice, text: "Who wrote Crime and Punishment?", options: ["Fyodor Dostoevsky", "Leo Tolstoy", "Nikolai Gogol", "Boris Pasternak"], answer: 0, difficulty: medium, tags: [classics] }
+  - { type: multiple-choice, text: "What is the name of Mr Darcy's estate in Pride and Prejudice?", options: ["Netherfield", "Longbourn", "Pemberley", "Rosings"], answer: 2, difficulty: hard, tags: [novels] }
+  - { type: multiple-choice, text: "Which American writer is famous for the poem The Raven?", options: ["Walt Whitman", "Edgar Allan Poe", "Robert Frost", "Emily Dickinson"], answer: 1, difficulty: medium, tags: [poetry] }
+  - { type: multiple-choice, text: "Which fantasy author created the Discworld series?", options: ["Terry Pratchett", "Neil Gaiman", "Douglas Adams", "Philip Pullman"], answer: 0, difficulty: medium, tags: [fantasy] }
+  - { type: multiple-choice, text: "Which Shakespeare play features the characters Rosencrantz and Guildenstern?", options: ["Macbeth", "King Lear", "Hamlet", "Twelfth Night"], answer: 2, difficulty: medium, tags: [shakespeare] }
+  - { type: multiple-choice, text: "Which two cities are the settings of Dickens's A Tale of Two Cities?", options: ["London and Paris", "London and Rome", "Paris and Vienna", "Dublin and London"], answer: 0, difficulty: medium, tags: [dickens] }
+  - { type: multiple-choice, text: "Who wrote Gulliver's Travels?", options: ["Daniel Defoe", "Henry Fielding", "Samuel Johnson", "Jonathan Swift"], answer: 3, difficulty: medium, tags: [classics] }
+  - { type: multiple-choice, text: "Which Bronte sister wrote Jane Eyre?", options: ["Emily", "Anne", "Charlotte", "Maria"], answer: 2, difficulty: medium, tags: [novels] }
+  - { type: multiple-choice, text: "In Animal Farm, what kind of animal is the dictator Napoleon?", options: ["A horse", "A pig", "A dog", "A sheep"], answer: 1, difficulty: easy, tags: [novels] }
+  - { type: multiple-choice, text: "Who wrote The Handmaid's Tale?", options: ["Margaret Atwood", "Alice Munro", "Doris Lessing", "Sylvia Plath"], answer: 0, difficulty: medium, tags: [novels] }
+  - { type: multiple-choice, text: "Which ancient Greek poet is traditionally credited with writing the Odyssey?", options: ["Hesiod", "Homer", "Sophocles", "Virgil"], answer: 1, difficulty: easy, tags: [classics] }
+  - { type: multiple-choice, text: "Which author created the Belgian detective Hercule Poirot?", options: ["Dorothy L. Sayers", "Ngaio Marsh", "P. D. James", "Agatha Christie"], answer: 3, difficulty: easy, tags: [crime] }
+  - { type: multiple-choice, text: "Who wrote The Old Man and the Sea?", options: ["Ernest Hemingway", "John Steinbeck", "Jack London", "Mark Twain"], answer: 0, difficulty: medium, tags: [novels] }
+  - { type: multiple-choice, text: "Who wrote the epic poem Paradise Lost?", options: ["John Donne", "John Milton", "Alexander Pope", "William Blake"], answer: 1, difficulty: hard, tags: [poetry] }
+  - { type: multiple-choice, text: "Gabriel Garcia Marquez, author of One Hundred Years of Solitude, was born in which country?", options: ["Mexico", "Argentina", "Colombia", "Spain"], answer: 2, difficulty: hard, tags: [novels] }
+  - { type: multiple-choice, text: "Who wrote the Gothic novel Dracula?", options: ["Bram Stoker", "Mary Shelley", "Robert Louis Stevenson", "Oscar Wilde"], answer: 0, difficulty: easy, tags: [novels] }
+  - { type: multiple-choice, text: "What was the real name of the author who wrote as Mark Twain?", options: ["Samuel Clemens", "Stephen Crane", "Sherwood Anderson", "Samuel Johnson"], answer: 0, difficulty: medium, tags: [authors] }
+  - { type: multiple-choice, text: "Which series of books features the heroine Katniss Everdeen?", options: ["Divergent", "The Maze Runner", "Twilight", "The Hunger Games"], answer: 3, difficulty: easy, tags: [young-adult] }
+  - { type: multiple-choice, text: "In which Italian city is Romeo and Juliet mainly set?", options: ["Venice", "Verona", "Florence", "Rome"], answer: 1, difficulty: medium, tags: [shakespeare] }
+  - { type: multiple-choice, text: "Which Russian author wrote Doctor Zhivago?", options: ["Boris Pasternak", "Vladimir Nabokov", "Maxim Gorky", "Alexander Solzhenitsyn"], answer: 0, difficulty: hard, tags: [classics] }
+  - { type: multiple-choice, text: "Who wrote the novel Things Fall Apart?", options: ["Wole Soyinka", "Ngugi wa Thiong'o", "Chinua Achebe", "Nadine Gordimer"], answer: 2, difficulty: hard, tags: [novels] }
+  - { type: multiple-choice, text: "Who wrote Of Mice and Men?", options: ["John Steinbeck", "Sinclair Lewis", "Upton Sinclair", "Theodore Dreiser"], answer: 0, difficulty: medium, tags: [novels] }
+  - { type: multiple-choice, text: "Who wrote the play Peter Pan?", options: ["A. A. Milne", "J. M. Barrie", "Kenneth Grahame", "Lewis Carroll"], answer: 1, difficulty: medium, tags: [children] }
+  - { type: multiple-choice, text: "What is the name of the one-legged pirate in Treasure Island?", options: ["Captain Hook", "Blind Pew", "Long John Silver", "Billy Bones"], answer: 2, difficulty: easy, tags: [novels] }
+  - { type: multiple-choice, text: "Who wrote Middlemarch under a male pen name?", options: ["George Eliot", "Elizabeth Gaskell", "Fanny Burney", "Maria Edgeworth"], answer: 0, difficulty: hard, tags: [novels] }
+  - { type: multiple-choice, text: "On which moor is The Hound of the Baskervilles set?", options: ["Exmoor", "Bodmin Moor", "Dartmoor", "Yorkshire Moors"], answer: 2, difficulty: hard, tags: [crime] }
+  - { type: multiple-choice, text: "True or false? The Brontë sisters first published their novels under male-sounding pen names.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [authors], info: "They used the names Currer, Ellis and Acton Bell." }
+  - { type: multiple-choice, text: "True or false? Jane Austen's novels were first published with her name on the title page.", options: ["True", "False"], answer: 1, difficulty: hard, tags: [authors], info: "Her early novels appeared anonymously, credited to \"A Lady\"." }
+  - { type: multiple-choice, text: "True or false? J. R. R. Tolkien and C. S. Lewis were friends.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [authors], info: "Both belonged to an Oxford writers' group called the Inklings." }
+  - { type: letter, text: "Which Irish writer wrote the play Waiting for Godot?", answer: Samuel Beckett, difficulty: medium, tags: [plays] }
+  - { type: letter, text: "Which Irish author wrote the 1922 novel Ulysses?", answer: James Joyce, difficulty: medium, tags: [novels] }
+  - { type: letter, text: "Which Czech-born writer wrote The Trial and The Metamorphosis?", answer: Franz Kafka, difficulty: medium, tags: [novels] }
+  - { type: letter, text: "Which Irish playwright wrote Pygmalion?", answer: George Bernard Shaw, difficulty: hard, tags: [plays] }
+  - { type: letter, text: "Which ancient Greek tragedian wrote Oedipus Rex?", answer: Sophocles, difficulty: hard, tags: [plays] }
+  - { type: letter, text: "Which writer and wit wrote The Picture of Dorian Gray?", answer: Oscar Wilde, difficulty: medium, tags: [novels] }
+  - { type: letter, text: "Which Dickens novel features the jilted Miss Havisham and a young boy named Pip?", answer: Great Expectations, difficulty: medium, tags: [dickens] }
+  - { type: letter, text: "Which American author wrote Little Women?", answer: Louisa May Alcott, difficulty: medium, tags: [novels] }
+  - { type: letter, text: "In which Shakespeare tragedy does the villain Iago appear?", answer: Othello, difficulty: medium, tags: [shakespeare] }
+  - { type: number, text: "In what year did William Shakespeare die?", answer: 1616, difficulty: medium, tags: [shakespeare] }
+  - { type: number, text: "How many books are there in the main Harry Potter series?", answer: 7, difficulty: easy, tags: [children] }
+  - { type: number, text: "In what year was George Orwell's Nineteen Eighty-Four published?", answer: 1949, difficulty: medium, tags: [novels] }
+  - { type: number, text: "In what year was Pride and Prejudice first published?", answer: 1813, difficulty: hard, tags: [novels] }
+  - { type: number, text: "In Jules Verne's novel, in how many days does Phileas Fogg travel around the world?", answer: 80, difficulty: easy, tags: [novels] }
+  - { type: nearest, text: "How many sonnets did Shakespeare write (in the collection published in 1609)?", answer: 154, difficulty: hard, tags: [shakespeare] }
+  - { type: nearest, text: "How old was Jane Austen when she died in 1817?", answer: 41, difficulty: hard, tags: [authors] }
+  - { type: ordering, text: "Put these novels in order of first publication, earliest first.", items: ["The Hobbit", "Animal Farm", "Lord of the Flies", "To Kill a Mockingbird", "Catch-22"], difficulty: hard, tags: [novels] }
+  - { type: ordering, text: "Put these Charles Dickens novels in order of first publication, earliest first.", items: ["The Pickwick Papers", "Oliver Twist", "A Christmas Carol", "David Copperfield", "Great Expectations"], difficulty: hard, tags: [dickens] }
+  - { type: ordering, text: "Put these Harry Potter books in the order they were published, earliest first.", items: ["Chamber of Secrets", "Prisoner of Azkaban", "Goblet of Fire", "Order of the Phoenix", "Half-Blood Prince"], difficulty: medium, tags: [children] }
+  - { type: ordering, text: "Put these Jane Austen novels in order of first publication, earliest first.", items: ["Sense and Sensibility", "Pride and Prejudice", "Mansfield Park", "Emma", "Persuasion"], difficulty: hard, tags: [novels] }
+  - { type: ordering, text: "Put these writers in order of birth, earliest first.", items: ["Geoffrey Chaucer", "William Shakespeare", "Jane Austen", "Charles Dickens", "George Orwell"], difficulty: easy, tags: [authors] }
+  - { type: ordering, text: "Put these Chronicles of Narnia books in order of first publication, earliest first.", items: ["The Lion, the Witch and the Wardrobe", "Prince Caspian", "The Voyage of the Dawn Treader", "The Silver Chair", "The Horse and His Boy"], difficulty: hard, tags: [children] }

@@ -1,0 +1,63 @@
+category: Television
+region: uk
+questions:
+  - { type: multiple-choice, text: "In Friends, what is the name of the coffee shop where the group hangs out?", options: ["Java Joe's", "Monk's Cafe", "Central Perk", "Moe's Tavern"], answer: 2, difficulty: easy, tags: [sitcom, us] }
+  - { type: multiple-choice, text: "What subject does Walter White teach in Breaking Bad?", options: ["Chemistry", "Physics", "Maths", "Biology"], answer: 0, difficulty: easy, tags: [drama, us] }
+  - { type: multiple-choice, text: "Game of Thrones is based on a series of novels by which author?", options: ["J. R. R. Tolkien", "Terry Pratchett", "Stephen King", "George R. R. Martin"], answer: 3, difficulty: medium, tags: [fantasy] }
+  - { type: multiple-choice, text: "What is the name of Homer Simpson's favourite bar in The Simpsons?", options: ["Cheers", "Moe's Tavern", "The Rovers Return", "Paddy's Pub"], answer: 1, difficulty: easy, tags: [animation, us] }
+  - { type: multiple-choice, text: "In Doctor Who, what does the \"T\" in TARDIS stand for?", options: ["Time", "Travel", "Transport", "Tele"], answer: 0, difficulty: medium, tags: [sci-fi, uk] }
+  - { type: multiple-choice, text: "In which English seaside town is the hotel in Fawlty Towers located?", options: ["Brighton", "Blackpool", "Scarborough", "Torquay"], answer: 3, difficulty: medium, tags: [sitcom, uk] }
+  - { type: multiple-choice, text: "In Only Fools and Horses, what is Del Boy's younger brother called?", options: ["Trigger", "Rodney", "Boycie", "Denzil"], answer: 1, difficulty: easy, tags: [sitcom, uk] }
+  - { type: multiple-choice, text: "In the original UK version of The Office, which town is the paper company based in?", options: ["Reading", "Swindon", "Slough", "Croydon"], answer: 2, difficulty: medium, tags: [sitcom, uk] }
+  - { type: multiple-choice, text: "Which writer created the period drama Downton Abbey?", options: ["Julian Fellowes", "Richard Curtis", "Russell T Davies", "Steven Moffat"], answer: 0, difficulty: medium, tags: [drama, uk] }
+  - { type: multiple-choice, text: "In Stranger Things, what is the name of the town where the story is set?", options: ["Derry", "Sunnydale", "Hawkins", "Twin Peaks"], answer: 2, difficulty: medium, tags: [sci-fi, us] }
+  - { type: multiple-choice, text: "Who is the captain of the starship Enterprise in the original Star Trek series?", options: ["Jean-Luc Picard", "James T. Kirk", "Han Solo", "Mr Spock"], answer: 1, difficulty: easy, tags: [sci-fi] }
+  - { type: multiple-choice, text: "In which US city is the sitcom Cheers set?", options: ["Chicago", "New York", "Philadelphia", "Boston"], answer: 3, difficulty: medium, tags: [sitcom, us] }
+  - { type: multiple-choice, text: "In which English city is Peaky Blinders set?", options: ["Manchester", "Birmingham", "Liverpool", "Leeds"], answer: 1, difficulty: easy, tags: [drama, uk] }
+  - { type: multiple-choice, text: "In which US state is The Sopranos set?", options: ["New York", "Connecticut", "New Jersey", "Pennsylvania"], answer: 2, difficulty: medium, tags: [drama, us] }
+  - { type: multiple-choice, text: "In the 1960s puppet series Thunderbirds, what is the name of the secret organisation?", options: ["International Rescue", "UNIT", "Torchwood", "SHADO"], answer: 0, difficulty: hard, tags: [classics, uk] }
+  - { type: multiple-choice, text: "Who played Captain Mainwaring in the sitcom Dad's Army?", options: ["John Le Mesurier", "Clive Dunn", "Ian Lavender", "Arthur Lowe"], answer: 3, difficulty: hard, tags: [sitcom, uk] }
+  - { type: multiple-choice, text: "What type of animal is Kermit in The Muppet Show?", options: ["Toad", "Frog", "Pig", "Bear"], answer: 1, difficulty: easy, tags: [kids] }
+  - { type: multiple-choice, text: "What colour is Big Bird on Sesame Street?", options: ["Orange", "Blue", "Yellow", "Red"], answer: 2, difficulty: easy, tags: [kids, us] }
+  - { type: multiple-choice, text: "What is the name of the pub in EastEnders?", options: ["The Rovers Return", "The Woolpack", "The Bull", "The Queen Vic"], answer: 3, difficulty: easy, tags: [soap, uk] }
+  - { type: multiple-choice, text: "What is the name of the fictional town where Coronation Street is set?", options: ["Weatherfield", "Walford", "Erinsborough", "Holby"], answer: 0, difficulty: medium, tags: [soap, uk] }
+  - { type: multiple-choice, text: "Which street is the setting for the Australian soap Neighbours?", options: ["Albert Square", "Ramsay Street", "Summer Bay", "Brookside Close"], answer: 1, difficulty: medium, tags: [soap] }
+  - { type: multiple-choice, text: "Who was the original presenter of the UK version of Who Wants to Be a Millionaire?", options: ["Jeremy Clarkson", "Bruce Forsyth", "Chris Tarrant", "Des O'Connor"], answer: 2, difficulty: medium, tags: [gameshow, uk] }
+  - { type: multiple-choice, text: "Who was the first presenter of the BBC quiz show Mastermind?", options: ["Bamber Gascoigne", "Jeremy Paxman", "Bob Holness", "Magnus Magnusson"], answer: 3, difficulty: hard, tags: [gameshow, uk] }
+  - { type: multiple-choice, text: "The Netflix series Money Heist (La Casa de Papel) comes from which country?", options: ["Italy", "Mexico", "Spain", "Argentina"], answer: 2, difficulty: medium, tags: [drama] }
+  - { type: multiple-choice, text: "Which British monarch is the main focus of the early seasons of The Crown?", options: ["Queen Victoria", "Elizabeth II", "Henry VIII", "Elizabeth I"], answer: 1, difficulty: easy, tags: [drama, uk] }
+  - { type: multiple-choice, text: "Which actor plays Dr Watson in the BBC series Sherlock?", options: ["Andrew Scott", "Mark Gatiss", "Jude Law", "Martin Freeman"], answer: 3, difficulty: medium, tags: [drama, uk] }
+  - { type: multiple-choice, text: "Which word is Sheldon Cooper's catchphrase in The Big Bang Theory?", options: ["Bazinga", "Eureka", "Zinger", "Kapow"], answer: 0, difficulty: easy, tags: [sitcom, us] }
+  - { type: multiple-choice, text: "How do the survivors in the first episode of Lost end up on the island?", options: ["A shipwreck", "A train derailment", "A plane crash", "A bus accident"], answer: 2, difficulty: easy, tags: [drama, us] }
+  - { type: multiple-choice, text: "What is the name of Edmund Blackadder's dim-witted servant?", options: ["Percy", "Baldrick", "Melchett", "Darling"], answer: 1, difficulty: easy, tags: [sitcom, uk] }
+  - { type: multiple-choice, text: "Which British sitcom features a snobbish woman named Hyacinth Bucket?", options: ["Keeping Up Appearances", "Open All Hours", "Yes Minister", "Hi-de-Hi!"], answer: 0, difficulty: medium, tags: [sitcom, uk] }
+  - { type: multiple-choice, text: "Which 1960s series starred Patrick McGoohan as a man known only as Number Six?", options: ["The Avengers", "Danger Man", "Callan", "The Prisoner"], answer: 3, difficulty: hard, tags: [classics, uk] }
+  - { type: multiple-choice, text: "Which industry is the drama Mad Men set in?", options: ["Publishing", "Banking", "Advertising", "Law"], answer: 2, difficulty: medium, tags: [drama, us] }
+  - { type: multiple-choice, text: "In which US city is the crime drama The Wire set?", options: ["Detroit", "Chicago", "Baltimore", "New Orleans"], answer: 2, difficulty: hard, tags: [drama, us] }
+  - { type: letter, text: "Which actor plays Walter White in Breaking Bad?", answer: Bryan Cranston, difficulty: medium, tags: [drama, us] }
+  - { type: letter, text: "Which actress plays Rachel Green in Friends?", answer: Jennifer Aniston, difficulty: easy, tags: [sitcom, us] }
+  - { type: letter, text: "Which comedian plays Basil Fawlty in Fawlty Towers?", answer: John Cleese, difficulty: easy, tags: [sitcom, uk] }
+  - { type: letter, text: "Who co-created and starred as David Brent in the original UK version of The Office?", answer: Ricky Gervais, difficulty: medium, tags: [sitcom, uk] }
+  - { type: letter, text: "What is the name of the father in The Simpsons?", answer: Homer Simpson, difficulty: easy, tags: [animation, us] }
+  - { type: letter, text: "Which actor plays Sherlock Holmes in the BBC series Sherlock?", answer: Benedict Cumberbatch, difficulty: medium, tags: [drama, uk] }
+  - { type: letter, text: "Which broadcaster narrated the BBC nature series Planet Earth?", answer: David Attenborough, difficulty: easy, tags: [documentary, uk] }
+  - { type: letter, text: "Which actor plays both Mr Bean and Edmund Blackadder?", answer: Rowan Atkinson, difficulty: easy, tags: [sitcom, uk] }
+  - { type: letter, text: "Which British actor plays the title character in the medical drama House?", answer: Hugh Laurie, difficulty: medium, tags: [drama, us] }
+  - { type: number, text: "In what year did Friends first air?", answer: 1994, difficulty: medium, tags: [sitcom, us] }
+  - { type: number, text: "In what year was the first episode of Doctor Who broadcast?", answer: 1963, difficulty: medium, tags: [sci-fi, uk] }
+  - { type: number, text: "How many episodes of Fawlty Towers were made in total?", answer: 12, difficulty: hard, tags: [sitcom, uk], info: "Two series of six episodes each." }
+  - { type: number, text: "How many seasons did Game of Thrones run for?", answer: 8, difficulty: easy, tags: [fantasy] }
+  - { type: number, text: "In what year did The Simpsons begin as a regular half-hour series?", answer: 1989, difficulty: hard, tags: [animation, us], info: "It had previously appeared as shorts on The Tracey Ullman Show." }
+  - { type: number, text: "How many series of Blackadder were made?", answer: 4, difficulty: medium, tags: [sitcom, uk] }
+  - { type: nearest, text: "How many episodes of Friends were made in total?", answer: 236, difficulty: hard, tags: [sitcom, us] }
+  - { type: nearest, text: "How many episodes of The Sopranos were made in total?", answer: 86, difficulty: hard, tags: [drama, us] }
+  - { type: nearest, text: "How many episodes of Breaking Bad were made in total?", answer: 62, difficulty: hard, tags: [drama, us] }
+  - { type: ordering, text: "Put these UK soap operas in order of their first broadcast, earliest first.", items: ["Coronation Street", "Emmerdale", "Brookside", "EastEnders", "Hollyoaks"], difficulty: hard, tags: [soap, uk] }
+  - { type: ordering, text: "Put these sitcoms in order of their first broadcast, earliest first.", items: ["Fawlty Towers", "Cheers", "Seinfeld", "Friends", "The Office (UK)"], difficulty: medium, tags: [sitcom] }
+  - { type: ordering, text: "Put these actors in the order they first played the Doctor in Doctor Who, earliest first.", items: ["William Hartnell", "Patrick Troughton", "Jon Pertwee", "Tom Baker", "Peter Davison"], difficulty: medium, tags: [sci-fi, uk] }
+  - { type: ordering, text: "Put these Star Trek series in order of their first broadcast, earliest first.", items: ["The Original Series", "The Next Generation", "Deep Space Nine", "Voyager", "Enterprise"], difficulty: medium, tags: [sci-fi] }
+  - { type: ordering, text: "Put these dramas in order of their first broadcast, earliest first.", items: ["The Sopranos", "Breaking Bad", "Game of Thrones", "Stranger Things", "Squid Game"], difficulty: medium, tags: [drama] }
+  - { type: ordering, text: "Put these US sitcoms in order of their first broadcast, earliest first.", items: ["M*A*S*H", "Happy Days", "The Simpsons", "Frasier", "The Big Bang Theory"], difficulty: hard, tags: [sitcom, us] }
+  - { type: multiple-choice, text: "True or false? The sitcom Friends is set in London.", options: ["True", "False"], answer: 1, difficulty: easy, tags: [sitcom] }
+  - { type: multiple-choice, text: "True or false? In Doctor Who, the TARDIS looks like a police box from the outside.", options: ["True", "False"], answer: 0, difficulty: easy, tags: [sci-fi, uk] }
+  - { type: multiple-choice, text: "True or false? The Simpsons live in a town called Shelbyville.", options: ["True", "False"], answer: 1, difficulty: easy, tags: [animation] }

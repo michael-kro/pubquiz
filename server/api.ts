@@ -1,6 +1,9 @@
 // HTTP API for the host's quiz library and editor. Every route needs the host key.
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { sampleQuizFiles } from './assets.ts';
+import { bundledBankFiles, sampleQuizFiles } from './assets.ts';
+import { buildEntries, filterEntries, sample, summarise, type BankEntry } from './bank.ts';
+import { readdir, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { BrandingError, MAX_LOGO_BYTES, type BrandingStore } from './branding.ts';
 import { Library, LibraryError, MAX_IMAGE_UPLOAD, MAX_IMPORT, type QuizDraft } from './library.ts';
 
@@ -59,6 +62,23 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
     if (parts[0] === 'quizzes' && parts.length === 1) {
       if (method === 'GET') return void sendJson(res, 200, await library.list()), true;
       if (method === 'POST') return void sendJson(res, 201, { id: await library.create() }), true;
+    }
+
+    if (parts[0] === 'bank' && method === 'GET') {
+      const entries = await bankEntries(library.dir);
+      const q = url.searchParams;
+      const matches = filterEntries(entries, {
+        category: q.get('category') ?? undefined,
+        type: q.get('type') ?? undefined,
+        difficulty: q.get('difficulty') ?? undefined,
+        region: q.get('region') ?? undefined,
+        source: q.get('source') ?? undefined,
+        search: q.get('search') ?? undefined,
+      });
+      if (parts[1] === 'summary') return void sendJson(res, 200, summarise(entries)), true;
+      const limit = Math.min(Math.max(Number(q.get('limit') ?? 50) || 50, 1), 200);
+      const picked = parts[1] === 'random' ? sample(matches, limit) : matches.slice(Math.max(Number(q.get('offset') ?? 0) || 0, 0), Math.max(Number(q.get('offset') ?? 0) || 0, 0) + limit);
+      return void sendJson(res, 200, { total: matches.length, questions: picked }), true;
     }
 
     if (parts[0] === 'branding' && ctx.branding) {
@@ -156,4 +176,19 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
     }
   }
   return true;
+}
+
+// The question bank: the built-in files plus anything in a "bank" folder inside the quiz library.
+let bankCache: { at: number; dir: string; entries: BankEntry[] } | undefined;
+
+async function bankEntries(libraryDir: string): Promise<BankEntry[]> {
+  if (bankCache && bankCache.dir === libraryDir && Date.now() - bankCache.at < 10_000) return bankCache.entries;
+  const mine = new Map<string, string>();
+  const dir = join(libraryDir, 'bank');
+  for (const name of await readdir(dir).catch(() => [] as string[])) {
+    if (/\.ya?ml$/i.test(name)) mine.set(name, await readFile(join(dir, name), 'utf8'));
+  }
+  const entries = [...buildEntries(await bundledBankFiles(), 'built-in').entries, ...buildEntries(mine, 'mine').entries];
+  bankCache = { at: Date.now(), dir: libraryDir, entries };
+  return entries;
 }

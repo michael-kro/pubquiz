@@ -1,0 +1,65 @@
+category: Words & Language
+region: uk
+questions:
+  # multiple-choice
+  - { type: multiple-choice, text: "Which of these is the correct spelling?", options: [Accomodate, Accommodate, Acommodate, Acomodate], answer: 1, difficulty: easy, tags: [spelling] }
+  - { type: multiple-choice, text: "Which of these words is spelled correctly?", options: [Separate, Seperate, Separete, Sepurate], answer: 0, difficulty: easy, tags: [spelling] }
+  - { type: multiple-choice, text: "Which spelling is right?", options: [Neccessary, Necesary, Necessary, Necessery], answer: 2, difficulty: medium, tags: [spelling] }
+  - { type: multiple-choice, text: "The word 'quarantine' comes from an Italian phrase meaning a period of how many days?", options: [Ten, Forty, Sixty, Thirty], answer: 1, difficulty: medium, tags: [etymology] }
+  - { type: multiple-choice, text: "Which English poet is credited with inventing the word 'pandemonium' in Paradise Lost?", options: [William Shakespeare, Geoffrey Chaucer, John Milton, John Dryden], answer: 2, difficulty: hard, tags: [etymology] }
+  - { type: multiple-choice, text: "Which of these words is a palindrome (reads the same backwards)?", options: [Garden, Radar, Planet, Window], answer: 1, difficulty: easy, tags: [wordplay] }
+  - { type: multiple-choice, text: "What is the collective noun for a group of crows?", options: [Parliament, Gaggle, Murder, Pride], answer: 2, difficulty: easy, tags: [collective-nouns] }
+  - { type: multiple-choice, text: "What is the collective noun for a group of owls?", options: [Murder, Parliament, Flock, Clutch], answer: 1, difficulty: medium, tags: [collective-nouns] }
+  - { type: multiple-choice, text: "What is the collective noun for a group of flamingos?", options: [Flamboyance, Colony, Skein, Bloom], answer: 0, difficulty: hard, tags: [collective-nouns] }
+  - { type: multiple-choice, text: "What do we call a word that means the same as another word?", options: [Antonym, Synonym, Homonym, Acronym], answer: 1, difficulty: easy, tags: [vocabulary] }
+  - { type: multiple-choice, text: "What does the word 'laser' originally stand for?", options: [Light Amplification by Stimulated Emission of Radiation, Long Angle Sound Energy Ray, Linear Atomic Spectrum Emission Reaction, Light Aimed Strongly at Every Receiver], answer: 0, difficulty: hard, tags: [acronyms] }
+  - { type: multiple-choice, text: "What does the 'S' in the word 'scuba' stand for?", options: [Sea, Self-contained, Submarine, Swimming], answer: 1, difficulty: hard, tags: [acronyms], info: "Scuba stands for Self-Contained Underwater Breathing Apparatus." }
+  - { type: multiple-choice, text: "Which language is the main language of Iran?", options: [Arabic, Turkish, Persian, Urdu], answer: 2, difficulty: medium, tags: [languages], info: "Persian is also called Farsi." }
+  - { type: multiple-choice, text: "Which of these languages is written in the Cyrillic alphabet?", options: [Polish, Czech, Hungarian, Russian], answer: 3, difficulty: easy, tags: [languages] }
+  - { type: multiple-choice, text: "Which language did English borrow the word 'kindergarten' from?", options: [Dutch, German, Swedish, Danish], answer: 1, difficulty: medium, tags: [etymology] }
+  - { type: multiple-choice, text: "Which language gave English the word 'robot'?", options: [Polish, Russian, Czech, German], answer: 2, difficulty: hard, tags: [etymology], info: "It comes from the Czech word robota, meaning forced labour, via the 1920 play R.U.R." }
+  - { type: multiple-choice, text: "Who are you traditionally wishing luck to when you say 'break a leg'?", options: [Footballers, Actors, Surgeons, Fishermen], answer: 1, difficulty: easy, tags: [phrases] }
+  - { type: multiple-choice, text: "What does the Latin phrase 'ad hoc' mean?", options: [For this purpose, By chance, At home, After lunch], answer: 0, difficulty: medium, tags: [phrases] }
+  - { type: multiple-choice, text: "What does the French phrase 'deja vu' literally mean?", options: [Seen it all, Already seen, Never again, Too late], answer: 1, difficulty: medium, tags: [phrases] }
+  - { type: multiple-choice, text: "Which figure of speech involves deliberate exaggeration?", options: [Simile, Metaphor, Hyperbole, Irony], answer: 2, difficulty: medium, tags: [grammar] }
+  - { type: multiple-choice, text: "How is the surname Cholmondeley usually pronounced?", options: [Chumley, Chol-mon-dee-lee, Shol-mun-ley, Kohl-mond-ly], answer: 0, difficulty: medium, tags: [pronunciation] }
+  - { type: multiple-choice, text: "How is the English city of Leicester pronounced?", options: [Lie-ses-ter, Lay-ces-ter, Lester, Lye-ster], answer: 2, difficulty: easy, tags: [pronunciation] }
+  - { type: multiple-choice, text: "Which word is a homophone of 'knight'?", options: [Nigh, Night, Knit, Kite], answer: 1, difficulty: easy, tags: [wordplay] }
+  - { type: multiple-choice, text: "What is the Welsh name for Wales?", options: [Cambria, Gwalia, Albion, Cymru], answer: 3, difficulty: medium, tags: [languages] }
+  - { type: multiple-choice, text: "In Irish Gaelic, what is 'sláinte' commonly said as?", options: [Goodbye, Cheers, Thank you, Welcome], answer: 1, difficulty: easy, tags: [languages] }
+  - { type: multiple-choice, text: "Which language does the English word 'bungalow' come from?", options: [Hindi, Arabic, Malay, Japanese], answer: 0, difficulty: hard, tags: [etymology] }
+  - { type: multiple-choice, text: "What is the name of the punctuation mark '...'?", options: [Colon, Ampersand, Ellipsis, Hyphen], answer: 2, difficulty: easy, tags: [grammar] }
+  - { type: multiple-choice, text: "What is a word made from the initial letters of other words and pronounced as a word itself, like NASA?", options: [Initialism, Acronym, Contraction, Abbreviation], answer: 1, difficulty: medium, tags: [grammar] }
+  - { type: multiple-choice, text: "What does the Welsh greeting 'Bore da' mean?", options: [Good night, Good morning, Thank you, Goodbye], answer: 1, difficulty: medium, tags: [languages] }
+  - { type: multiple-choice, text: "Which Scandinavian language gave English the word 'ombudsman'?", options: [Danish, Norwegian, Finnish, Swedish], answer: 3, difficulty: hard, tags: [etymology] }
+  - { type: multiple-choice, text: "Which is the most common letter in written English?", options: [T, E, A, S], answer: 1, difficulty: medium, tags: [wordplay] }
+  # true/false
+  - { type: multiple-choice, text: "True or false? The word 'rhythm' contains none of the vowels a, e, i, o or u.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [wordplay] }
+  - { type: multiple-choice, text: "True or false? Sign language is the same all over the world.", options: ["True", "False"], answer: 1, difficulty: easy, tags: [languages] }
+  - { type: multiple-choice, text: "True or false? The word 'goodbye' began as a shortening of 'God be with ye'.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [etymology] }
+  # letter
+  - { type: letter, text: "What language is spoken in the Netherlands?", answer: Dutch, difficulty: easy, tags: [languages] }
+  - { type: letter, text: "Which writer compiled the famous Dictionary of the English Language published in 1755?", answer: Samuel Johnson, difficulty: medium, tags: [history] }
+  - { type: letter, text: "What do we call a word that means the opposite of another word?", answer: Antonym, difficulty: easy, tags: [vocabulary] }
+  - { type: letter, text: "Which ancient language did the Romans speak, and gave rise to French, Spanish and Italian?", answer: Latin, difficulty: easy, tags: [languages] }
+  - { type: letter, text: "What is the first letter of the Greek alphabet called?", answer: Alpha, difficulty: easy, tags: [languages] }
+  - { type: letter, text: "What is the study of the origins and history of words called?", answer: Etymology, difficulty: medium, tags: [etymology] }
+  - { type: letter, text: "What is the name of the Japanese poem form with three lines of five, seven and five syllables?", answer: Haiku, difficulty: easy, tags: [poetry] }
+  - { type: letter, text: "Which language gave English the word 'schadenfreude'?", answer: German, difficulty: medium, tags: [etymology] }
+  - { type: letter, text: "What do we call words that sound the same but are spelled differently, like 'bare' and 'bear'?", answer: Homophones, difficulty: medium, tags: [wordplay] }
+  # number
+  - { type: number, text: "How many letters are in the English alphabet?", answer: 26, difficulty: easy, tags: [alphabet] }
+  - { type: number, text: "How many letters are in the Greek alphabet?", answer: 24, difficulty: medium, tags: [alphabet] }
+  - { type: number, text: "In what year was Samuel Johnson's Dictionary of the English Language published?", answer: 1755, difficulty: hard, tags: [history] }
+  - { type: number, text: "How many syllables does a traditional haiku have in total (5, 7, 5)?", answer: 17, difficulty: medium, tags: [poetry] }
+  - { type: number, text: "In what year was Shakespeare's First Folio published?", answer: 1623, difficulty: hard, tags: [history] }
+  - { type: number, text: "How many words are in the sentence 'The quick brown fox jumps over the lazy dog'?", answer: 9, difficulty: easy, tags: [wordplay], info: "It uses every letter of the alphabet at least once." }
+  # nearest
+  - { type: nearest, text: "In what year was the Rosetta Stone found by French soldiers in Egypt?", answer: 1799, difficulty: hard, tags: [history] }
+  - { type: nearest, text: "Roughly how many different languages are spoken in the world today?", answer: 7000, difficulty: hard, tags: [languages] }
+  # ordering
+  - { type: ordering, text: "Put these animals in alphabetical order, A to Z.", items: [Quokka, Rhino, Tapir, Walrus, Zebra], difficulty: easy, tags: [alphabet] }
+  - { type: ordering, text: "Put these Greek letters in alphabet order, first to last.", items: [Alpha, Beta, Gamma, Delta, Epsilon], difficulty: easy, tags: [alphabet] }
+  - { type: ordering, text: "Put these words in order of number of letters, fewest first.", items: [Cat, Door, Table, Garden, Kitchen], difficulty: easy, tags: [wordplay] }
+  - { type: ordering, text: "Put these words from the NATO phonetic alphabet in order, A first.", items: [Alfa, Bravo, Charlie, Delta, Echo], difficulty: medium, tags: [alphabet] }
+  - { type: ordering, text: "Put these days of the week in order, earliest first.", items: [Tuesday, Wednesday, Thursday, Friday, Saturday], difficulty: easy, tags: [days], info: "Tuesday, Wednesday, Thursday and Friday are named after Norse gods; Saturday is named after the Roman god Saturn." }

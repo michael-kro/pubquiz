@@ -77,9 +77,9 @@ test('plays a full quiz: timing-based points, scores hidden until reveal, ties s
 
   game.advance();
   assert.equal(game.phase, 'reveal');
-  assert.deepEqual(game.teamView(fast.id)!.result, { correctIndex: 1, correct: true, points: 950, answerText: 'b', detail: undefined });
-  assert.deepEqual(game.teamView(slow.id)!.result, { correctIndex: 1, correct: true, points: 750, answerText: 'b', detail: undefined });
-  assert.deepEqual(game.teamView(wrong.id)!.result, { correctIndex: 1, correct: false, points: 0, answerText: 'b', detail: undefined });
+  assert.deepEqual(game.teamView(fast.id)!.result, { correctIndex: 1, correct: true, points: 950, answerText: 'b', detail: undefined, info: undefined });
+  assert.deepEqual(game.teamView(slow.id)!.result, { correctIndex: 1, correct: true, points: 750, answerText: 'b', detail: undefined, info: undefined });
+  assert.deepEqual(game.teamView(wrong.id)!.result, { correctIndex: 1, correct: false, points: 0, answerText: 'b', detail: undefined, info: undefined });
 
   game.advance();
   assert.equal(game.phase, 'leaderboard');

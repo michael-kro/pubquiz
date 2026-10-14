@@ -149,6 +149,9 @@ input {
 .opt-1 { background: var(--opt-1); }
 .opt-2 { background: var(--opt-2); color: #1a1406; }
 .opt-3 { background: var(--opt-3); }
+.opt-4 { background: #8e5bd4; }
+.opt-5 { background: #d4559b; }
+.row-letter.opt-4, .row-letter.opt-5 { color: #fff; }
 .option:disabled { opacity: 0.35; }
 .option.chosen { opacity: 1; outline: 4px solid var(--text); outline-offset: 2px; }
 
@@ -543,3 +546,34 @@ input {
 .preview-card { display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 10px; background: var(--surface); }
 .preview-card strong { color: var(--accent); }
 @media (max-width: 800px) { .branding-grid { grid-template-columns: 1fr; } }
+
+.info { font-style: italic; margin-top: 10px; }
+.guesses { list-style: none; padding: 0; margin: 14px auto 0; max-width: 640px; display: grid; gap: 6px; text-align: left; }
+.guesses li { display: flex; gap: 12px; align-items: baseline; padding: 8px 14px; border-radius: 10px; background: var(--surface); font-size: 1.1rem; }
+.guesses li.win { outline: 3px solid var(--right); }
+.guesses .guess-teams { margin-left: auto; text-align: right; overflow-wrap: anywhere; }
+
+/* Question bank picker */
+.bank-overlay { position: fixed; inset: 0; z-index: 20; background: #000a; display: grid; place-items: center; padding: 16px; }
+.bank-modal { background: var(--bg); color: var(--text); border-radius: var(--radius); width: min(960px, 100%); max-height: 92vh; display: flex; flex-direction: column; border: 1px solid var(--surface-2); overflow: hidden; }
+.bank-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; background: var(--surface); }
+.bank-head h2 { margin: 0; }
+.bank-filters { display: flex; flex-wrap: wrap; gap: 12px; padding: 14px 18px 0; }
+.bank-filters .field { min-width: 150px; }
+.bank-filters .grow { flex: 1; min-width: 200px; }
+.bank-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 18px; }
+.field.inline { flex-direction: row; align-items: center; }
+.bank-list { list-style: none; margin: 0; padding: 0 18px; overflow: auto; flex: 1; display: grid; gap: 6px; align-content: start; }
+.bank-list li { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 10px; background: var(--surface); }
+.bank-list li.already { opacity: 0.55; }
+.bank-list input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--accent); }
+.bank-text { margin: 0; font-weight: 600; }
+.bank-answer { margin: 2px 0 0; font-size: 0.9rem; }
+.bank-meta { margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 0.72rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--accent); color: var(--accent-text); text-transform: capitalize; }
+.chip.plain { background: var(--surface-2); color: var(--text); font-weight: 600; }
+.chip.easy { background: #3ccf7a; color: #06210f; }
+.chip.medium { background: #f5b83d; color: #1a1406; }
+.chip.hard { background: #ef5b5b; color: #fff; }
+.bank-foot { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: var(--surface); }
+.bank-modal button:not(.primary):not(.icon) { background: var(--surface-2); color: var(--text); padding: 0.5em 1em; font-weight: 600; }

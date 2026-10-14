@@ -1,5 +1,6 @@
 // The quiz editor on the host screen. Edits a draft of quiz.yaml, autosaves it, and shows
 // the server's validation problems next to the fields they're about.
+import { openBankPicker } from './bank-picker.js';
 import { h, LETTERS } from './common.js';
 
 const TYPES = {
@@ -8,6 +9,8 @@ const TYPES = {
   music: 'Music',
   ordering: 'Put in order',
   letter: 'First letter',
+  number: 'Number',
+  nearest: 'Nearest wins',
 };
 const ORDERING_ITEMS = 5;
 const SAVE_DELAY_MS = 700;
@@ -30,7 +33,7 @@ function normalise(text) {
 }
 
 function blankQuestion(type = 'multiple-choice', from = {}) {
-  const keep = { text: from.text ?? '', seconds: from.seconds, points: from.points, image: from.image };
+  const keep = { text: from.text ?? '', seconds: from.seconds, points: from.points, image: from.image, info: from.info };
   for (const k of Object.keys(keep)) if (keep[k] === undefined) delete keep[k];
   const typed = {
     'multiple-choice': { options: ['', '', '', ''], answer: 0 },
@@ -38,6 +41,8 @@ function blankQuestion(type = 'multiple-choice', from = {}) {
     music: { accept: [''] },
     ordering: { items: Array(ORDERING_ITEMS).fill('') },
     letter: { answer: '' },
+    number: { answer: 0 },
+    nearest: { answer: 0 },
   }[type];
   // Carry the answer across where the types are similar.
   if ((type === 'picture' || type === 'music') && from.accept) typed.accept = [...from.accept];
@@ -298,6 +303,20 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
     }
   }
 
+  function openBank() {
+    void openBankPicker({
+      api,
+      rounds: () => model.rounds,
+      onAdd(questions, roundIndex) {
+        const round = model.rounds[Math.min(roundIndex, model.rounds.length - 1)];
+        const added = questions.map((q) => ({ key: newKey(), ...q }));
+        round.questions.push(...added);
+        selected = added[0].key;
+        changed({ structure: true });
+      },
+    });
+  }
+
   async function run() {
     await flush();
     try {
@@ -416,7 +435,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
                   : null,
               ),
             ),
-            q.options.length < 4
+            q.options.length < 6
               ? h('button', { type: 'button', class: 'add', onclick: () => {
                   q.options.push('');
                   changed({ structure: true });
@@ -440,6 +459,22 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           'items',
           'Teams see these shuffled.',
         );
+      case 'number':
+        return [
+          field('Answer', numberInput(q.answer, 'e.g. 1989', (v) => {
+            q.answer = v;
+            changed();
+          }), 'answer', 'Teams type a number. It must match exactly, unless you allow some give below.'),
+          field('Give or take (optional)', numberInput(q.tolerance, '0', (v) => {
+            q.tolerance = v;
+            changed();
+          }), 'tolerance', 'For example 5 accepts anything within 5 of the answer.'),
+        ];
+      case 'nearest':
+        return field('Answer', numberInput(q.answer, 'e.g. 8849', (v) => {
+          q.answer = v;
+          changed();
+        }), 'answer', 'Teams type a number and the closest guess wins all the points. Speed doesn\'t count. Good as a bonus question or tie-break.');
       case 'letter': {
         const letter = (q.letter || normalise(q.answer)[0] || '?').toUpperCase();
         return [
@@ -552,7 +587,11 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
       ),
       typeFields(q),
       imageField(q),
-      h(
+      field('Fun fact or source (optional, shown with the answer)', textInput(q.info, (v) => {
+        q.info = v.trim() ? v : undefined;
+        changed();
+      }, { maxlength: '300' }), 'info'),
+      q.type === 'nearest' ? null : h(
         'label',
         { class: 'check' },
         h('input', {
@@ -700,6 +739,9 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           return h('div', { class: 'options' }, q.options.map((o, i) =>
             h('div', { class: `option opt-${i}${i === q.answer ? ' chosen' : ''}` }, h('span', { class: 'letter' }, LETTERS[i]), h('span', {}, o || '…')),
           ));
+        case 'number':
+        case 'nearest':
+          return h('div', { class: 'text-answer' }, h('input', { disabled: true, placeholder: 'Type a number' }), h('div', { class: 'primary fake-button' }, 'Submit answer'));
         case 'picture':
         case 'music':
           return h('div', { class: 'text-answer' }, h('input', { disabled: true, placeholder: 'Type your answer' }), h('div', { class: 'primary fake-button' }, 'Submit answer'));
@@ -755,6 +797,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           }),
           h('span', { class: 'problem-count' }),
           h('span', { class: 'save-status', role: 'status' }),
+          h('button', { type: 'button', onclick: openBank }, '📚 Question bank'),
           h('a', { class: 'button', href: `/api/quizzes/${id}/export.zip?key=${encodeURIComponent(hostKey)}`, onclick: () => flush() }, 'Export'),
           h('button', { type: 'button', class: 'primary', onclick: run }, 'Run quiz ▶'),
         ),

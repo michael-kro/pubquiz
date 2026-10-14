@@ -1,0 +1,81 @@
+category: Food & Drink
+region: universal
+questions:
+  - { type: multiple-choice, text: "Which country is the dish paella most famously associated with?", options: ["France", "Spain", "Portugal", "Mexico"], answer: 1, difficulty: easy, tags: [food] }
+  - { type: multiple-choice, text: "Which fruit is the main ingredient of guacamole?", options: ["Avocado", "Cucumber", "Pea", "Mango"], answer: 0, difficulty: easy, tags: [food] }
+  - { type: multiple-choice, text: "Which grain is used to make the Japanese drink sake?", options: ["Barley", "Wheat", "Rice", "Maize"], answer: 2, difficulty: easy, tags: [drink] }
+  - { type: multiple-choice, text: "Which cheese is traditionally used on a Margherita pizza?", options: ["Cheddar", "Brie", "Gouda", "Mozzarella"], answer: 3, difficulty: easy, tags: [food] }
+  - { type: multiple-choice, text: "Raisins are dried versions of which fruit?", options: ["Plums", "Grapes", "Cherries", "Figs"], answer: 1, difficulty: easy, tags: [food] }
+  - { type: multiple-choice, text: "Which spice comes from the dried stigmas of the crocus flower?", options: ["Vanilla", "Cardamom", "Saffron", "Turmeric"], answer: 2, difficulty: medium, tags: [spices] }
+  - { type: multiple-choice, text: "Which nut is the main ingredient of marzipan?", options: ["Almond", "Pistachio", "Walnut", "Cashew"], answer: 0, difficulty: easy, tags: [food] }
+  - { type: multiple-choice, text: "What is the main ingredient of hummus?", options: ["Lentils", "Chickpeas", "Black beans", "Peas"], answer: 1, difficulty: easy, tags: [food] }
+  - { type: multiple-choice, text: "Tequila is made from which plant?", options: ["Cactus", "Sugar cane", "Blue agave", "Maize"], answer: 2, difficulty: medium, tags: [drink] }
+  - { type: multiple-choice, text: "Parmigiano Reggiano cheese comes from which country?", options: ["Spain", "France", "Switzerland", "Italy"], answer: 3, difficulty: easy, tags: [cheese] }
+  - { type: multiple-choice, text: "Which fruit is fermented to make cider?", options: ["Pears", "Apples", "Plums", "Grapes"], answer: 1, difficulty: easy, tags: [drink] }
+  - { type: multiple-choice, text: "Which herb is the main ingredient of traditional pesto genovese?", options: ["Basil", "Parsley", "Mint", "Coriander"], answer: 0, difficulty: easy, tags: [food] }
+  - { type: multiple-choice, text: "Kimchi is a staple of the cuisine of which country?", options: ["Japan", "China", "Korea", "Thailand"], answer: 2, difficulty: easy, tags: [food] }
+  - { type: multiple-choice, text: "Which pasta name means \"little worms\" in Italian?", options: ["Farfalle", "Vermicelli", "Penne", "Orzo"], answer: 1, difficulty: hard, tags: [pasta] }
+  - { type: multiple-choice, text: "Oranges are famous for being a good source of which vitamin?", options: ["Vitamin A", "Vitamin B12", "Vitamin C", "Vitamin D"], answer: 2, difficulty: easy, tags: [food] }
+  - { type: multiple-choice, text: "Which type of rice is traditionally used to make risotto?", options: ["Basmati", "Jasmine", "Patna", "Arborio"], answer: 3, difficulty: medium, tags: [rice] }
+  - { type: multiple-choice, text: "Gin gets its main flavour from which berry?", options: ["Cranberry", "Juniper", "Elderberry", "Blueberry"], answer: 1, difficulty: medium, tags: [drink] }
+  - { type: multiple-choice, text: "Feta cheese is traditionally associated with which country?", options: ["Italy", "Spain", "France", "Greece"], answer: 3, difficulty: easy, tags: [cheese] }
+  - { type: multiple-choice, text: "Which fruit is traditionally a key ingredient of a Black Forest gateau?", options: ["Strawberries", "Raspberries", "Cherries", "Plums"], answer: 2, difficulty: easy, tags: [dessert] }
+  - { type: multiple-choice, text: "Pad Thai is a famous noodle dish from which country?", options: ["Vietnam", "Thailand", "Laos", "Malaysia"], answer: 1, difficulty: easy, tags: [food] }
+  - { type: multiple-choice, text: "The liqueur crème de cassis is made from which fruit?", options: ["Blackcurrant", "Blackberry", "Cherry", "Plum"], answer: 0, difficulty: medium, tags: [drink] }
+  - { type: multiple-choice, text: "Which type of pastry is used to make profiteroles and eclairs?", options: ["Puff", "Choux", "Filo", "Shortcrust"], answer: 1, difficulty: medium, tags: [baking] }
+  - { type: multiple-choice, text: "Which flower gives beer its characteristic bitter flavour?", options: ["Barley", "Yeast", "Hops", "Heather"], answer: 2, difficulty: medium, tags: [drink] }
+  - { type: multiple-choice, text: "Vanilla comes from the seed pods of which type of plant?", options: ["Orchid", "Palm", "Bean", "Pepper"], answer: 0, difficulty: hard, tags: [spices], info: "Vanilla is the only orchid that produces an edible crop on a large scale." }
+  - { type: multiple-choice, text: "Which sauce is made from egg yolks, melted butter and lemon juice?", options: ["Bechamel", "Hollandaise", "Mornay", "Veloute"], answer: 1, difficulty: medium, tags: [sauces] }
+  - { type: multiple-choice, text: "The Italian dessert tiramisu has a name that translates roughly as what?", options: ["Sweet dream", "Little cake", "Pick me up", "Cold cream"], answer: 2, difficulty: medium, tags: [dessert] }
+  - { type: multiple-choice, text: "What is the Scoville scale used to measure?", options: ["Sweetness of sugar", "Heat of chilli peppers", "Acidity of wine", "Alcohol in beer"], answer: 1, difficulty: medium, tags: [spices] }
+  - { type: multiple-choice, text: "Which cocktail is made with rum, lime, sugar, mint and soda water?", options: ["Daiquiri", "Caipirinha", "Cuba Libre", "Mojito"], answer: 3, difficulty: easy, tags: [cocktails] }
+  - { type: multiple-choice, text: "Which cocktail is made with vodka, tomato juice and spices?", options: ["Bloody Mary", "Screwdriver", "Cosmopolitan", "Moscow Mule"], answer: 0, difficulty: easy, tags: [cocktails] }
+  - { type: multiple-choice, text: "Chocolate is made from the beans of which plant?", options: ["Coffee", "Cacao", "Vanilla", "Carob"], answer: 1, difficulty: easy, tags: [chocolate] }
+  - { type: multiple-choice, text: "Which spirit is the main ingredient of a piña colada?", options: ["Rum", "Vodka", "Gin", "Tequila"], answer: 0, difficulty: easy, tags: [cocktails] }
+  - { type: multiple-choice, text: "In which city is Guinness brewed at St James's Gate?", options: ["Cork", "Belfast", "Dublin", "Galway"], answer: 2, difficulty: easy, tags: [drink] }
+  - { type: multiple-choice, text: "Which of these is NOT a citrus fruit?", options: ["Lime", "Pomelo", "Mango", "Kumquat"], answer: 2, difficulty: medium, tags: [fruit] }
+  - { type: multiple-choice, text: "Which flatbread is traditionally baked on the inside wall of a tandoor oven?", options: ["Tortilla", "Pitta", "Injera", "Naan"], answer: 3, difficulty: easy, tags: [bread] }
+  - { type: multiple-choice, text: "Which Japanese noodles are made from buckwheat?", options: ["Udon", "Ramen", "Soba", "Somen"], answer: 2, difficulty: medium, tags: [food] }
+  - { type: multiple-choice, text: "Cava is a sparkling wine from which country?", options: ["Italy", "Portugal", "Spain", "Germany"], answer: 2, difficulty: medium, tags: [wine] }
+  - { type: multiple-choice, text: "Gouda cheese originally comes from which country?", options: ["Belgium", "Netherlands", "Denmark", "Germany"], answer: 1, difficulty: easy, tags: [cheese] }
+  - { type: multiple-choice, text: "Which country is port wine from?", options: ["Spain", "Portugal", "Italy", "France"], answer: 1, difficulty: easy, tags: [wine] }
+  - { type: multiple-choice, text: "What is the dried seaweed used to wrap sushi rolls called?", options: ["Wakame", "Kombu", "Nori", "Dulse"], answer: 2, difficulty: medium, tags: [food] }
+  - { type: multiple-choice, text: "Which fruit has its seeds on the outside of its skin?", options: ["Raspberry", "Blueberry", "Strawberry", "Cherry"], answer: 2, difficulty: medium, tags: [fruit] }
+  - { type: multiple-choice, text: "Which vegetable gives borscht its deep red colour?", options: ["Tomato", "Red cabbage", "Beetroot", "Radish"], answer: 2, difficulty: easy, tags: [food] }
+  - { type: multiple-choice, text: "True caviar is the salted roe of which type of fish?", options: ["Salmon", "Sturgeon", "Cod", "Herring"], answer: 1, difficulty: medium, tags: [food] }
+  - { type: multiple-choice, text: "Ghee, used in Indian cooking, is a form of clarified what?", options: ["Oil", "Butter", "Cream cheese", "Yoghurt"], answer: 1, difficulty: medium, tags: [food] }
+  - { type: multiple-choice, text: "In ceviche, raw fish is \"cooked\" in what?", options: ["Vinegar", "Citrus juice", "Wine", "Brine"], answer: 1, difficulty: medium, tags: [food] }
+  - { type: multiple-choice, text: "Which nut is the main flavour of the spread Nutella?", options: ["Almond", "Peanut", "Hazelnut", "Walnut"], answer: 2, difficulty: easy, tags: [chocolate] }
+  - { type: multiple-choice, text: "Tofu is made from which crop?", options: ["Rice", "Soybeans", "Wheat", "Chickpeas"], answer: 1, difficulty: easy, tags: [food] }
+  - { type: multiple-choice, text: "Which Mexican sauce is well known for sometimes containing chocolate?", options: ["Salsa verde", "Mole", "Pico de gallo", "Guacamole"], answer: 1, difficulty: hard, tags: [sauces] }
+  - { type: multiple-choice, text: "Which animal's offal is traditionally used to make haggis?", options: ["Sheep", "Pig", "Cow", "Goat"], answer: 0, difficulty: medium, tags: [food] }
+  - { type: multiple-choice, text: "Which plant do tea leaves come from?", options: ["Camellia sinensis", "Coffea arabica", "Hibiscus", "Mint"], answer: 0, difficulty: hard, tags: [drink] }
+  - { type: multiple-choice, text: "Baklava is made with layers of which type of pastry?", options: ["Puff", "Filo", "Choux", "Hot water crust"], answer: 1, difficulty: medium, tags: [dessert] }
+  - { type: multiple-choice, text: "Which country does Camembert cheese come from?", options: ["Switzerland", "Italy", "Netherlands", "France"], answer: 3, difficulty: easy, tags: [cheese] }
+  - { type: multiple-choice, text: "Which main ingredient is sauerkraut made from?", options: ["Cabbage", "Turnip", "Beetroot", "Cucumber"], answer: 0, difficulty: easy, tags: [food] }
+  - { type: multiple-choice, text: "True or false? Pineapples grow on tall trees.", options: ["True", "False"], answer: 1, difficulty: easy, tags: [fruit], info: "Pineapples grow from the centre of a low, spiky plant close to the ground." }
+  - { type: multiple-choice, text: "True or false? Peanuts are technically legumes rather than true nuts.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [food] }
+  - { type: multiple-choice, text: "True or false? Prosecco is a sparkling wine from Italy.", options: ["True", "False"], answer: 0, difficulty: easy, tags: [wine] }
+  - { type: letter, text: "Which Italian cheese is the traditional creamy filling of tiramisu?", answer: Mascarpone, difficulty: medium, tags: [dessert] }
+  - { type: letter, text: "Which cold Spanish soup is made from raw blended tomatoes, peppers and cucumber?", answer: Gazpacho, difficulty: medium, tags: [food] }
+  - { type: letter, text: "Which French vegetable stew from Provence gave its name to a Pixar film?", answer: Ratatouille, difficulty: easy, tags: [food] }
+  - { type: letter, text: "Which Hungarian beef stew is flavoured with paprika?", answer: Goulash, difficulty: easy, tags: [food] }
+  - { type: letter, text: "Which Indian cheese is often cubed and served in curries such as saag?", answer: Paneer, difficulty: medium, tags: [cheese] }
+  - { type: letter, text: "Which Swiss dish of melted cheese is eaten by dipping bread on long forks?", answer: Fondue, difficulty: easy, tags: [cheese] }
+  - { type: letter, text: "Which aniseed-flavoured spirit is Greece's national drink?", answer: Ouzo, difficulty: medium, tags: [drink] }
+  - { type: letter, text: "Which Italian dessert, whose name means \"cooked cream\", is often served with fruit sauce?", answer: Panna Cotta, difficulty: medium, tags: [dessert] }
+  - { type: letter, text: "Which Japanese dish consists of thinly sliced raw fish served without rice?", answer: Sashimi, difficulty: easy, tags: [food] }
+  - { type: number, text: "How many pints are there in an imperial gallon?", answer: 8, difficulty: medium, tags: [measures] }
+  - { type: number, text: "How many items are there in a baker's dozen?", answer: 13, difficulty: easy, tags: [bread] }
+  - { type: number, text: "What is the maximum number of stars a restaurant can be awarded in the Michelin Guide?", answer: 3, difficulty: easy, tags: [restaurants] }
+  - { type: number, text: "How many millilitres are there in a standard bottle of wine?", answer: 750, difficulty: medium, tags: [wine] }
+  - { type: number, text: "In what year was Coca-Cola first created?", answer: 1886, difficulty: hard, tags: [drink] }
+  - { type: number, text: "In what year was the first Michelin Guide published?", answer: 1900, difficulty: hard, tags: [restaurants] }
+  - { type: nearest, text: "How many millilitres are there in an imperial (UK) pint?", answer: 568, difficulty: hard, tags: [measures] }
+  - { type: nearest, text: "How many grams are there in one pound (lb) of weight, to the nearest gram?", answer: 454, difficulty: hard, tags: [measures] }
+  - { type: nearest, text: "What oven temperature in degrees Celsius corresponds to gas mark 4?", answer: 180, difficulty: hard, tags: [baking] }
+  - { type: ordering, text: "Put these chillies in order of heat, mildest first.", items: ["Bell pepper", "Jalapeno", "Cayenne", "Habanero", "Carolina Reaper"], difficulty: medium, tags: [spices] }
+  - { type: ordering, text: "Put these drinks in order of typical alcohol content, lowest first.", items: ["Lager", "Red wine", "Port", "Vodka", "Absinthe"], difficulty: medium, tags: [drink] }
+  - { type: ordering, text: "Put these champagne bottle sizes in order of volume, smallest first.", items: ["Standard bottle", "Magnum", "Methuselah", "Salmanazar", "Balthazar"], difficulty: hard, tags: [wine] }
+  - { type: ordering, text: "Put these US measures in order of volume, smallest first.", items: ["Tablespoon", "Fluid ounce", "Cup", "Pint", "Quart"], difficulty: medium, tags: [measures] }
+  - { type: ordering, text: "Put these meals and breaks into the order they typically occur in a day, earliest first.", items: ["Breakfast", "Elevenses", "Lunch", "Afternoon tea", "Supper"], difficulty: easy, tags: [meals] }

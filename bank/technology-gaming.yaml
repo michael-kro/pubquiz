@@ -1,0 +1,62 @@
+category: Technology & Gaming
+region: universal
+questions:
+  - { type: multiple-choice, text: "Which company makes the iPhone?", options: ["Samsung", "Apple", "Nokia", "Sony"], answer: 1, difficulty: easy, tags: [tech] }
+  - { type: multiple-choice, text: "Which company created Mario and the Game Boy?", options: ["Sega", "Sony", "Nintendo", "Atari"], answer: 2, difficulty: easy, tags: [gaming] }
+  - { type: multiple-choice, text: "Which sandbox game, created by Markus \"Notch\" Persson, lets you build with blocks?", options: ["Roblox", "Terraria", "Lego Worlds", "Minecraft"], answer: 3, difficulty: easy, tags: [gaming] }
+  - { type: multiple-choice, text: "What does HTML stand for?", options: ["HyperText Markup Language", "High Tech Modern Language", "Hyperlink Text Mode Language", "Home Tool Markup Language"], answer: 0, difficulty: medium, tags: [web] }
+  - { type: multiple-choice, text: "What does CPU stand for?", options: ["Computer Personal Unit", "Central Processing Unit", "Central Program Utility", "Core Power Unit"], answer: 1, difficulty: easy, tags: [hardware] }
+  - { type: multiple-choice, text: "Who is credited with inventing the World Wide Web?", options: ["Bill Gates", "Steve Jobs", "Tim Berners-Lee", "Vint Cerf"], answer: 2, difficulty: medium, tags: [web] }
+  - { type: multiple-choice, text: "In which country was Tetris created?", options: ["Japan", "United States", "Germany", "Russia"], answer: 3, difficulty: medium, tags: [gaming], info: "Alexey Pajitnov created it in Moscow in the 1980s, when Russia was part of the USSR." }
+  - { type: multiple-choice, text: "Which company created the PlayStation?", options: ["Sony", "Sega", "Microsoft", "Nintendo"], answer: 0, difficulty: easy, tags: [gaming] }
+  - { type: multiple-choice, text: "What does USB stand for?", options: ["Universal System Board", "Universal Serial Bus", "Unified Signal Bridge", "United Serial Box"], answer: 1, difficulty: medium, tags: [hardware] }
+  - { type: multiple-choice, text: "Which programming language shares its name with a type of coffee?", options: ["Ruby", "Python", "Java", "Swift"], answer: 2, difficulty: medium, tags: [programming] }
+  - { type: multiple-choice, text: "Which company was founded by Larry Page and Sergey Brin?", options: ["Yahoo", "Amazon", "Netscape", "Google"], answer: 3, difficulty: easy, tags: [tech] }
+  - { type: multiple-choice, text: "What does RAM stand for?", options: ["Random Access Memory", "Rapid Action Module", "Read And Modify", "Remote Access Machine"], answer: 0, difficulty: medium, tags: [hardware] }
+  - { type: multiple-choice, text: "Which 1972 Atari game is considered the first commercially successful arcade video game?", options: ["Pac-Man", "Pong", "Breakout", "Asteroids"], answer: 1, difficulty: medium, tags: [gaming] }
+  - { type: multiple-choice, text: "What is the name of Mario's younger twin brother?", options: ["Wario", "Toad", "Luigi", "Yoshi"], answer: 2, difficulty: easy, tags: [gaming] }
+  - { type: multiple-choice, text: "What is the Pokedex number of Pikachu?", options: ["1", "4", "7", "25"], answer: 3, difficulty: hard, tags: [gaming] }
+  - { type: multiple-choice, text: "What type is the starter Pokemon Charmander?", options: ["Fire", "Water", "Grass", "Electric"], answer: 0, difficulty: easy, tags: [gaming] }
+  - { type: multiple-choice, text: "Which company created the Xbox?", options: ["Sony", "Microsoft", "Sega", "Intel"], answer: 1, difficulty: easy, tags: [gaming] }
+  - { type: multiple-choice, text: "Who is the princess that Mario usually rescues?", options: ["Zelda", "Daisy", "Peach", "Rosalina"], answer: 2, difficulty: easy, tags: [gaming] }
+  - { type: multiple-choice, text: "Which game franchise stars the soldier Master Chief?", options: ["Gears of War", "Call of Duty", "Doom", "Halo"], answer: 3, difficulty: easy, tags: [gaming] }
+  - { type: multiple-choice, text: "What does GPS stand for?", options: ["Global Positioning System", "General Planet Scanner", "Ground Pathfinding Signal", "Global Pointing Service"], answer: 0, difficulty: easy, tags: [tech] }
+  - { type: multiple-choice, text: "What does PDF stand for?", options: ["Printed Data File", "Portable Document Format", "Personal Digital Form", "Page Design Format"], answer: 1, difficulty: medium, tags: [software] }
+  - { type: multiple-choice, text: "Which handheld console, launched in 1989, became famous for its version of Tetris?", options: ["Atari Lynx", "Sega Game Gear", "Game Boy", "Neo Geo Pocket"], answer: 2, difficulty: medium, tags: [gaming] }
+  - { type: multiple-choice, text: "Which animal is the mascot of the Linux operating system?", options: ["Fox", "Wolf", "Panda", "Penguin"], answer: 3, difficulty: medium, tags: [software] }
+  - { type: multiple-choice, text: "Which social network was founded in a Harvard dorm room in 2004?", options: ["Facebook", "MySpace", "LinkedIn", "Reddit"], answer: 0, difficulty: easy, tags: [web] }
+  - { type: multiple-choice, text: "Which video game franchise stars the adventurer Lara Croft?", options: ["Uncharted", "Tomb Raider", "Prince of Persia", "Assassin's Creed"], answer: 1, difficulty: easy, tags: [gaming] }
+  - { type: multiple-choice, text: "Space Invaders was created by a company from which country?", options: ["United States", "United Kingdom", "Japan", "South Korea"], answer: 2, difficulty: medium, tags: [gaming] }
+  - { type: multiple-choice, text: "Which language is mainly used to style the appearance of web pages?", options: ["SQL", "XML", "PHP", "CSS"], answer: 3, difficulty: medium, tags: [web] }
+  - { type: multiple-choice, text: "What does LAN stand for in networking?", options: ["Local Area Network", "Large Access Node", "Linked Address Network", "Long Array Number"], answer: 0, difficulty: medium, tags: [hardware] }
+  - { type: multiple-choice, text: "In which 1981 arcade game did Mario first appear?", options: ["Mario Bros.", "Donkey Kong", "Super Mario Bros.", "Pac-Man"], answer: 1, difficulty: hard, tags: [gaming] }
+  - { type: multiple-choice, text: "Which company created the Windows operating system?", options: ["Apple", "IBM", "Microsoft", "Google"], answer: 2, difficulty: easy, tags: [software] }
+  - { type: multiple-choice, text: "Which company developed the Walkman portable cassette player?", options: ["Panasonic", "Philips", "Toshiba", "Sony"], answer: 3, difficulty: medium, tags: [tech] }
+  - { type: multiple-choice, text: "What does the \"www\" at the start of many web addresses stand for?", options: ["World Wide Web", "World Web Window", "Wide Web Works", "Web With Wires"], answer: 0, difficulty: easy, tags: [web] }
+  - { type: multiple-choice, text: "What does a \"pixel\" represent on a screen?", options: ["A type of cable", "A single dot of an image", "A computer virus", "A file format"], answer: 1, difficulty: easy, tags: [hardware] }
+  - { type: multiple-choice, text: "In the Legend of Zelda series, what is the main hero's name?", options: ["Zelda", "Ganon", "Epona", "Link"], answer: 3, difficulty: easy, tags: [gaming] }
+  - { type: multiple-choice, text: "Which type of computer memory keeps its data when the power is switched off?", options: ["Flash storage such as an SSD", "RAM", "Cache", "Registers"], answer: 0, difficulty: medium, tags: [hardware] }
+  - { type: multiple-choice, text: "True or false? The first computer \"bug\" was an actual moth found in a computer.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [history], info: "A moth was taped into the logbook of the Harvard Mark II in 1947." }
+  - { type: multiple-choice, text: "True or false? Nintendo began as a company that made playing cards.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [gaming], info: "Nintendo was founded in 1889 to make hanafuda playing cards." }
+  - { type: multiple-choice, text: "True or false? Mario was originally called \"Jumpman\" in early Nintendo games.", options: ["True", "False"], answer: 0, difficulty: hard, tags: [gaming] }
+  - { type: letter, text: "Which co-founder of Microsoft, with Paul Allen, started the company in 1975?", answer: Bill Gates, difficulty: easy, tags: [people] }
+  - { type: letter, text: "Which co-founder of Apple introduced the original Macintosh in 1984?", answer: Steve Jobs, difficulty: easy, tags: [people] }
+  - { type: letter, text: "Which British mathematician helped break the Enigma code and is a father of computer science?", answer: Alan Turing, difficulty: medium, tags: [people] }
+  - { type: letter, text: "Which Japanese designer created Mario and The Legend of Zelda?", answer: Shigeru Miyamoto, difficulty: hard, tags: [people] }
+  - { type: letter, text: "Who is regarded as the first computer programmer, working with Charles Babbage?", answer: Ada Lovelace, difficulty: medium, tags: [people] }
+  - { type: letter, text: "Which yellow arcade character chomps dots in a maze while avoiding ghosts?", answer: Pac-Man, difficulty: easy, tags: [gaming] }
+  - { type: letter, text: "Which Valve puzzle game has you creating linked doorways with a special gun?", answer: Portal, difficulty: medium, tags: [gaming] }
+  - { type: letter, text: "Which Nintendo console, launched in 1996, came with Super Mario 64?", answer: Nintendo 64, difficulty: medium, tags: [gaming] }
+  - { type: letter, text: "Which Sega mascot is a fast-running blue hedgehog?", answer: Sonic the Hedgehog, difficulty: easy, tags: [gaming] }
+  - { type: number, text: "How many bits are there in a byte?", answer: 8, difficulty: easy, tags: [computing] }
+  - { type: number, text: "What is the binary number 1010 in ordinary decimal?", answer: 10, difficulty: medium, tags: [computing] }
+  - { type: number, text: "In what year was the first iPhone released?", answer: 2007, difficulty: medium, tags: [tech] }
+  - { type: number, text: "How many different shapes (tetrominoes) are there in classic Tetris?", answer: 7, difficulty: hard, tags: [gaming] }
+  - { type: number, text: "How many Pokemon were there in the original Pokemon Red and Blue games?", answer: 151, difficulty: medium, tags: [gaming] }
+  - { type: number, text: "How many levels are there in the original Super Mario Bros. (eight worlds of four levels each)?", answer: 32, difficulty: medium, tags: [gaming] }
+  - { type: nearest, text: "Roughly how fast does light travel in a vacuum, in kilometres per second?", answer: 299792, difficulty: hard, tags: [science] }
+  - { type: ordering, text: "Put these game consoles in order of release, earliest first.", items: ["Atari 2600", "Nintendo Entertainment System", "Game Boy", "PlayStation", "Xbox"], difficulty: medium, tags: [gaming] }
+  - { type: ordering, text: "Put these units of digital storage in order, smallest first.", items: ["Byte", "Kilobyte", "Megabyte", "Gigabyte", "Terabyte"], difficulty: easy, tags: [computing] }
+  - { type: ordering, text: "Put these companies in order of when they were founded, earliest first.", items: ["Microsoft", "Apple", "Amazon", "Google", "Facebook"], difficulty: medium, tags: [tech] }
+  - { type: ordering, text: "Put these Windows versions in order of release, earliest first.", items: ["Windows 95", "Windows 98", "Windows XP", "Windows Vista", "Windows 7"], difficulty: medium, tags: [software] }
+  - { type: ordering, text: "Put these arcade and puzzle games in order of release, earliest first.", items: ["Pong", "Space Invaders", "Pac-Man", "Donkey Kong", "Tetris"], difficulty: hard, tags: [gaming] }

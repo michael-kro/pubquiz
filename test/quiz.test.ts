@@ -60,7 +60,7 @@ test('reports an answer outside the options with its location', () => {
 });
 
 test('rejects too many options, unknown fields and bad YAML', () => {
-  assert.match(issuesOf(VALID.replace('[a, b, c]', '[a, b, c, d, e]'))[0]!, /^Round 1, question 1, options:/);
+  assert.match(issuesOf(VALID.replace('[a, b, c]', '[a, b, c, d, e, f, g]'))[0]!, /^Round 1, question 1, options:/);
   assert.match(issuesOf(VALID.replace('seconds: 10', 'secs: 10'))[0]!, /^Round 2, question 1: .*secs/);
   assert.match(issuesOf('title: [unclosed')[0]!, /^Not valid YAML/);
   assert.match(issuesOf('title: Empty\nrounds: []')[0]!, /^rounds:/);

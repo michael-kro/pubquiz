@@ -27,7 +27,11 @@ const common = {
   image: text.optional(),
   /** Faster correct answers earn more. Defaults to on, except for music. */
   speedBonus: z.boolean().optional(),
+  /** Shown with the answer once it's revealed: a fun fact, or where it comes from. */
+  info: z.string().trim().min(1).max(300).optional(),
 };
+
+const number = z.number({ error: 'must be a number' }).finite('must be a number').refine((n) => Math.abs(n) <= 1e12, 'is too big');
 
 const accept = z
   .array(text, { error: 'needs a list of accepted answers' })
@@ -41,7 +45,7 @@ const QuestionSchema = z.discriminatedUnion('type', [
     .object({
       type: z.literal('multiple-choice'),
       ...common,
-      options: z.array(text, { error: 'needs a list of options' }).min(2, 'needs at least 2 options').max(4, 'can have at most 4 options'),
+      options: z.array(text, { error: 'needs a list of options' }).min(2, 'needs at least 2 options').max(6, 'can have at most 6 options'),
       answer: z.number({ error: 'must say which option is right (0 for the first)' }).int().min(0, 'must be 0 or more'),
     })
     .strict()
@@ -51,6 +55,10 @@ const QuestionSchema = z.discriminatedUnion('type', [
     }),
   z.object({ type: z.literal('picture'), ...common, image: text, accept }).strict(),
   z.object({ type: z.literal('music'), ...common, accept }).strict(),
+  // Teams type a number. Right if it matches, give or take `tolerance`.
+  z.object({ type: z.literal('number'), ...common, answer: number, tolerance: z.number().min(0).max(1e12).default(0) }).strict(),
+  // Teams type a number; whoever is closest wins the points.
+  z.object({ type: z.literal('nearest'), ...common, answer: number }).strict(),
   // classic style: teams tap the first letter of the answer.
   z
     .object({

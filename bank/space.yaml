@@ -1,0 +1,63 @@
+category: Space
+region: universal
+questions:
+  # multiple-choice
+  - { type: multiple-choice, text: "Which planet has a giant storm called the Great Red Spot?", options: [Saturn, Jupiter, Neptune, Mars], answer: 1, difficulty: easy, tags: [planets] }
+  - { type: multiple-choice, text: "Which planet spins on its side, tilted at about 98 degrees?", options: [Neptune, Venus, Saturn, Uranus], answer: 3, difficulty: medium, tags: [planets] }
+  - { type: multiple-choice, text: "Which is the farthest planet from the Sun?", options: [Uranus, Neptune, Saturn, Pluto], answer: 1, difficulty: easy, tags: [planets] }
+  - { type: multiple-choice, text: "Which dwarf planet was once counted as the ninth planet before being reclassified in 2006?", options: [Pluto, Ceres, Eris, Haumea], answer: 0, difficulty: easy, tags: [planets] }
+  - { type: multiple-choice, text: "Which star is closest to the Earth?", options: [Sirius, Proxima Centauri, The Sun, Polaris], answer: 2, difficulty: easy, tags: [stars] }
+  - { type: multiple-choice, text: "Which star appears brightest in the night sky?", options: [Polaris, Sirius, Betelgeuse, Vega], answer: 1, difficulty: medium, tags: [stars] }
+  - { type: multiple-choice, text: "Which star is known as the North Star?", options: [Sirius, Vega, Polaris, Rigel], answer: 2, difficulty: medium, tags: [stars] }
+  - { type: multiple-choice, text: "Which is the nearest large spiral galaxy to our own Milky Way?", options: [Andromeda, Triangulum, Whirlpool, Sombrero], answer: 0, difficulty: hard, tags: [galaxies] }
+  - { type: multiple-choice, text: "What force keeps the planets in orbit around the Sun?", options: [Magnetism, Gravity, Friction, Static electricity], answer: 1, difficulty: easy, tags: [physics] }
+  - { type: multiple-choice, text: "Who was the first woman in space, in 1963?", options: [Sally Ride, Mae Jemison, Valentina Tereshkova, Eileen Collins], answer: 2, difficulty: medium, tags: [history] }
+  - { type: multiple-choice, text: "Who was the first Briton in space, in 1991?", options: [Tim Peake, Helen Sharman, Michael Foale, Piers Sellers], answer: 1, difficulty: hard, tags: [history] }
+  - { type: multiple-choice, text: "Which astronaut stayed in lunar orbit in the command module during the Apollo 11 landing?", options: [Buzz Aldrin, Pete Conrad, Michael Collins, Alan Shepard], answer: 2, difficulty: hard, tags: [history] }
+  - { type: multiple-choice, text: "Who was the second person to walk on the Moon?", options: [Buzz Aldrin, Michael Collins, Pete Conrad, Gene Cernan], answer: 0, difficulty: medium, tags: [history] }
+  - { type: multiple-choice, text: "Which Apollo mission suffered an oxygen tank explosion on the way to the Moon in 1970?", options: [Apollo 8, Apollo 11, Apollo 13, Apollo 17], answer: 2, difficulty: easy, tags: [history] }
+  - { type: multiple-choice, text: "Which astronaut famously hit golf balls on the Moon during Apollo 14?", options: [Neil Armstrong, Alan Shepard, Buzz Aldrin, Jim Lovell], answer: 1, difficulty: medium, tags: [history] }
+  - { type: multiple-choice, text: "Which Russian space station was deliberately brought down into the Pacific Ocean in 2001?", options: [Salyut, Skylab, Mir, Tiangong], answer: 2, difficulty: hard, tags: [spacecraft] }
+  - { type: multiple-choice, text: "Voyager 1 became the first human-made object to reach what?", options: [The surface of Mars, Interstellar space, The core of Jupiter, The Sun], answer: 1, difficulty: medium, tags: [spacecraft] }
+  - { type: multiple-choice, text: "Which NASA rover landed on Mars in 2012?", options: [Spirit, Sojourner, Curiosity, Opportunity], answer: 2, difficulty: medium, tags: [spacecraft] }
+  - { type: multiple-choice, text: "What is a 'shooting star' actually?", options: [A meteor, A comet, An asteroid, A satellite], answer: 0, difficulty: easy, tags: [objects] }
+  - { type: multiple-choice, text: "What is a space rock called once it has landed on the surface of the Earth?", options: [Meteoroid, Meteor, Meteorite, Comet], answer: 2, difficulty: medium, tags: [objects] }
+  - { type: multiple-choice, text: "Between which two planets is the main asteroid belt found?", options: [Earth and Mars, Mars and Jupiter, Jupiter and Saturn, Venus and Earth], answer: 1, difficulty: medium, tags: [objects] }
+  - { type: multiple-choice, text: "What does a light-year measure?", options: [Time, Distance, Speed, Brightness], answer: 1, difficulty: easy, tags: [physics] }
+  - { type: multiple-choice, text: "Which planet has the shortest year, taking about 88 Earth days to orbit the Sun?", options: [Venus, Mercury, Earth, Mars], answer: 1, difficulty: medium, tags: [planets] }
+  - { type: multiple-choice, text: "Which moon of Jupiter is the most volcanically active body in the solar system?", options: [Europa, Ganymede, Callisto, Io], answer: 3, difficulty: hard, tags: [moons] }
+  - { type: multiple-choice, text: "Which is the largest moon in the solar system?", options: [Titan, Ganymede, Callisto, The Moon], answer: 1, difficulty: hard, tags: [moons] }
+  - { type: multiple-choice, text: "Olympus Mons, the tallest known volcano in the solar system, is on which planet?", options: [Venus, Mars, Mercury, Earth], answer: 1, difficulty: medium, tags: [planets] }
+  - { type: multiple-choice, text: "What is the Sun mostly made of?", options: [Oxygen, Iron, Carbon, Hydrogen], answer: 3, difficulty: easy, tags: [stars] }
+  - { type: multiple-choice, text: "What type of star is the Sun usually classed as?", options: [Red giant, White dwarf, Yellow dwarf, Neutron star], answer: 2, difficulty: medium, tags: [stars] }
+  - { type: multiple-choice, text: "Which scientist first used a telescope to see the four large moons of Jupiter, in 1610?", options: [Galileo Galilei, Nicolaus Copernicus, Johannes Kepler, Isaac Newton], answer: 0, difficulty: easy, tags: [history] }
+  - { type: multiple-choice, text: "Who discovered the planet Uranus in 1781?", options: [Edmond Halley, William Herschel, Galileo Galilei, Carl Sagan], answer: 1, difficulty: hard, tags: [history] }
+  - { type: multiple-choice, text: "Which country launched Sputnik 1, the first artificial satellite?", options: [USA, The Soviet Union, China, The UK], answer: 1, difficulty: easy, tags: [history] }
+  # true/false
+  - { type: multiple-choice, text: "True or false? Sound can travel through the vacuum of space.", options: ["True", "False"], answer: 1, difficulty: easy, tags: [physics] }
+  - { type: multiple-choice, text: "True or false? Apollo 11 was the first mission to orbit the Moon.", options: ["True", "False"], answer: 1, difficulty: medium, tags: [history], info: "Apollo 8 orbited the Moon in 1968." }
+  # letter
+  - { type: letter, text: "Who became the first human in space in 1961?", answer: Yuri Gagarin, difficulty: easy, tags: [history] }
+  - { type: letter, text: "Who was the first person to walk on the Moon?", answer: Neil Armstrong, difficulty: easy, tags: [history] }
+  - { type: letter, text: "What was the name of the dog sent into orbit by the Soviet Union in 1957?", answer: Laika, difficulty: medium, tags: [history] }
+  - { type: letter, text: "Which famous space telescope, launched in 1990, is named after an American astronomer?", answer: Hubble, difficulty: medium, tags: [spacecraft] }
+  - { type: letter, text: "Which comet, named after an English astronomer, returns to our skies about every 76 years?", answer: Halley's Comet, difficulty: easy, tags: [objects] }
+  - { type: letter, text: "What is the largest moon of Saturn?", answer: Titan, difficulty: medium, tags: [moons] }
+  - { type: letter, text: "What is the nearest star to our Sun, about 4.2 light-years away?", answer: Proxima Centauri, difficulty: medium, tags: [stars] }
+  - { type: letter, text: "What was the name of the NASA programme that landed twelve astronauts on the Moon?", answer: Apollo, difficulty: easy, tags: [history] }
+  # number
+  - { type: number, text: "In what year did Apollo 11 land the first humans on the Moon?", answer: 1969, difficulty: easy, tags: [history] }
+  - { type: number, text: "How many moons does Mars have?", answer: 2, difficulty: medium, tags: [moons] }
+  - { type: number, text: "In what year was Sputnik 1 launched?", answer: 1957, difficulty: medium, tags: [history] }
+  - { type: number, text: "How many people in total have walked on the Moon?", answer: 12, difficulty: hard, tags: [history] }
+  - { type: number, text: "How many Apollo missions successfully landed astronauts on the Moon?", answer: 6, difficulty: hard, tags: [history] }
+  # nearest
+  - { type: nearest, text: "What is the average diameter of the Earth, in kilometres?", answer: 12742, difficulty: hard, tags: [distances] }
+  - { type: nearest, text: "What is the average distance from the Earth to the Sun, in millions of kilometres?", answer: 150, difficulty: medium, tags: [distances], info: "About 149.6 million km, a distance known as one astronomical unit." }
+  # ordering
+  - { type: ordering, text: "Put these planets in order from the Sun, closest first.", items: [Earth, Mars, Saturn, Uranus, Neptune], difficulty: easy, tags: [planets] }
+  - { type: ordering, text: "Put these planets in order of diameter, largest first.", items: [Jupiter, Saturn, Uranus, Neptune, Earth], difficulty: medium, tags: [planets] }
+  - { type: ordering, text: "Put these space events in order, earliest first.", items: [Launch of Sputnik 1, Yuri Gagarin's flight, Apollo 11 Moon landing, Launch of Voyager 1, Launch of the Hubble telescope], difficulty: medium, tags: [history], info: "They happened in 1957, 1961, 1969, 1977 and 1990." }
+  - { type: ordering, text: "Put these moons of Jupiter in order of distance from the planet, closest first.", items: [Amalthea, Io, Europa, Ganymede, Callisto], difficulty: hard, tags: [moons] }
+  - { type: ordering, text: "Put these Apollo missions in order of when they landed on the Moon, earliest first.", items: [Apollo 11, Apollo 12, Apollo 14, Apollo 15, Apollo 17], difficulty: medium, tags: [history] }
+  - { type: ordering, text: "Put these objects in order of distance from the Earth, nearest first.", items: [The Moon, The Sun, Neptune, Proxima Centauri, The Andromeda Galaxy], difficulty: medium, tags: [distances] }

@@ -599,6 +599,7 @@ function stage(s) {
           : null,
         questionBody(s, q, reveal),
         reveal ? fastestBlock(s) : null,
+        reveal && q.info && q.type !== 'number' && q.type !== 'nearest' ? h('p', { class: 'muted info center' }, q.info) : null,
         s.phase === 'open' ? timerBar(q) : null,
         answerProgress(s),
         TV ? null : questionControls(s),
@@ -770,6 +771,26 @@ function questionBody(s, q, reveal) {
         ),
         reveal ? null : h('p', { class: 'muted center' }, 'Teams put these in order.'),
         s.summary ? h('p', { class: 'center big' }, s.summary) : null,
+      );
+
+    case 'number':
+    case 'nearest':
+      return h(
+        'div',
+        { class: 'center' },
+        h('p', { class: 'muted' }, q.type === 'nearest' ? 'Teams type a number. The closest guess wins.' : 'Teams type a number.'),
+        reveal ? h('p', { class: 'center big answer-reveal' }, 'Answer: ', h('strong', {}, q.answerText)) : null,
+        q.info && reveal ? h('p', { class: 'muted info' }, q.info) : null,
+        s.summary ? h('p', { class: 'letter-counts' }, h('span', {}, s.summary)) : null,
+        s.guesses?.length
+          ? h(
+              'ul',
+              { class: 'guesses' },
+              s.guesses.map((g) =>
+                h('li', { class: g.winner ? 'win' : '' }, h('strong', {}, g.value), h('span', { class: 'muted' }, g.off), h('span', { class: 'guess-teams' }, g.teams.join(', '))),
+              ),
+            )
+          : null,
       );
 
     case 'letter':

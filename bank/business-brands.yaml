@@ -1,0 +1,69 @@
+category: Business & Brands
+region: uk
+questions:
+  # multiple-choice
+  - { type: multiple-choice, text: "The Nike name and swoosh logo are linked to the Greek goddess of what?", options: [Wisdom, Victory, Love, Wealth], answer: 1, difficulty: medium, tags: [logos] }
+  - { type: multiple-choice, text: "The curved arrow in the Amazon logo points from the letter A to which letter?", options: [M, X, Z, N], answer: 2, difficulty: medium, tags: [logos] }
+  - { type: multiple-choice, text: "Starbucks takes its name from a character in which novel?", options: [Treasure Island, Moby-Dick, Dracula, Ulysses], answer: 1, difficulty: hard, tags: [origins] }
+  - { type: multiple-choice, text: "Which supermarket uses the slogan 'Every little helps'?", options: [Sainsbury's, Asda, Tesco, Morrisons], answer: 2, difficulty: easy, tags: [slogans] }
+  - { type: multiple-choice, text: "The name Google is a play on 'googol', the number 1 followed by how many zeros?", options: ["10", "50", "100", "1000"], answer: 2, difficulty: medium, tags: [origins] }
+  - { type: multiple-choice, text: "Which company launched the Walkman personal cassette player in 1979?", options: [Panasonic, Sony, Toshiba, Philips], answer: 1, difficulty: medium, tags: [products] }
+  - { type: multiple-choice, text: "Coca-Cola was originally invented by a pharmacist named John Pemberton in which US city?", options: [New York, Atlanta, Chicago, Dallas], answer: 1, difficulty: hard, tags: [origins] }
+  - { type: multiple-choice, text: "Which animal appears on the Lamborghini logo?", options: [Horse, Lion, Eagle, Bull], answer: 3, difficulty: easy, tags: [logos] }
+  - { type: multiple-choice, text: "The Porsche crest includes the coat of arms of which German city?", options: [Berlin, Stuttgart, Munich, Hamburg], answer: 1, difficulty: hard, tags: [logos] }
+  - { type: multiple-choice, text: "Which animal appears on the Peugeot logo?", options: [Lion, Horse, Bull, Jaguar], answer: 0, difficulty: easy, tags: [logos] }
+  - { type: multiple-choice, text: "In which country was the furniture company IKEA founded?", options: [Denmark, Norway, Sweden, Finland], answer: 2, difficulty: easy, tags: [origins] }
+  - { type: multiple-choice, text: "Which country is the beer brand Heineken from?", options: [Belgium, Germany, Netherlands, Denmark], answer: 2, difficulty: easy, tags: [origins] }
+  - { type: multiple-choice, text: "In which country did the electronics company Samsung begin?", options: [Japan, China, Taiwan, South Korea], answer: 3, difficulty: easy, tags: [origins] }
+  - { type: multiple-choice, text: "Which country is Nokia from?", options: [Sweden, Finland, Norway, Denmark], answer: 1, difficulty: easy, tags: [origins] }
+  - { type: multiple-choice, text: "Which UK department store famously promises to be 'Never knowingly undersold'?", options: [Debenhams, Argos, John Lewis, Next], answer: 2, difficulty: medium, tags: [slogans] }
+  - { type: multiple-choice, text: "Which sweet brand uses the slogan 'Taste the rainbow'?", options: [Skittles, Haribo, Starburst, Maynards], answer: 0, difficulty: medium, tags: [slogans] }
+  - { type: multiple-choice, text: "In which English city did John Cadbury open his first shop in 1824?", options: [Manchester, Birmingham, Bristol, Leeds], answer: 1, difficulty: hard, tags: [origins] }
+  - { type: multiple-choice, text: "Which company invented the Post-it note?", options: [Xerox, 3M, Kodak, Hewlett-Packard], answer: 1, difficulty: medium, tags: [products] }
+  - { type: multiple-choice, text: "In the UK, which brand name became a verb meaning to vacuum?", options: [Dyson, Vax, Hoover, Henry], answer: 2, difficulty: easy, tags: [brands] }
+  - { type: multiple-choice, text: "Which company makes the Barbie doll?", options: [Hasbro, Mattel, Fisher-Price, Playmobil], answer: 1, difficulty: easy, tags: [products] }
+  - { type: multiple-choice, text: "Which animal is on the Lacoste logo?", options: [Alligator, Lizard, Crocodile, Snake], answer: 2, difficulty: easy, tags: [logos] }
+  - { type: multiple-choice, text: "Which fashion house is known for its interlocking double-C logo?", options: [Gucci, Dior, Versace, Chanel], answer: 3, difficulty: medium, tags: [logos] }
+  - { type: multiple-choice, text: "Which colour is most strongly linked to Cadbury Dairy Milk packaging?", options: [Blue, Red, Purple, Green], answer: 2, difficulty: easy, tags: [brands] }
+  - { type: multiple-choice, text: "What did Netflix first do as a business?", options: [Stream music, Rent DVDs by post, Sell books online, Sell video games], answer: 1, difficulty: medium, tags: [origins] }
+  - { type: multiple-choice, text: "What did Amazon first sell online?", options: [Books, Music, Electronics, Toys], answer: 0, difficulty: easy, tags: [origins] }
+  - { type: multiple-choice, text: "What do the letters IBM stand for?", options: [Internet Business Machines, International Business Machines, International Binary Media, Integrated Business Marketing], answer: 1, difficulty: easy, tags: [names] }
+  - { type: multiple-choice, text: "BMW stands for Bayerische Motoren Werke. What does that mean in English?", options: [Berlin Motor Works, Bavarian Motor Works, British Motor Workshop, Big Motor Wheels], answer: 1, difficulty: medium, tags: [names] }
+  - { type: multiple-choice, text: "The name Lego comes from the Danish words 'leg godt'. What do they mean?", options: [Build high, Little blocks, Play well, Snap together], answer: 2, difficulty: hard, tags: [names] }
+  - { type: multiple-choice, text: "Which colour is the famous box from the jeweller Tiffany & Co.?", options: [Red, Robin's-egg blue, Yellow, Silver], answer: 1, difficulty: medium, tags: [brands] }
+  - { type: multiple-choice, text: "Adidas takes its name from its founder, Adolf Dassler, whose nickname was what?", options: [Rudi, Dolf, Dassy, Adi], answer: 3, difficulty: hard, tags: [names] }
+  - { type: multiple-choice, text: "Which social network was started in a Harvard dorm room in 2004?", options: [Twitter, Facebook, Snapchat, LinkedIn], answer: 1, difficulty: easy, tags: [origins] }
+  - { type: multiple-choice, text: "Which Swedish company launched a music streaming service in 2008?", options: [Deezer, Spotify, Tidal, Pandora], answer: 1, difficulty: medium, tags: [origins] }
+  - { type: multiple-choice, text: "Which Italian company makes Nutella?", options: [Barilla, Ferrero, Lavazza, Mars], answer: 1, difficulty: medium, tags: [products] }
+  # true/false
+  - { type: multiple-choice, text: "True or false? Pepsi was originally called Brad's Drink.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [origins] }
+  - { type: multiple-choice, text: "True or false? Volvo is a Danish company.", options: ["True", "False"], answer: 1, difficulty: medium, tags: [origins], info: "Volvo was founded in Gothenburg, Sweden." }
+  - { type: multiple-choice, text: "True or false? Google was originally called BackRub.", options: ["True", "False"], answer: 0, difficulty: hard, tags: [origins] }
+  # letter
+  - { type: letter, text: "Which sportswear company has a 'swoosh' as its logo?", answer: Nike, difficulty: easy, tags: [logos] }
+  - { type: letter, text: "Who co-founded Microsoft with Paul Allen in 1975?", answer: Bill Gates, difficulty: easy, tags: [founders] }
+  - { type: letter, text: "Which Italian sports car maker has a prancing horse as its logo?", answer: Ferrari, difficulty: easy, tags: [logos] }
+  - { type: letter, text: "Which Swedish retailer is famous for flat-pack furniture and meatballs in its stores?", answer: IKEA, difficulty: easy, tags: [brands] }
+  - { type: letter, text: "Which Danish company makes colourful interlocking plastic building bricks?", answer: Lego, difficulty: easy, tags: [brands] }
+  - { type: letter, text: "Which Japanese car company makes the Corolla?", answer: Toyota, difficulty: easy, tags: [brands] }
+  - { type: letter, text: "Which fast food chain is known for its golden arches?", answer: McDonald's, difficulty: easy, tags: [logos] }
+  - { type: letter, text: "Which British entrepreneur founded the Virgin Group?", answer: Richard Branson, difficulty: easy, tags: [founders] }
+  - { type: letter, text: "Which car company introduced the Model T in 1908?", answer: Ford, difficulty: medium, tags: [brands] }
+  # number
+  - { type: number, text: "In what year was Apple founded?", answer: 1976, difficulty: medium, tags: [founding-years] }
+  - { type: number, text: "In what year was Microsoft founded?", answer: 1975, difficulty: medium, tags: [founding-years] }
+  - { type: number, text: "In what year was Google founded?", answer: 1998, difficulty: medium, tags: [founding-years] }
+  - { type: number, text: "How many interlocking rings appear in the Audi logo?", answer: 4, difficulty: easy, tags: [logos] }
+  - { type: number, text: "In what year did Ford introduce the Model T car?", answer: 1908, difficulty: hard, tags: [founding-years] }
+  - { type: number, text: "In what year was Coca-Cola first sold?", answer: 1886, difficulty: hard, tags: [founding-years] }
+  # nearest
+  - { type: nearest, text: "In what year was the Japanese company Nintendo founded, originally to make playing cards?", answer: 1889, difficulty: hard, tags: [founding-years] }
+  - { type: nearest, text: "In what year was IKEA founded?", answer: 1943, difficulty: hard, tags: [founding-years] }
+  - { type: nearest, text: "In what year was the Lego company founded?", answer: 1932, difficulty: hard, tags: [founding-years] }
+  # ordering
+  - { type: ordering, text: "Put these tech companies in order of when they were founded, earliest first.", items: [Microsoft, Apple, Amazon, Google, Facebook], difficulty: medium, tags: [founding-years] }
+  - { type: ordering, text: "Put these companies in order of when they were founded, earliest first.", items: [Coca-Cola, Ford, Disney, Toyota, Sony], difficulty: hard, tags: [founding-years] }
+  - { type: ordering, text: "Put these Apple products in order of when they were first released, earliest first.", items: [iPod, iPhone, iPad, Apple Watch, AirPods], difficulty: medium, tags: [products] }
+  - { type: ordering, text: "Put these Starbucks cup sizes in order, smallest first.", items: [Short, Tall, Grande, Venti, Trenta], difficulty: medium, tags: [products] }
+  - { type: ordering, text: "Put these social media services in order of when they launched, earliest first.", items: [Facebook, YouTube, Twitter, Instagram, Snapchat], difficulty: medium, tags: [founding-years] }
+  - { type: ordering, text: "Put these games consoles in order of first release anywhere in the world, earliest first.", items: [Atari 2600, Nintendo Famicom, Sega Mega Drive, Sony PlayStation, Microsoft Xbox], difficulty: hard, tags: [products] }

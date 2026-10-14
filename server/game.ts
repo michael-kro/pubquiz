@@ -19,6 +19,8 @@ export const CLIENT_TIME_TOLERANCE_MS = 150;
 export const MAX_EXTEND_SECONDS = 120;
 /** Share of the fastest-team bonus for 1st, 2nd and 3rd quickest. */
 const FAST_SHARES = [1, 0.6, 0.3];
+/** 1234.5 → "1234.5", without floating-point dust like 0.30000000000000004. */
+const formatNumber = (n: number) => String(Number(n.toPrecision(12)));
 const FAST_NAMES = ['Fastest', 'Second fastest', 'Third fastest'];
 
 export interface Answer {
@@ -97,6 +99,10 @@ function answerText(q: Question): string {
       return q.items.join(' → ');
     case 'letter':
       return `${q.letter}: ${q.answer}`;
+    case 'number':
+      return q.tolerance > 0 ? `${q.answer} (give or take ${q.tolerance})` : String(q.answer);
+    case 'nearest':
+      return String(q.answer);
   }
 }
 
@@ -270,6 +276,10 @@ export class Game {
         if (typeof value !== 'string' || !/^[A-Za-z]$/.test(value)) return fail('Tap a letter.');
         return { ok: true, value: value.toUpperCase() };
       }
+      case 'number':
+      case 'nearest':
+        if (typeof value !== 'number' || !Number.isFinite(value) || Math.abs(value) > 1e12) return fail('Type a number.');
+        return { ok: true, value };
       case 'ordering': {
         const display = this.displayOrders.get(this.questionIndex)!;
         const valid =
@@ -504,6 +514,7 @@ export class Game {
   /** What a team earns for being among the quickest correct answers to a question, if anything. */
   private fastBonusFor(questionIndex: number, teamId: string): { points: number; label: string; place: number } | undefined {
     const q = this.quiz.questions[questionIndex]!;
+    if (q.type === 'nearest') return undefined; // Closest wins; being quick means nothing.
     const order = this.fastestOrder(questionIndex);
     const place = order.indexOf(teamId);
     if (place < 0) return undefined;
@@ -513,6 +524,23 @@ export class Game {
     if (place >= this.quiz.fastPlaces || this.quiz.fastBonus <= 0) return undefined;
     const points = Math.round(this.quiz.fastBonus * FAST_SHARES[place]!);
     return { points, label: `⚡ ${FAST_NAMES[place]} correct answer: +${points}`, place };
+  }
+
+  /** The guesses closest to the answer of a "nearest" question, and how far off they are. */
+  private nearestWinners(questionIndex: number): { winners: Set<number>; best: number } {
+    const q = this.quiz.questions[questionIndex]!;
+    if (q.type !== 'nearest') return { winners: new Set(), best: 0 };
+    let best = Infinity;
+    for (const team of this.teams.values()) {
+      const answer = team.answers.get(questionIndex);
+      if (answer) best = Math.min(best, Math.abs((answer.value as number) - q.answer));
+    }
+    const winners = new Set<number>();
+    for (const team of this.teams.values()) {
+      const answer = team.answers.get(questionIndex);
+      if (answer && Math.abs((answer.value as number) - q.answer) === best) winners.add(answer.value as number);
+    }
+    return { winners, best: best === Infinity ? 0 : best };
   }
 
   /** Teams with a correct answer, quickest first (ties go to whoever joined first). */
@@ -561,6 +589,16 @@ export class Game {
       case 'letter': {
         const correct = answer.value === q.letter;
         return { correct, points: timed(correct, q.points) };
+      }
+      case 'number': {
+        const correct = Math.abs((answer.value as number) - q.answer) <= q.tolerance + 1e-9;
+        return { correct, points: timed(correct, q.points) };
+      }
+      case 'nearest': {
+        // The closest guess wins the lot (ties share it); speed doesn't matter.
+        const { winners, best } = this.nearestWinners(questionIndex);
+        const correct = winners.has(answer.value as number);
+        return { correct, points: correct ? q.points : 0, detail: correct ? `Closest guess${best === 0 ? ': spot on!' : ` (off by ${formatNumber(best)})`}` : `Off by ${formatNumber(Math.abs((answer.value as number) - q.answer))}` };
       }
       case 'ordering': {
         // Half the points for items in the right place, half as a bonus for the whole order (with speed bonus).
@@ -689,6 +727,9 @@ export class Game {
       case 'music':
       case 'letter':
         return answer.value as string;
+      case 'number':
+      case 'nearest':
+        return formatNumber(answer.value as number);
       case 'ordering':
         return (answer.value as number[]).map((i) => q.items[i]).join(' → ');
     }
@@ -729,6 +770,7 @@ export class Game {
               answerText: answerText(question),
               detail: marked?.detail,
               correctIndex: question.type === 'multiple-choice' ? question.answer : undefined,
+              info: question.info,
             }
           : undefined,
       standings: this.phase === 'leaderboard' || this.phase === 'finished' ? standings : undefined,
@@ -751,6 +793,7 @@ export class Game {
     let distribution: number[] | undefined;
     let review: ReviewGroup[] | undefined;
     let summary: string | undefined;
+    let guesses: { value: string; off: string; teams: string[]; winner: boolean }[] | undefined;
     if (question && afterClose) {
       if (question.type === 'multiple-choice') {
         distribution = question.options.map((_, i) => answered.filter(({ answer }) => answer.value === i).length);
@@ -774,6 +817,17 @@ export class Game {
         }
         const order = { exact: 0, close: 1, none: 2 };
         review = [...groups.values()].sort((a, b) => order[a.match] - order[b.match] || b.teams.length - a.teams.length);
+      } else if (question.type === 'number') {
+        const right = answered.filter(({ answer }) => this.baseMark(this.questionIndex, answer).correct).length;
+        summary = `${right} of ${answered.length} ${answered.length === 1 ? 'team' : 'teams'} got it right`;
+      } else if (question.type === 'nearest') {
+        const { winners } = this.nearestWinners(this.questionIndex);
+        const byValue = new Map<number, string[]>();
+        for (const { team, answer } of answered) byValue.set(answer.value as number, [...(byValue.get(answer.value as number) ?? []), team.name]);
+        guesses = [...byValue]
+          .map(([value, names]) => ({ value, names, off: Math.abs(value - question.answer) }))
+          .sort((a, b) => a.off - b.off || a.value - b.value)
+          .map(({ value, names, off }) => ({ value: formatNumber(value), off: off === 0 ? 'spot on' : `off by ${formatNumber(off)}`, teams: names, winner: winners.has(value) }));
       } else if (question.type === 'letter') {
         const counts = new Map<string, number>();
         for (const { answer } of answered) counts.set(answer.value as string, (counts.get(answer.value as string) ?? 0) + 1);
@@ -806,6 +860,7 @@ export class Game {
               ...questionView,
               answerText: answerText(question),
               answer: question.type === 'multiple-choice' ? question.answer : undefined,
+              info: question.info,
             }
           : undefined,
       answeredCount: answered.length,
@@ -813,6 +868,7 @@ export class Game {
       distribution,
       review,
       summary,
+      guesses,
       fastest: this.fastestTeams(),
       standings,
       preloadImage: this.preloadImage(),

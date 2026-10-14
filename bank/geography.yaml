@@ -1,0 +1,63 @@
+category: Geography
+region: universal
+questions:
+  - { type: multiple-choice, text: "What is the capital city of Australia?", options: ["Sydney", "Melbourne", "Canberra", "Perth"], answer: 2, difficulty: easy }
+  - { type: multiple-choice, text: "Which river is the longest in Africa?", options: ["Congo", "Nile", "Niger", "Zambezi"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "Which is the largest ocean on Earth?", options: ["Atlantic", "Indian", "Pacific", "Arctic"], answer: 2, difficulty: easy }
+  - { type: multiple-choice, text: "Marrakech is a city in which country?", options: ["Tunisia", "Egypt", "Morocco", "Algeria"], answer: 2, difficulty: medium }
+  - { type: multiple-choice, text: "On which continent is the Sahara Desert?", options: ["Asia", "Africa", "Australia", "South America"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "What is the capital city of Canada?", options: ["Toronto", "Ottawa", "Vancouver", "Montreal"], answer: 1, difficulty: medium }
+  - { type: multiple-choice, text: "Which mountain range is traditionally seen as the border between Europe and Asia?", options: ["Alps", "Andes", "Carpathians", "Urals"], answer: 3, difficulty: medium }
+  - { type: multiple-choice, text: "Which is the smallest country in the world by area?", options: ["Monaco", "San Marino", "Vatican City", "Liechtenstein"], answer: 2, difficulty: medium }
+  - { type: multiple-choice, text: "Which river flows through Paris?", options: ["Loire", "Seine", "Rhine", "Rhone"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "What is the capital city of Brazil?", options: ["Rio de Janeiro", "Sao Paulo", "Brasilia", "Salvador"], answer: 2, difficulty: medium }
+  - { type: multiple-choice, text: "Which is the largest hot desert in the world?", options: ["Gobi", "Kalahari", "Sahara", "Arabian"], answer: 2, difficulty: easy }
+  - { type: multiple-choice, text: "The Great Barrier Reef lies off the coast of which country?", options: ["Australia", "Fiji", "Philippines", "Indonesia"], answer: 0, difficulty: easy }
+  - { type: multiple-choice, text: "Which is the largest country in the world by area?", options: ["Canada", "China", "United States", "Russia"], answer: 3, difficulty: easy }
+  - { type: multiple-choice, text: "Which country is shaped a bit like a boot?", options: ["Greece", "Italy", "Portugal", "Croatia"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "What is the capital city of Turkey?", options: ["Istanbul", "Ankara", "Izmir", "Antalya"], answer: 1, difficulty: medium }
+  - { type: multiple-choice, text: "Which sea lies between southern Europe and North Africa?", options: ["Baltic Sea", "Red Sea", "Mediterranean Sea", "Caspian Sea"], answer: 2, difficulty: easy }
+  - { type: multiple-choice, text: "Which two countries share the longest international land border?", options: ["United States and Mexico", "United States and Canada", "Russia and China", "Argentina and Chile"], answer: 1, difficulty: medium }
+  - { type: multiple-choice, text: "What is the capital city of Spain?", options: ["Barcelona", "Seville", "Valencia", "Madrid"], answer: 3, difficulty: easy }
+  - { type: multiple-choice, text: "Lake Titicaca lies on the border of Peru and which other country?", options: ["Chile", "Bolivia", "Ecuador", "Brazil"], answer: 1, difficulty: medium }
+  - { type: multiple-choice, text: "Which major city is built on both sides of the Bosphorus, in both Europe and Asia?", options: ["Istanbul", "Athens", "Cairo", "Moscow"], answer: 0, difficulty: medium }
+  - { type: multiple-choice, text: "Which African country was once known as Abyssinia?", options: ["Eritrea", "Ethiopia", "Sudan", "Somalia"], answer: 1, difficulty: hard }
+  - { type: multiple-choice, text: "What is the capital city of Argentina?", options: ["Santiago", "Lima", "Buenos Aires", "Montevideo"], answer: 2, difficulty: medium }
+  - { type: multiple-choice, text: "Which river is the longest in South America?", options: ["Orinoco", "Amazon", "Parana", "Madeira"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "Which is the largest US state by area?", options: ["Texas", "California", "Alaska", "Montana"], answer: 2, difficulty: easy }
+  - { type: multiple-choice, text: "What is the capital city of Egypt?", options: ["Cairo", "Alexandria", "Giza", "Luxor"], answer: 0, difficulty: easy }
+  - { type: multiple-choice, text: "Which of the five Great Lakes lies entirely within the United States?", options: ["Superior", "Michigan", "Erie", "Ontario"], answer: 1, difficulty: hard }
+  - { type: multiple-choice, text: "In which country is the ancient city of Petra?", options: ["Egypt", "Syria", "Saudi Arabia", "Jordan"], answer: 3, difficulty: medium }
+  - { type: multiple-choice, text: "Mount Fuji is found in which country?", options: ["China", "South Korea", "Taiwan", "Japan"], answer: 3, difficulty: easy }
+  - { type: multiple-choice, text: "What is the capital city of Sweden?", options: ["Oslo", "Helsinki", "Stockholm", "Copenhagen"], answer: 2, difficulty: medium }
+  - { type: multiple-choice, text: "In which country is the Taj Mahal?", options: ["Pakistan", "India", "Bangladesh", "Nepal"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "The River Danube flows into which sea?", options: ["Baltic Sea", "Black Sea", "Caspian Sea", "Adriatic Sea"], answer: 1, difficulty: hard }
+  - { type: multiple-choice, text: "In which country is Machu Picchu?", options: ["Bolivia", "Peru", "Chile", "Colombia"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "True or false? Africa has more countries than any other continent.", options: ["True", "False"], answer: 0, difficulty: medium }
+  - { type: multiple-choice, text: "True or false? Russia spans more than ten time zones.", options: ["True", "False"], answer: 0, difficulty: medium }
+  - { type: multiple-choice, text: "True or false? Mount Everest lies on the border between Nepal and China.", options: ["True", "False"], answer: 0, difficulty: medium }
+  - { type: multiple-choice, text: "True or false? Greenland is part of Canada.", options: ["True", "False"], answer: 1, difficulty: easy, info: "Greenland is a self-governing territory of Denmark." }
+  - { type: letter, text: "Which country's capital city is Lima?", answer: Peru, difficulty: medium }
+  - { type: letter, text: "Which is the largest continent by area?", answer: Asia, difficulty: easy }
+  - { type: letter, text: "Which city is nicknamed the Eternal City?", answer: Rome, difficulty: easy }
+  - { type: letter, text: "Which country is known as the Land of the Rising Sun?", answer: Japan, difficulty: easy }
+  - { type: letter, text: "What is the capital city of Norway?", answer: Oslo, difficulty: medium }
+  - { type: letter, text: "Which US city is nicknamed the Big Apple?", answer: New York, difficulty: easy }
+  - { type: letter, text: "Which island nation lies off the south-east tip of India?", answer: Sri Lanka, difficulty: medium }
+  - { type: letter, text: "Which volcano buried the Roman town of Pompeii in AD 79?", answer: Vesuvius, difficulty: medium }
+  - { type: letter, text: "Which is the largest country in South America by area?", answer: Brazil, difficulty: easy }
+  - { type: letter, text: "Which river flows through London?", answer: Thames, difficulty: easy }
+  - { type: number, text: "How many continents are there, using the most common way of counting?", answer: 7, difficulty: easy }
+  - { type: number, text: "How many states are there in the United States?", answer: 50, difficulty: easy }
+  - { type: number, text: "How many countries make up the United Kingdom?", answer: 4, difficulty: easy }
+  - { type: number, text: "How many official time zones does China use across the whole country?", answer: 1, difficulty: hard }
+  - { type: number, text: "In what year did the Suez Canal open?", answer: 1869, difficulty: hard }
+  - { type: number, text: "How many countries share a land border with Germany?", answer: 9, difficulty: hard }
+  - { type: nearest, text: "How high is Mount Kilimanjaro, the highest mountain in Africa, in metres?", answer: 5895, difficulty: medium }
+  - { type: nearest, text: "Roughly how long is the Earth's circumference around the equator, in kilometres?", answer: 40075, difficulty: medium }
+  - { type: ordering, text: "Put these countries in order of land area, largest first.", items: [Russia, Canada, Brazil, Australia, India], difficulty: medium }
+  - { type: ordering, text: "Put these continents in order of land area, largest first.", items: [Asia, Africa, North America, South America, Antarctica], difficulty: medium }
+  - { type: ordering, text: "Put these cities in order from north to south, most northerly first.", items: [Reykjavik, London, Rome, Cairo, Nairobi], difficulty: hard }
+  - { type: ordering, text: "Put these mountains in order of height, tallest first.", items: [Mount Everest, K2, Kilimanjaro, Mont Blanc, Ben Nevis], difficulty: medium }
+  - { type: ordering, text: "Put these cities in order from west to east, most westerly first.", items: [Los Angeles, New York, London, Cairo, Tokyo], difficulty: medium }
+  - { type: ordering, text: "Put these US states in order of land area, largest first.", items: [Alaska, Texas, California, Montana, Florida], difficulty: hard }

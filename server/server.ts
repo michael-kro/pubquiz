@@ -194,8 +194,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     const revealed = ['reveal', 'leaderboard', 'finished'].includes(view.phase);
     return {
       ...view,
-      question: view.question && !revealed ? { ...view.question, answerText: '', answer: undefined } : view.question,
+      question: view.question && !revealed ? { ...view.question, answerText: '', answer: undefined, info: undefined } : view.question,
       review: revealed ? view.review : undefined,
+      // A list of guesses with how far off each was gives the answer away.
+      guesses: revealed ? view.guesses : undefined,
       teams: view.teams.map((t) => ({ ...t, code: '' })),
       screenKey: '',
       canEnd: false,

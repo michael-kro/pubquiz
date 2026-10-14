@@ -1,0 +1,66 @@
+category: Maths & Logic
+region: universal
+questions:
+  # number
+  - { type: number, text: "What is 7 x 8?", answer: 56, difficulty: easy, tags: [arithmetic] }
+  - { type: number, text: "What is 15% of 200?", answer: 30, difficulty: easy, tags: [arithmetic] }
+  - { type: number, text: "How many degrees do the three angles of any flat triangle add up to?", answer: 180, difficulty: easy, tags: [geometry] }
+  - { type: number, text: "What is 2 to the power of 10 (2 multiplied by itself ten times)?", answer: 1024, difficulty: medium, tags: [arithmetic] }
+  - { type: number, text: "What is 17 x 6?", answer: 102, difficulty: easy, tags: [arithmetic] }
+  - { type: number, text: "What is 1000 minus 387?", answer: 613, difficulty: easy, tags: [arithmetic] }
+  - { type: number, text: "What number comes next in this sequence? 2, 4, 8, 16, 32, ...", answer: 64, difficulty: easy, tags: [sequences] }
+  - { type: number, text: "What number comes next in this sequence? 1, 1, 2, 3, 5, 8, 13, ...", answer: 21, difficulty: medium, tags: [sequences], info: "Each number is the sum of the two before it: the Fibonacci sequence." }
+  - { type: number, text: "What is the sum of all the whole numbers from 1 to 10 inclusive?", answer: 55, difficulty: medium, tags: [arithmetic] }
+  - { type: number, text: "What is 13 squared (13 x 13)?", answer: 169, difficulty: medium, tags: [arithmetic] }
+  - { type: number, text: "Which is the only prime number between 30 and 36?", answer: 31, difficulty: medium, tags: [primes] }
+  - { type: number, text: "What is the smallest prime number greater than 50?", answer: 53, difficulty: medium, tags: [primes] }
+  - { type: number, text: "The Roman numerals MCMXC make which year?", answer: 1990, difficulty: medium, tags: [roman-numerals] }
+  - { type: number, text: "What number do the Roman numerals XLIV represent?", answer: 44, difficulty: medium, tags: [roman-numerals] }
+  - { type: number, text: "How many seconds are there in two hours?", answer: 7200, difficulty: medium, tags: [arithmetic] }
+  - { type: number, text: "A bat and a ball cost £1.10 together. The bat costs £1.00 more than the ball. How many pence does the ball cost?", answer: 5, difficulty: medium, tags: [puzzle], info: "The ball is 5p and the bat is £1.05. The quick answer of 10p is wrong." }
+  - { type: number, text: "What is the mean (average) of 2, 4, 6, 8 and 10?", answer: 6, difficulty: easy, tags: [arithmetic] }
+  - { type: number, text: "What is 99 x 99?", answer: 9801, difficulty: hard, tags: [arithmetic] }
+  - { type: number, text: "How many diagonals can be drawn inside a hexagon, joining corners that are not next to each other?", answer: 9, difficulty: hard, tags: [geometry] }
+  - { type: number, text: "What is the sum of all the whole numbers from 1 to 100 inclusive?", answer: 5050, difficulty: hard, tags: [arithmetic], info: "The young mathematician Carl Friedrich Gauss is said to have spotted the shortcut at school." }
+  - { type: number, text: "What is 7 factorial (7 x 6 x 5 x 4 x 3 x 2 x 1)?", answer: 5040, difficulty: hard, tags: [arithmetic] }
+  # multiple-choice
+  - { type: multiple-choice, text: "Which of these is a prime number?", options: ["21", "27", "29", "33"], answer: 2, difficulty: easy, tags: [primes] }
+  - { type: multiple-choice, text: "What is the name of a seven-sided shape?", options: [Octagon, Heptagon, Hexagon, Nonagon], answer: 1, difficulty: easy, tags: [geometry] }
+  - { type: multiple-choice, text: "Pi is approximately equal to which number?", options: ["3.14", "3.41", "2.71", "3.24"], answer: 0, difficulty: easy, tags: [number-facts] }
+  - { type: multiple-choice, text: "Which of these numbers is a perfect square?", options: ["48", "52", "63", "49"], answer: 3, difficulty: easy, tags: [number-facts] }
+  - { type: multiple-choice, text: "Which letter is the Roman numeral for 50?", options: [C, L, D, X], answer: 1, difficulty: easy, tags: [roman-numerals] }
+  - { type: multiple-choice, text: "Which ancient Greek mathematician is often called the father of geometry?", options: [Euclid, Archimedes, Pythagoras, Aristotle], answer: 0, difficulty: medium, tags: [history] }
+  - { type: multiple-choice, text: "What is 0.25 written as a fraction?", options: ["1/2", "1/4", "1/5", "2/5"], answer: 1, difficulty: easy, tags: [fractions] }
+  - { type: multiple-choice, text: "What is a triangle called when all three of its sides are different lengths?", options: [Isosceles, Equilateral, Scalene, Obtuse], answer: 2, difficulty: medium, tags: [geometry] }
+  - { type: multiple-choice, text: "What is the only even prime number?", options: ["0", "2", "4", "6"], answer: 1, difficulty: medium, tags: [primes] }
+  - { type: multiple-choice, text: "True or false? Zero is an even number.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [number-facts] }
+  - { type: multiple-choice, text: "True or false? The number 1 is a prime number.", options: ["True", "False"], answer: 1, difficulty: medium, tags: [primes], info: "A prime must have exactly two different factors, and 1 has only one." }
+  - { type: multiple-choice, text: "True or false? Every square is also a rectangle.", options: ["True", "False"], answer: 0, difficulty: easy, tags: [geometry] }
+  - { type: multiple-choice, text: "What is the binary number 101 in everyday (decimal) numbers?", options: ["3", "4", "5", "6"], answer: 2, difficulty: medium, tags: [number-facts] }
+  - { type: multiple-choice, text: "What do the four angles of any flat four-sided shape (quadrilateral) add up to?", options: ["180 degrees", "270 degrees", "360 degrees", "540 degrees"], answer: 2, difficulty: medium, tags: [geometry] }
+  - { type: multiple-choice, text: "What is a ten-sided shape called?", options: [Nonagon, Decagon, Dodecagon, Heptagon], answer: 1, difficulty: medium, tags: [geometry] }
+  - { type: multiple-choice, text: "Which of these numbers is irrational?", options: ["1/3", "0.75", "The square root of 2", "4/5"], answer: 2, difficulty: hard, tags: [number-facts] }
+  - { type: multiple-choice, text: "What is the result of a division sum called?", options: [Product, Sum, Quotient, Difference], answer: 2, difficulty: medium, tags: [vocabulary] }
+  - { type: multiple-choice, text: "A shape with all its sides and all its angles equal is described as what?", options: [Reflex, Rhombic, Radial, Regular], answer: 3, difficulty: hard, tags: [geometry] }
+  # nearest
+  - { type: nearest, text: "How many seconds are there in one day?", answer: 86400, difficulty: medium, tags: [time] }
+  - { type: nearest, text: "How many minutes are there in one week?", answer: 10080, difficulty: medium, tags: [time] }
+  - { type: nearest, text: "How many seconds are there in a normal 365-day year?", answer: 31536000, difficulty: hard, tags: [time] }
+  - { type: nearest, text: "How many prime numbers are there below 1000?", answer: 168, difficulty: hard, tags: [primes] }
+  - { type: nearest, text: "How many different five-card hands can be dealt from a standard 52-card pack?", answer: 2598960, difficulty: hard, tags: [probability] }
+  - { type: nearest, text: "How many digits does the number 2 to the power of 100 have?", answer: 31, difficulty: hard, tags: [number-facts] }
+  - { type: nearest, text: "How many hours are there in a leap year?", answer: 8784, difficulty: hard, tags: [time] }
+  - { type: nearest, text: "How many squares of every size can you find on a standard 8 x 8 chessboard?", answer: 204, difficulty: hard, tags: [puzzle], info: "64 + 49 + 36 + 25 + 16 + 9 + 4 + 1 = 204." }
+  - { type: nearest, text: "How many digits are in 100 factorial (100 x 99 x 98 x ... x 1)?", answer: 158, difficulty: hard, tags: [number-facts] }
+  # ordering
+  - { type: ordering, text: "Put these numbers in order of size, smallest first.", items: ["0.5", "3/5", "0.75", "7/8", "1.1"], difficulty: medium, tags: [fractions] }
+  - { type: ordering, text: "Put these in order of value, smallest first.", items: ["2^5", "6^2", "3^4", "10^2", "5^3"], difficulty: hard, tags: [arithmetic], info: "They equal 32, 36, 81, 100 and 125." }
+  - { type: ordering, text: "Put these in order of quantity, smallest first.", items: [A pair, A dozen, A baker's dozen, A score, A gross], difficulty: medium, tags: [number-facts], info: "That is 2, 12, 13, 20 and 144." }
+  - { type: ordering, text: "Put these metric prefixes in order of size, smallest first.", items: [Nano, Micro, Milli, Kilo, Mega], difficulty: medium, tags: [number-facts] }
+  # letter
+  - { type: letter, text: "Which ancient Greek thinker gave his name to the theorem about the sides of a right-angled triangle?", answer: Pythagoras, difficulty: easy, tags: [history] }
+  - { type: letter, text: "What is the name of the shape with eight sides?", answer: Octagon, difficulty: easy, tags: [geometry] }
+  - { type: letter, text: "What is the name of the number sequence where each number is the sum of the previous two (1, 1, 2, 3, 5, 8...)?", answer: Fibonacci, difficulty: medium, tags: [sequences] }
+  - { type: letter, text: "What is the name for the longest side of a right-angled triangle?", answer: Hypotenuse, difficulty: medium, tags: [geometry] }
+  - { type: letter, text: "Which British mathematician proved Fermat's Last Theorem in the 1990s?", answer: Andrew Wiles, difficulty: hard, tags: [history] }
+  - { type: letter, text: "What is the Roman numeral letter for 500?", answer: D, difficulty: easy, tags: [roman-numerals] }

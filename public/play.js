@@ -137,6 +137,7 @@ const socket = connectSocket({
 
 function showNotice(text) {
   notice = text;
+  render();
   clearTimeout(noticeTimer);
   noticeTimer = setTimeout(() => {
     notice = '';
@@ -392,10 +393,11 @@ function phaseView(s) {
         'section',
         { class: `screen center result ${r.correct ? 'right' : r.points > 0 ? 'partial' : 'wrong'}` },
         questionHeader(q),
-        h('h1', {}, r.correct ? 'Correct!' : !answered ? 'No answer' : r.points > 0 ? 'Close!' : 'Wrong'),
+        h('h1', {}, q.type === 'nearest' ? (r.correct ? 'Closest!' : !answered ? 'No answer' : 'Not the closest') : r.correct ? 'Correct!' : !answered ? 'No answer' : r.points > 0 ? 'Close!' : 'Wrong'),
         r.points > 0 ? h('p', { class: 'points' }, `+${r.points}`) : null,
         r.detail && answered ? h('p', {}, r.detail) : null,
-        r.correct ? null : h('p', {}, q.type === 'ordering' ? 'The order was ' : 'The answer was ', h('strong', {}, answerLabel)),
+        r.correct && q.type !== 'nearest' ? null : h('p', {}, q.type === 'ordering' ? 'The order was ' : 'The answer was ', h('strong', {}, answerLabel)),
+        r.info ? h('p', { class: 'muted info' }, r.info) : null,
         answered && !r.correct ? h('p', { class: 'muted' }, 'You said ', myAnswerLabel(s)) : null,
       );
     }
@@ -479,6 +481,34 @@ function answerInput(s, q, locked) {
             ),
           ),
         ),
+      );
+    }
+
+    case 'number':
+    case 'nearest': {
+      if (locked) return null;
+      const valid = (text) => /^-?\d+([.,]\d+)?$/.test(text.trim());
+      const submit = (event) => {
+        event.preventDefault();
+        if (valid(draftText)) sendAnswer(Number(draftText.trim().replace(',', '.')));
+        else showNotice('Type a number: digits only, with a minus sign or decimal point if you need one.');
+      };
+      return h(
+        'form',
+        { class: 'text-answer', onsubmit: submit },
+        q.type === 'nearest' ? h('p', { class: 'muted small center' }, 'The closest guess wins. Speed doesn\'t matter.') : null,
+        h('input', {
+          name: 'answer',
+          'aria-label': 'Your answer, a number',
+          placeholder: 'Type a number',
+          value: draftText,
+          inputmode: 'decimal',
+          maxlength: '20',
+          autocomplete: 'off',
+          enterkeyhint: 'send',
+          oninput: (e) => (draftText = e.target.value),
+        }),
+        h('button', { class: 'primary', type: 'submit' }, 'Submit answer'),
       );
     }
 

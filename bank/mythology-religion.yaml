@@ -1,0 +1,72 @@
+category: Mythology & Religion
+region: universal
+questions:
+  # multiple-choice
+  - { type: multiple-choice, text: "In Greek myth, who is the god of the underworld?", options: [Hades, Ares, Hermes, Apollo], answer: 0, difficulty: easy, tags: [greek] }
+  - { type: multiple-choice, text: "What was the Roman name for the Greek god Hades?", options: [Mars, Pluto, Neptune, Vulcan], answer: 1, difficulty: medium, tags: [roman] }
+  - { type: multiple-choice, text: "In Norse mythology, what is the name of the realm where the gods live?", options: [Valhalla, Asgard, Midgard, Niflheim], answer: 1, difficulty: medium, tags: [norse] }
+  - { type: multiple-choice, text: "What is the name of Odin's eight-legged horse in Norse myth?", options: [Fenrir, Sleipnir, Jormungandr, Hel], answer: 1, difficulty: hard, tags: [norse] }
+  - { type: multiple-choice, text: "In Norse myth, which rainbow bridge links Asgard and Midgard?", options: [Yggdrasil, Ragnarok, Bifrost, Gjallar], answer: 2, difficulty: medium, tags: [norse] }
+  - { type: multiple-choice, text: "In Greek myth, which part of Achilles' body was his weak spot?", options: [Shoulder, Knee, Neck, Heel], answer: 3, difficulty: easy, tags: [greek] }
+  - { type: multiple-choice, text: "In the story of the Trojan Horse, which side hid soldiers inside the wooden horse?", options: [Trojans, Greeks, Romans, Egyptians], answer: 1, difficulty: easy, tags: [greek] }
+  - { type: multiple-choice, text: "In Greek myth, where did the Minotaur live?", options: [A cave on Olympus, The Labyrinth, A temple in Delphi, The River Styx], answer: 1, difficulty: easy, tags: [greek] }
+  - { type: multiple-choice, text: "In Greek myth, what grew on Medusa's head instead of hair?", options: [Snakes, Eels, Flames, Feathers], answer: 0, difficulty: easy, tags: [greek] }
+  - { type: multiple-choice, text: "Who is the Greek goddess of love and beauty?", options: [Hera, Athena, Aphrodite, Artemis], answer: 2, difficulty: easy, tags: [greek] }
+  - { type: multiple-choice, text: "Who is the Roman goddess of love?", options: [Juno, Venus, Minerva, Diana], answer: 1, difficulty: easy, tags: [roman] }
+  - { type: multiple-choice, text: "Who is the Greek god of wine and revelry?", options: [Dionysus, Hephaestus, Poseidon, Apollo], answer: 0, difficulty: medium, tags: [greek] }
+  - { type: multiple-choice, text: "In Hinduism, which god is known as the destroyer within the Trimurti?", options: [Vishnu, Shiva, Brahma, Indra], answer: 1, difficulty: medium, tags: [hinduism] }
+  - { type: multiple-choice, text: "Which festival is known as the Festival of Lights in Hinduism?", options: [Holi, Diwali, Navaratri, Raksha Bandhan], answer: 1, difficulty: easy, tags: [hinduism] }
+  - { type: multiple-choice, text: "Eid al-Fitr celebrates the end of which Muslim month of fasting?", options: [Muharram, Rajab, Shaban, Ramadan], answer: 3, difficulty: easy, tags: [islam] }
+  - { type: multiple-choice, text: "Which Indian city is home to the Golden Temple, the holiest shrine of Sikhism?", options: [Delhi, Lahore, Amritsar, Varanasi], answer: 2, difficulty: medium, tags: [sikhism] }
+  - { type: multiple-choice, text: "What was the name of the Buddha before his enlightenment?", options: [Siddhartha Gautama, Mahavira, Ashoka, Nanak], answer: 0, difficulty: medium, tags: [buddhism] }
+  - { type: multiple-choice, text: "The Torah is the central text of which religion?", options: [Islam, Judaism, Hinduism, Buddhism], answer: 1, difficulty: easy, tags: [judaism] }
+  - { type: multiple-choice, text: "Mecca, the holiest city of Islam, is in which country?", options: [Iraq, Egypt, Saudi Arabia, Jordan], answer: 2, difficulty: easy, tags: [islam] }
+  - { type: multiple-choice, text: "What does the Jewish holy day Yom Kippur commemorate?", options: [The Day of Atonement, The harvest, The Jewish New Year, The escape from Egypt], answer: 0, difficulty: medium, tags: [judaism] }
+  - { type: multiple-choice, text: "From which land did the Israelites escape in the story celebrated at Passover?", options: [Babylon, Egypt, Rome, Persia], answer: 1, difficulty: easy, tags: [judaism] }
+  - { type: multiple-choice, text: "In the Christian Bible, which apostle betrayed Jesus?", options: [Peter, Thomas, Andrew, Judas Iscariot], answer: 3, difficulty: easy, tags: [christianity] }
+  - { type: multiple-choice, text: "Which Hindu festival is known as the festival of colours?", options: [Holi, Diwali, Onam, Pongal], answer: 0, difficulty: easy, tags: [hinduism] }
+  - { type: multiple-choice, text: "Which animal is considered sacred in Hinduism?", options: [Pig, Cow, Camel, Horse], answer: 1, difficulty: easy, tags: [hinduism] }
+  - { type: multiple-choice, text: "In Greek myth, which hero led the Argonauts in search of the Golden Fleece?", options: [Theseus, Odysseus, Jason, Heracles], answer: 2, difficulty: medium, tags: [greek] }
+  - { type: multiple-choice, text: "What was the name of Odysseus's home island?", options: [Crete, Ithaca, Rhodes, Sparta], answer: 1, difficulty: medium, tags: [greek] }
+  - { type: multiple-choice, text: "Which Greek god, with winged sandals, was the messenger of the gods?", options: [Ares, Apollo, Hermes, Hephaestus], answer: 2, difficulty: easy, tags: [greek] }
+  - { type: multiple-choice, text: "Which Greek goddess of the harvest was the mother of Persephone?", options: [Hestia, Demeter, Hera, Gaia], answer: 1, difficulty: medium, tags: [greek] }
+  - { type: multiple-choice, text: "Which Egyptian god had the head of a jackal?", options: [Horus, Osiris, Thoth, Anubis], answer: 3, difficulty: medium, tags: [egyptian] }
+  - { type: multiple-choice, text: "In ancient Egyptian religion, Ra was the god of what?", options: [The sun, The moon, The sea, The harvest], answer: 0, difficulty: easy, tags: [egyptian] }
+  - { type: multiple-choice, text: "What is the name of the giant tree that connects the nine worlds in Norse myth?", options: [Bifrost, Valhalla, Yggdrasil, Ragnarok], answer: 2, difficulty: medium, tags: [norse] }
+  - { type: multiple-choice, text: "In Buddhism, what is the name for the state of ultimate release from suffering?", options: [Karma, Nirvana, Dharma, Samsara], answer: 1, difficulty: medium, tags: [buddhism] }
+  - { type: multiple-choice, text: "The Hajj is a pilgrimage made by Muslims to which city?", options: [Medina, Jerusalem, Mecca, Cairo], answer: 2, difficulty: easy, tags: [islam] }
+  - { type: multiple-choice, text: "In the Bible, who built the ark to survive the great flood?", options: [Moses, Noah, Abraham, Jonah], answer: 1, difficulty: easy, tags: [christianity] }
+  - { type: multiple-choice, text: "Which two-faced Roman god gave his name to the month of January?", options: [Vulcan, Saturn, Mercury, Janus], answer: 3, difficulty: medium, tags: [roman] }
+  - { type: multiple-choice, text: "In Greek myth, which Titan was punished by having to hold up the sky?", options: [Atlas, Prometheus, Cronus, Hyperion], answer: 0, difficulty: easy, tags: [greek] }
+  - { type: multiple-choice, text: "In Greek myth, what did the Titan Prometheus steal for humankind?", options: [Gold, Fire, Wine, Lightning], answer: 1, difficulty: easy, tags: [greek] }
+  # true/false
+  - { type: multiple-choice, text: "True or false? In Greek myth, Mount Olympus, home of the gods, is in Italy.", options: ["True", "False"], answer: 1, difficulty: easy, tags: [greek], info: "Mount Olympus is in northern Greece." }
+  - { type: multiple-choice, text: "True or false? In Greek myth, Hera was the wife of Zeus.", options: ["True", "False"], answer: 0, difficulty: easy, tags: [greek] }
+  - { type: multiple-choice, text: "True or false? In Norse myth, Odin is the father of Thor.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [norse] }
+  # letter
+  - { type: letter, text: "What was the Roman name for the king of the gods, the equivalent of the Greek Zeus?", answer: Jupiter, difficulty: easy, tags: [roman] }
+  - { type: letter, text: "Which Greek goddess of wisdom and warfare was born from the head of Zeus?", answer: Athena, difficulty: easy, tags: [greek] }
+  - { type: letter, text: "Which Greek hero killed Medusa?", answer: Perseus, difficulty: medium, tags: [greek] }
+  - { type: letter, text: "Who was the founder of the Sikh religion and the first of its ten Gurus?", answer: Guru Nanak, difficulty: medium, tags: [sikhism] }
+  - { type: letter, text: "Who is the Greek god of the sea, with a trident?", answer: Poseidon, difficulty: easy, tags: [greek] }
+  - { type: letter, text: "What is the name of the winged horse of Greek myth?", answer: Pegasus, difficulty: easy, tags: [greek] }
+  - { type: letter, text: "Which elephant-headed Hindu god is known as the remover of obstacles?", answer: Ganesha, difficulty: medium, tags: [hinduism] }
+  - { type: letter, text: "Who was the Roman god of war, from whom the planet and the month of March take their name?", answer: Mars, difficulty: medium, tags: [roman] }
+  # number
+  - { type: number, text: "How many labours did Heracles (Hercules) have to complete in Greek myth?", answer: 12, difficulty: medium, tags: [greek] }
+  - { type: number, text: "How many commandments did Moses receive on Mount Sinai in the Bible?", answer: 10, difficulty: easy, tags: [judaism] }
+  - { type: number, text: "How many Pillars of Islam are there?", answer: 5, difficulty: medium, tags: [islam] }
+  - { type: number, text: "How many Muses are there in Greek myth?", answer: 9, difficulty: medium, tags: [greek] }
+  - { type: number, text: "For how many nights is the Jewish festival of Hanukkah celebrated?", answer: 8, difficulty: medium, tags: [judaism] }
+  - { type: number, text: "How many Noble Truths are taught in Buddhism?", answer: 4, difficulty: hard, tags: [buddhism] }
+  # nearest
+  - { type: nearest, text: "In what year did Martin Luther famously post his 95 Theses, sparking the Reformation?", answer: 1517, difficulty: medium, tags: [christianity] }
+  - { type: nearest, text: "In what year (AD) was the Council of Nicaea, the first great council of the Christian church, held?", answer: 325, difficulty: hard, tags: [christianity] }
+  - { type: nearest, text: "In what year (AD) did the Prophet Muhammad migrate from Mecca to Medina, the Hijra that begins the Islamic calendar?", answer: 622, difficulty: hard, tags: [islam] }
+  # ordering
+  - { type: ordering, text: "Planets are named after Roman gods. Put these in order from the Sun, closest first.", items: [Mercury, Venus, Mars, Jupiter, Saturn], difficulty: easy, tags: [roman] }
+  - { type: ordering, text: "Put these days of the week in order, earliest first. Several are named after Norse gods.", items: [Tuesday, Wednesday, Thursday, Friday, Saturday], difficulty: easy, tags: [norse] }
+  - { type: ordering, text: "Put the first five books of the Bible in order.", items: [Genesis, Exodus, Leviticus, Numbers, Deuteronomy], difficulty: medium, tags: [christianity] }
+  - { type: ordering, text: "Put these religions in order of when they began, earliest first.", items: [Judaism, Buddhism, Christianity, Islam, Sikhism], difficulty: medium, tags: [world-religions] }
+  - { type: ordering, text: "Put these Christian festivals in order through the church year, starting from Advent.", items: [Advent, Christmas, Epiphany, Easter, Pentecost], difficulty: medium, tags: [christianity] }
+  - { type: ordering, text: "Put the Five Pillars of Islam in their traditional order.", items: [Shahada, Salat, Zakat, Sawm, Hajj], difficulty: hard, tags: [islam], info: "Faith, prayer, charity, fasting and pilgrimage." }

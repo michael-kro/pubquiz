@@ -1,0 +1,62 @@
+category: Sport
+region: universal
+questions:
+  - { type: multiple-choice, text: "What surface is the tennis tournament at Wimbledon played on?", options: ["Clay", "Grass", "Hard court", "Carpet"], answer: 1, difficulty: easy, tags: [tennis] }
+  - { type: multiple-choice, text: "Which US golf club hosts The Masters every year?", options: ["Pebble Beach", "St Andrews", "Augusta National", "Pinehurst"], answer: 2, difficulty: medium, tags: [golf] }
+  - { type: multiple-choice, text: "Which two countries compete for the Ashes in cricket?", options: ["England and Australia", "England and India", "Australia and New Zealand", "England and South Africa"], answer: 0, difficulty: easy, tags: [cricket] }
+  - { type: multiple-choice, text: "The All Blacks rugby team represents which country?", options: ["Australia", "South Africa", "New Zealand", "Fiji"], answer: 2, difficulty: easy, tags: [rugby] }
+  - { type: multiple-choice, text: "What is the name of the trophy awarded to the winner of the men's Rugby World Cup?", options: ["Calcutta Cup", "Bledisloe Cup", "Heineken Cup", "Webb Ellis Cup"], answer: 3, difficulty: medium, tags: [rugby] }
+  - { type: multiple-choice, text: "Which swimmer won eight gold medals at the 2008 Beijing Olympics?", options: ["Ian Thorpe", "Michael Phelps", "Mark Spitz", "Ryan Lochte"], answer: 1, difficulty: medium, tags: [olympics] }
+  - { type: multiple-choice, text: "Which city hosted the 1992 Summer Olympics?", options: ["Barcelona", "Atlanta", "Seoul", "Los Angeles"], answer: 0, difficulty: medium, tags: [olympics] }
+  - { type: multiple-choice, text: "The Stanley Cup is awarded in which sport?", options: ["Basketball", "Baseball", "Lacrosse", "Ice hockey"], answer: 3, difficulty: medium, tags: [american] }
+  - { type: multiple-choice, text: "The Super Bowl trophy is named after which famous coach?", options: ["Bill Belichick", "Don Shula", "Vince Lombardi", "Joe Gibbs"], answer: 2, difficulty: hard, tags: [american] }
+  - { type: multiple-choice, text: "The World Series is the championship of which sport?", options: ["Basketball", "Baseball", "American football", "Ice hockey"], answer: 1, difficulty: easy, tags: [american] }
+  - { type: multiple-choice, text: "Which player scored the infamous \"Hand of God\" goal at the 1986 World Cup?", options: ["Pele", "Johan Cruyff", "Zinedine Zidane", "Diego Maradona"], answer: 3, difficulty: medium, tags: [football] }
+  - { type: multiple-choice, text: "Which famous endurance motor race is held each year near Le Mans in France?", options: ["The Le Mans 24 Hours", "The Monaco Grand Prix", "The Indianapolis 500", "The Dakar Rally"], answer: 0, difficulty: medium, tags: [motorsport] }
+  - { type: multiple-choice, text: "Which motor race is held at the Indianapolis Motor Speedway each May?", options: ["The Daytona 500", "The Indianapolis 500", "The Le Mans 24 Hours", "The Monaco Grand Prix"], answer: 1, difficulty: medium, tags: [motorsport] }
+  - { type: multiple-choice, text: "What colour jersey is worn by the overall leader of the Tour de France?", options: ["Pink", "Green", "Yellow", "White"], answer: 2, difficulty: easy, tags: [cycling] }
+  - { type: multiple-choice, text: "In golf, what is the name for a score of one under par on a hole?", options: ["Eagle", "Birdie", "Bogey", "Albatross"], answer: 1, difficulty: easy, tags: [golf] }
+  - { type: multiple-choice, text: "In golf, what is the name for a score of three under par on a single hole?", options: ["Eagle", "Bogey", "Albatross", "Birdie"], answer: 2, difficulty: hard, tags: [golf] }
+  - { type: multiple-choice, text: "In cricket, what is it called when a batter is dismissed without scoring?", options: ["A zero", "A duck", "A blank", "A nil"], answer: 1, difficulty: easy, tags: [cricket] }
+  - { type: multiple-choice, text: "Which football club plays its home matches at Anfield?", options: ["Everton", "Liverpool", "Manchester City", "Chelsea"], answer: 1, difficulty: easy, tags: [football] }
+  - { type: multiple-choice, text: "Which country hosted the 2014 FIFA World Cup?", options: ["Germany", "South Africa", "Russia", "Brazil"], answer: 3, difficulty: easy, tags: [football] }
+  - { type: multiple-choice, text: "Which country won the 2018 FIFA World Cup?", options: ["Croatia", "France", "Belgium", "England"], answer: 1, difficulty: medium, tags: [football] }
+  - { type: multiple-choice, text: "Which tennis Grand Slam tournament is played on clay courts?", options: ["Wimbledon", "US Open", "Australian Open", "French Open"], answer: 3, difficulty: easy, tags: [tennis] }
+  - { type: multiple-choice, text: "Where was the 1974 boxing match known as the \"Rumble in the Jungle\" held?", options: ["Nigeria", "Zaire (now DR Congo)", "Ghana", "Kenya"], answer: 1, difficulty: hard, tags: [boxing] }
+  - { type: multiple-choice, text: "Michael Jordan won six NBA championships with which team?", options: ["Los Angeles Lakers", "Boston Celtics", "Detroit Pistons", "Chicago Bulls"], answer: 3, difficulty: medium, tags: [american] }
+  - { type: multiple-choice, text: "How many points is a touchdown worth in American football, before any extra point?", options: ["3", "6", "7", "10"], answer: 1, difficulty: easy, tags: [american] }
+  - { type: multiple-choice, text: "In baseball, how many strikes does a batter get before being out?", options: ["Two", "Four", "Three", "Five"], answer: 2, difficulty: easy, tags: [american] }
+  - { type: multiple-choice, text: "In cricket, what is it called when a bowler takes three wickets with three consecutive balls?", options: ["A triple", "A hat-trick", "A treble", "A trifecta"], answer: 1, difficulty: easy, tags: [cricket] }
+  - { type: multiple-choice, text: "How many points is a try worth in rugby union, before any conversion?", options: ["3", "4", "5", "6"], answer: 2, difficulty: medium, tags: [rugby] }
+  - { type: multiple-choice, text: "In which English city is the World Snooker Championship held at the Crucible Theatre?", options: ["Sheffield", "Leeds", "Manchester", "Blackpool"], answer: 0, difficulty: medium, tags: [snooker] }
+  - { type: multiple-choice, text: "Which German tennis player won the Golden Slam in 1988, winning all four Grand Slams and Olympic gold in one year?", options: ["Martina Navratilova", "Chris Evert", "Steffi Graf", "Monica Seles"], answer: 2, difficulty: hard, tags: [tennis] }
+  - { type: multiple-choice, text: "Who was the first athlete to run a mile in under four minutes?", options: ["Roger Bannister", "Sebastian Coe", "Steve Ovett", "Chris Chataway"], answer: 0, difficulty: hard, tags: [athletics] }
+  - { type: multiple-choice, text: "Which country won the first FIFA World Cup in 1930?", options: ["Brazil", "Argentina", "Uruguay", "Italy"], answer: 2, difficulty: hard, tags: [football] }
+  - { type: multiple-choice, text: "Which golfer was nicknamed \"The Golden Bear\"?", options: ["Arnold Palmer", "Jack Nicklaus", "Gary Player", "Greg Norman"], answer: 1, difficulty: hard, tags: [golf] }
+  - { type: multiple-choice, text: "Which sport is played at Lord's in London?", options: ["Cricket", "Rugby", "Tennis", "Golf"], answer: 0, difficulty: easy, tags: [cricket] }
+  - { type: letter, text: "Which Argentine footballer captained his country to victory at the 2022 World Cup?", answer: Lionel Messi, difficulty: easy, tags: [football] }
+  - { type: letter, text: "Which Swiss tennis player won eight Wimbledon men's singles titles?", answer: Roger Federer, difficulty: easy, tags: [tennis] }
+  - { type: letter, text: "Which American tennis player won 23 Grand Slam singles titles and has a sister named Venus?", answer: Serena Williams, difficulty: medium, tags: [tennis] }
+  - { type: letter, text: "Which American golfer won the Masters in 1997 at the age of 21?", answer: Tiger Woods, difficulty: easy, tags: [golf] }
+  - { type: letter, text: "Which Jamaican sprinter won the 100 metres at both the 2008 and 2012 Olympics?", answer: Usain Bolt, difficulty: easy, tags: [athletics] }
+  - { type: letter, text: "Which boxer, who won the world heavyweight title three times, was born Cassius Clay?", answer: Muhammad Ali, difficulty: easy, tags: [boxing] }
+  - { type: letter, text: "Which New York Yankees slugger was nicknamed \"The Sultan of Swat\"?", answer: Babe Ruth, difficulty: medium, tags: [american] }
+  - { type: letter, text: "Which Brazilian Formula One driver won three world championships, in 1988, 1990 and 1991?", answer: Ayrton Senna, difficulty: medium, tags: [motorsport] }
+  - { type: letter, text: "Which Brazilian footballer won three World Cups as a player, in 1958, 1962 and 1970?", answer: Pele, difficulty: easy, tags: [football] }
+  - { type: number, text: "How many times has Brazil won the men's FIFA World Cup (up to and including 2022)?", answer: 5, difficulty: medium, tags: [football] }
+  - { type: number, text: "How many times did Rafael Nadal win the French Open men's singles title?", answer: 14, difficulty: hard, tags: [tennis] }
+  - { type: number, text: "In what year did England win the men's FIFA World Cup?", answer: 1966, difficulty: easy, tags: [football] }
+  - { type: number, text: "What is the maximum possible break in snooker?", answer: 147, difficulty: medium, tags: [snooker] }
+  - { type: number, text: "What is the highest possible score with three darts?", answer: 180, difficulty: easy, tags: [darts] }
+  - { type: nearest, text: "Bob Beamon won the 1968 Olympic long jump with a famous leap. How far was it, in metres?", answer: 8.9, difficulty: hard, tags: [athletics], info: "His jump of 8.90 m stood as the world record for almost 23 years." }
+  - { type: nearest, text: "How long is a marathon, in kilometres?", answer: 42.195, difficulty: medium, tags: [athletics] }
+  - { type: nearest, text: "Roughly how many spectators can the redeveloped Wembley Stadium hold?", answer: 90000, difficulty: medium, tags: [football] }
+  - { type: ordering, text: "Put these Summer Olympics host cities in order, earliest first.", items: ["Sydney", "Athens", "Beijing", "London", "Rio de Janeiro"], difficulty: medium, tags: [olympics] }
+  - { type: ordering, text: "Put these men's World Cup winners in order of the year they won, earliest first.", items: ["Italy (1982)", "Argentina (1986)", "West Germany (1990)", "Brazil (1994)", "France (1998)"], difficulty: medium, tags: [football] }
+  - { type: ordering, text: "Put these athletics events in order of distance, shortest first.", items: ["100 metres", "400 metres", "800 metres", "1500 metres", "5000 metres"], difficulty: easy, tags: [athletics] }
+  - { type: ordering, text: "Put these sports in order of the number of players per side on the field of play, fewest first.", items: ["Basketball", "Volleyball", "Baseball", "Football (soccer)", "Rugby union"], difficulty: medium, tags: [general] }
+  - { type: ordering, text: "Put these golf scores for a single hole in order, best (lowest) first.", items: ["Albatross", "Eagle", "Birdie", "Par", "Bogey"], difficulty: medium, tags: [golf] }
+  - { type: ordering, text: "Put these Formula One drivers in order of the year they first won the world championship, earliest first.", items: ["Jackie Stewart", "Niki Lauda", "Ayrton Senna", "Michael Schumacher", "Lewis Hamilton"], difficulty: hard, tags: [motorsport] }
+  - { type: multiple-choice, text: "True or false? Wimbledon is played on clay courts.", options: ["True", "False"], answer: 1, difficulty: easy, tags: [tennis] }
+  - { type: multiple-choice, text: "True or false? In golf, the player with the lowest score wins.", options: ["True", "False"], answer: 0, difficulty: easy, tags: [golf] }
+  - { type: multiple-choice, text: "True or false? Basketball was invented in the United States.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [american] }

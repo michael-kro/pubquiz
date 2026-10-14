@@ -1,0 +1,66 @@
+category: Film
+region: universal
+questions:
+  - { type: multiple-choice, text: "Which actor plays Jack Dawson in the 1997 film Titanic?", options: ["Leonardo DiCaprio", "Brad Pitt", "Matt Damon", "Tom Cruise"], answer: 0, difficulty: easy, tags: [actors] }
+  - { type: multiple-choice, text: "Which studio made the first Toy Story film?", options: ["DreamWorks", "Pixar", "Illumination", "Blue Sky"], answer: 1, difficulty: easy, tags: [animation] }
+  - { type: multiple-choice, text: "What is the name of Dorothy's dog in The Wizard of Oz?", options: ["Benji", "Lassie", "Toto", "Rex"], answer: 2, difficulty: easy, tags: [classics] }
+  - { type: multiple-choice, text: "Which actor plays Maximus in the film Gladiator?", options: ["Mel Gibson", "Russell Crowe", "Gerard Butler", "Eric Bana"], answer: 1, difficulty: easy, tags: [actors] }
+  - { type: multiple-choice, text: "In which film does a teenager travel through time in a modified DeLorean car?", options: ["The Terminator", "Looper", "Back to the Future", "Bill & Ted's Excellent Adventure"], answer: 2, difficulty: easy, tags: [sci-fi] }
+  - { type: multiple-choice, text: "In The Lion King, what is the name of Simba's villainous uncle?", options: ["Mufasa", "Zazu", "Rafiki", "Scar"], answer: 3, difficulty: easy, tags: [animation] }
+  - { type: multiple-choice, text: "Who directed the 1994 film Pulp Fiction?", options: ["Quentin Tarantino", "Martin Scorsese", "Guy Ritchie", "Ridley Scott"], answer: 0, difficulty: medium, tags: [directors] }
+  - { type: multiple-choice, text: "In which classic film does the word \"Rosebud\" become a central mystery?", options: ["Casablanca", "Citizen Kane", "Vertigo", "Psycho"], answer: 1, difficulty: medium, tags: [classics] }
+  - { type: multiple-choice, text: "Which Alfred Hitchcock film contains a famous shower scene?", options: ["Vertigo", "The Birds", "Psycho", "Rear Window"], answer: 2, difficulty: easy, tags: [classics, directors] }
+  - { type: multiple-choice, text: "In Finding Nemo, what type of fish is Nemo?", options: ["Angelfish", "Pufferfish", "Clownfish", "Seahorse"], answer: 2, difficulty: easy, tags: [animation] }
+  - { type: multiple-choice, text: "Which actor plays Neo in The Matrix?", options: ["Will Smith", "Johnny Depp", "Brad Pitt", "Keanu Reeves"], answer: 3, difficulty: easy, tags: [actors, sci-fi] }
+  - { type: multiple-choice, text: "Who directed The Lord of the Rings film trilogy?", options: ["James Cameron", "Peter Jackson", "Ridley Scott", "George Lucas"], answer: 1, difficulty: easy, tags: [directors, fantasy] }
+  - { type: multiple-choice, text: "In which country is The Sound of Music set?", options: ["Switzerland", "Germany", "Austria", "Hungary"], answer: 2, difficulty: medium, tags: [musicals] }
+  - { type: multiple-choice, text: "Which 1982 film tells the story of an alien befriending a boy named Elliott?", options: ["Close Encounters of the Third Kind", "E.T. the Extra-Terrestrial", "Alien", "Starman"], answer: 1, difficulty: medium, tags: [sci-fi] }
+  - { type: multiple-choice, text: "Which of these films was NOT directed by Steven Spielberg?", options: ["Alien", "Jaws", "Jurassic Park", "E.T. the Extra-Terrestrial"], answer: 0, difficulty: medium, tags: [directors] }
+  - { type: multiple-choice, text: "In the film The Matrix, what colour is the pill Neo takes to learn the truth?", options: ["Blue", "Green", "Red", "Yellow"], answer: 2, difficulty: easy, tags: [sci-fi] }
+  - { type: multiple-choice, text: "In 2001: A Space Odyssey, what is the name of the spaceship's computer?", options: ["Skynet", "Mother", "HAL 9000", "WOPR"], answer: 2, difficulty: medium, tags: [sci-fi, classics] }
+  - { type: multiple-choice, text: "Which film is set on the fictional Amity Island?", options: ["Poltergeist", "The Birds", "Cape Fear", "Jaws"], answer: 3, difficulty: medium, tags: [thriller] }
+  - { type: multiple-choice, text: "Which actor first played James Bond on screen, in Dr. No?", options: ["Roger Moore", "Sean Connery", "Michael Caine", "David Niven"], answer: 1, difficulty: easy, tags: [bond] }
+  - { type: multiple-choice, text: "In Shrek, which actor voices Donkey?", options: ["Mike Myers", "Chris Rock", "Eddie Murphy", "Jim Carrey"], answer: 2, difficulty: medium, tags: [animation] }
+  - { type: multiple-choice, text: "Which film features the villain Hans Gruber?", options: ["Lethal Weapon", "Die Hard", "Speed", "Predator"], answer: 1, difficulty: medium, tags: [action] }
+  - { type: multiple-choice, text: "Which actress plays Hermione Granger in the Harry Potter films?", options: ["Emma Watson", "Emma Stone", "Keira Knightley", "Bonnie Wright"], answer: 0, difficulty: easy, tags: [fantasy] }
+  - { type: multiple-choice, text: "Which actor plays Indiana Jones in Raiders of the Lost Ark?", options: ["Tom Selleck", "Kurt Russell", "Mel Gibson", "Harrison Ford"], answer: 3, difficulty: easy, tags: [adventure] }
+  - { type: multiple-choice, text: "Who played the Joker in the 2008 film The Dark Knight?", options: ["Jack Nicholson", "Joaquin Phoenix", "Heath Ledger", "Jared Leto"], answer: 2, difficulty: medium, tags: [superhero] }
+  - { type: multiple-choice, text: "In Frozen, what is the name of the snowman?", options: ["Sven", "Frosty", "Kristoff", "Olaf"], answer: 3, difficulty: easy, tags: [animation] }
+  - { type: multiple-choice, text: "What was the original 1977 Star Wars film later subtitled?", options: ["The Phantom Menace", "A New Hope", "Return of the Jedi", "The Empire Strikes Back"], answer: 1, difficulty: medium, tags: [sci-fi] }
+  - { type: multiple-choice, text: "Parasite, the winner of the Best Picture Oscar for 2019 films, comes from which country?", options: ["Japan", "China", "South Korea", "Thailand"], answer: 2, difficulty: medium, tags: [awards] }
+  - { type: multiple-choice, text: "Which Japanese studio made the animated film Spirited Away?", options: ["Toei", "Studio Ghibli", "Pixar", "Aardman"], answer: 1, difficulty: medium, tags: [animation] }
+  - { type: multiple-choice, text: "Which British studio makes the Wallace and Gromit films?", options: ["Aardman", "Laika", "Pixar", "Studio Ghibli"], answer: 0, difficulty: medium, tags: [animation] }
+  - { type: multiple-choice, text: "Which director made Edward Scissorhands and Beetlejuice?", options: ["Wes Anderson", "Terry Gilliam", "David Lynch", "Tim Burton"], answer: 3, difficulty: medium, tags: [directors] }
+  - { type: multiple-choice, text: "In The Wizard of Oz, what does the Scarecrow wish to get from the Wizard?", options: ["A heart", "A brain", "Courage", "A way home"], answer: 1, difficulty: easy, tags: [classics] }
+  - { type: multiple-choice, text: "Which film is set largely in the Overlook Hotel?", options: ["Misery", "Psycho", "The Shining", "Carrie"], answer: 2, difficulty: medium, tags: [horror] }
+  - { type: multiple-choice, text: "Disney's first full-length animated feature film was which of these?", options: ["Pinocchio", "Snow White and the Seven Dwarfs", "Bambi", "Fantasia"], answer: 1, difficulty: medium, tags: [animation, classics] }
+  - { type: multiple-choice, text: "Which actor won an Oscar for playing Hannibal Lecter in The Silence of the Lambs?", options: ["Gary Oldman", "Ian McKellen", "Ralph Fiennes", "Anthony Hopkins"], answer: 3, difficulty: medium, tags: [awards, thriller] }
+  - { type: multiple-choice, text: "Which director made the 1954 film Seven Samurai?", options: ["Hayao Miyazaki", "Yasujiro Ozu", "Akira Kurosawa", "Takeshi Kitano"], answer: 2, difficulty: hard, tags: [directors, world-cinema] }
+  - { type: multiple-choice, text: "Which 1927 film is widely credited as the first feature-length film with synchronised dialogue sequences?", options: ["Metropolis", "The Jazz Singer", "Sunrise", "The General"], answer: 1, difficulty: hard, tags: [classics] }
+  - { type: letter, text: "Who directed Jaws, Jurassic Park and E.T.?", answer: Steven Spielberg, difficulty: easy, tags: [directors] }
+  - { type: letter, text: "Which actor plays the title role in Forrest Gump?", answer: Tom Hanks, difficulty: easy, tags: [actors] }
+  - { type: letter, text: "Which director is known as the \"Master of Suspense\" and made Vertigo and The Birds?", answer: Alfred Hitchcock, difficulty: easy, tags: [directors] }
+  - { type: letter, text: "Which actress plays Ellen Ripley in the Alien films?", answer: Sigourney Weaver, difficulty: medium, tags: [actors, sci-fi] }
+  - { type: letter, text: "Which actor plays Captain Jack Sparrow in the Pirates of the Caribbean films?", answer: Johnny Depp, difficulty: easy, tags: [actors] }
+  - { type: letter, text: "Which director made both Titanic and Avatar?", answer: James Cameron, difficulty: easy, tags: [directors] }
+  - { type: letter, text: "What is the name of the cowboy doll in Toy Story?", answer: Woody, difficulty: easy, tags: [animation] }
+  - { type: letter, text: "Which actress plays Rose in Titanic?", answer: Kate Winslet, difficulty: easy, tags: [actors] }
+  - { type: letter, text: "Who directed and starred in the 1941 film Citizen Kane?", answer: Orson Welles, difficulty: medium, tags: [classics, directors] }
+  - { type: number, text: "How many Academy Awards did Titanic win?", answer: 11, difficulty: medium, tags: [awards] }
+  - { type: number, text: "In what year was The Wizard of Oz (the famous MGM film with Judy Garland) released?", answer: 1939, difficulty: medium, tags: [classics] }
+  - { type: number, text: "In what year was the first Star Wars film released?", answer: 1977, difficulty: easy, tags: [sci-fi] }
+  - { type: number, text: "In what year was Alfred Hitchcock's Psycho released?", answer: 1960, difficulty: hard, tags: [classics] }
+  - { type: number, text: "In what year was the original Japanese Godzilla film released?", answer: 1954, difficulty: hard, tags: [world-cinema] }
+  - { type: number, text: "How many dwarfs does Snow White live with in Disney's 1937 film?", answer: 7, difficulty: easy, tags: [animation] }
+  - { type: nearest, text: "Roughly how long is the theatrical version of Titanic (1997), in minutes?", answer: 194, difficulty: hard, tags: [trivia], info: "That is 3 hours and 14 minutes." }
+  - { type: nearest, text: "Roughly how long is the theatrical version of The Godfather (1972), in minutes?", answer: 175, difficulty: hard, tags: [trivia], info: "That is 2 hours and 55 minutes." }
+  - { type: nearest, text: "Roughly how long is the theatrical version of The Lord of the Rings: The Return of the King, in minutes?", answer: 201, difficulty: hard, tags: [trivia], info: "That is 3 hours and 21 minutes." }
+  - { type: ordering, text: "Put these actors in the order they first played James Bond on screen, earliest first.", items: ["Sean Connery", "George Lazenby", "Roger Moore", "Timothy Dalton", "Pierce Brosnan"], difficulty: medium, tags: [bond] }
+  - { type: ordering, text: "Put these films in order of release, earliest first.", items: ["Star Wars", "Raiders of the Lost Ark", "E.T. the Extra-Terrestrial", "Back to the Future", "Jurassic Park"], difficulty: medium, tags: [classics] }
+  - { type: ordering, text: "Put these Pixar films in order of release, earliest first.", items: ["Toy Story", "A Bug's Life", "Monsters, Inc.", "Finding Nemo", "The Incredibles"], difficulty: medium, tags: [animation] }
+  - { type: ordering, text: "Put these Harry Potter films in order of release, earliest first.", items: ["Philosopher's Stone", "Chamber of Secrets", "Prisoner of Azkaban", "Goblet of Fire", "Order of the Phoenix"], difficulty: easy, tags: [fantasy] }
+  - { type: ordering, text: "Put these Christopher Nolan films in order of release, earliest first.", items: ["Memento", "Batman Begins", "The Prestige", "The Dark Knight", "Inception"], difficulty: hard, tags: [directors] }
+  - { type: ordering, text: "Put these Disney animated films in order of release, earliest first.", items: ["Snow White and the Seven Dwarfs", "Pinocchio", "Dumbo", "Bambi", "Cinderella"], difficulty: hard, tags: [animation, classics] }
+  - { type: multiple-choice, text: "True or false? Alfred Hitchcock's Psycho was filmed in colour.", options: ["True", "False"], answer: 1, difficulty: medium, tags: [classics] }
+  - { type: multiple-choice, text: "True or false? Tom Hanks provides the voice of Woody in the Toy Story films.", options: ["True", "False"], answer: 0, difficulty: easy, tags: [animation] }
+  - { type: multiple-choice, text: "True or false? The Shining was directed by Steven Spielberg.", options: ["True", "False"], answer: 1, difficulty: easy, tags: [horror] }

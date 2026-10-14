@@ -1,0 +1,67 @@
+category: Pop Culture Throwbacks
+region: uk
+questions:
+  # multiple-choice
+  - { type: multiple-choice, text: "Which boy band sang 'I Want It That Way'?", options: [NSYNC, Backstreet Boys, Boyzone, 5ive], answer: 1, difficulty: easy, tags: [music, 1990s] }
+  - { type: multiple-choice, text: "Which Spice Girl was known as Ginger Spice?", options: [Emma Bunton, Geri Halliwell, Melanie Chisholm, Victoria Beckham], answer: 1, difficulty: easy, tags: [music, 1990s] }
+  - { type: multiple-choice, text: "Which singer was known as the Queen of Pop in the 1980s?", options: [Cher, Whitney Houston, Madonna, Kylie Minogue], answer: 2, difficulty: easy, tags: [music, 1980s] }
+  - { type: multiple-choice, text: "In which US city is the bar in the sitcom Cheers set?", options: [Chicago, Boston, Seattle, New York], answer: 1, difficulty: medium, tags: [tv, 1980s] }
+  - { type: multiple-choice, text: "In which town do the Simpsons live?", options: [Shelbyville, Quahog, Springfield, South Park], answer: 2, difficulty: easy, tags: [tv] }
+  - { type: multiple-choice, text: "What is the name of Mario's brother in the Nintendo games?", options: [Wario, Luigi, Toad, Yoshi], answer: 1, difficulty: easy, tags: [games, 1980s] }
+  - { type: multiple-choice, text: "Which video game company created Sonic the Hedgehog?", options: [Sega, Nintendo, Sony, Atari], answer: 0, difficulty: easy, tags: [games, 1990s] }
+  - { type: multiple-choice, text: "Which Britpop band released the 1995 hit 'Wonderwall'?", options: [Blur, Pulp, Oasis, Suede], answer: 2, difficulty: easy, tags: [music, 1990s] }
+  - { type: multiple-choice, text: "Which duo had a 1984 hit with 'Wake Me Up Before You Go-Go'?", options: [Wham!, Eurythmics, Pet Shop Boys, Tears for Fears], answer: 0, difficulty: easy, tags: [music, 1980s] }
+  - { type: multiple-choice, text: "Which rock band had a hit with 'Livin' on a Prayer' in 1986?", options: [Def Leppard, Bon Jovi, Aerosmith, Europe], answer: 1, difficulty: easy, tags: [music, 1980s] }
+  - { type: multiple-choice, text: "Which TV talent show, launched in 2001, was won by Will Young in 2002?", options: [The X Factor, Fame Academy, Pop Idol, Popstars], answer: 2, difficulty: medium, tags: [tv, 2000s] }
+  - { type: multiple-choice, text: "Which actor played Neo in the 1999 film The Matrix?", options: [Keanu Reeves, Brad Pitt, Tom Cruise, Will Smith], answer: 0, difficulty: easy, tags: [film, 1990s] }
+  - { type: multiple-choice, text: "Which actor played Jack Dawson in the 1997 film Titanic?", options: [Brad Pitt, Johnny Depp, Leonardo DiCaprio, Matt Damon], answer: 2, difficulty: easy, tags: [film, 1990s] }
+  - { type: multiple-choice, text: "Who sang 'My Heart Will Go On', the theme to Titanic?", options: [Whitney Houston, Celine Dion, Mariah Carey, Shania Twain], answer: 1, difficulty: easy, tags: [music, 1990s] }
+  - { type: multiple-choice, text: "Which Pokemon is the partner of Ash Ketchum in the cartoon?", options: [Charmander, Bulbasaur, Squirtle, Pikachu], answer: 3, difficulty: easy, tags: [tv, 1990s] }
+  - { type: multiple-choice, text: "The Rubik's Cube was invented in which country?", options: [Poland, Hungary, Germany, Russia], answer: 1, difficulty: medium, tags: [toys, 1980s] }
+  - { type: multiple-choice, text: "The puzzle video game Tetris was created in which country in 1984?", options: [USA, Japan, The Soviet Union, The UK], answer: 2, difficulty: hard, tags: [games, 1980s] }
+  - { type: multiple-choice, text: "Which company made the Dreamcast games console?", options: [Sony, Nintendo, Sega, Atari], answer: 2, difficulty: medium, tags: [games, 1990s] }
+  - { type: multiple-choice, text: "Which actor starred in the sitcom The Fresh Prince of Bel-Air?", options: [Eddie Murphy, Will Smith, Martin Lawrence, Jamie Foxx], answer: 1, difficulty: easy, tags: [tv, 1990s] }
+  - { type: multiple-choice, text: "Which actor delivered the line 'I'll be back' in The Terminator?", options: [Sylvester Stallone, Arnold Schwarzenegger, Bruce Willis, Jean-Claude Van Damme], answer: 1, difficulty: easy, tags: [film, 1980s] }
+  - { type: multiple-choice, text: "Which soap opera is set in Albert Square?", options: [Coronation Street, Emmerdale, Hollyoaks, EastEnders], answer: 3, difficulty: easy, tags: [tv, 1980s] }
+  - { type: multiple-choice, text: "Which band had the 1981 hit 'Don't Stop Believin''?", options: [Foreigner, Journey, Toto, Boston], answer: 1, difficulty: medium, tags: [music, 1980s] }
+  - { type: multiple-choice, text: "The Y2K or 'millennium bug' worried people that computers would misread what?", options: [Passwords, Time zones, The year, Spelling], answer: 2, difficulty: medium, tags: [technology, 1990s] }
+  - { type: multiple-choice, text: "Who had a 1990 hit with 'Ice Ice Baby'?", options: [MC Hammer, Vanilla Ice, Coolio, Will Smith], answer: 1, difficulty: medium, tags: [music, 1990s] }
+  - { type: multiple-choice, text: "Which video game character, introduced in 1996, is an archaeologist adventurer?", options: [Lara Croft, Samus Aran, Sonic, Crash Bandicoot], answer: 0, difficulty: medium, tags: [games, 1990s] }
+  - { type: multiple-choice, text: "Which former Take That member had a solo hit with 'Angels' in 1997?", options: [Gary Barlow, Mark Owen, Robbie Williams, Howard Donald], answer: 2, difficulty: medium, tags: [music, 1990s] }
+  - { type: multiple-choice, text: "Which Australian soap did Kylie Minogue star in before she became a pop star?", options: [Home and Away, Neighbours, Prisoner, Sons and Daughters], answer: 1, difficulty: medium, tags: [tv, 1980s] }
+  - { type: multiple-choice, text: "In which country did the Pokemon video games first appear?", options: [South Korea, USA, China, Japan], answer: 3, difficulty: easy, tags: [games, 1990s] }
+  - { type: multiple-choice, text: "Which girl group had a 1999 hit with 'No Scrubs'?", options: [Destiny's Child, TLC, En Vogue, All Saints], answer: 1, difficulty: medium, tags: [music, 1990s] }
+  - { type: multiple-choice, text: "Which singer had a 1999 hit with 'Livin' la Vida Loca'?", options: [Enrique Iglesias, Marc Anthony, Ricky Martin, Julio Iglesias], answer: 2, difficulty: medium, tags: [music, 1990s] }
+  - { type: multiple-choice, text: "Which 1990s sitcom was famously described as being 'about nothing'?", options: [Frasier, Cheers, Roseanne, Seinfeld], answer: 3, difficulty: medium, tags: [tv, 1990s] }
+  - { type: multiple-choice, text: "In which US city is the sitcom Frasier set?", options: [Boston, Seattle, Chicago, Portland], answer: 1, difficulty: medium, tags: [tv, 1990s] }
+  # true/false
+  - { type: multiple-choice, text: "True or false? The sitcom Friends ran for ten seasons.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [tv, 1990s] }
+  - { type: multiple-choice, text: "True or false? The grunge band Nirvana came from the UK.", options: ["True", "False"], answer: 1, difficulty: easy, tags: [music, 1990s], info: "Nirvana formed in Aberdeen, Washington, in the USA." }
+  - { type: multiple-choice, text: "True or false? Pokemon began as a series of video games.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [games, 1990s] }
+  # letter
+  - { type: letter, text: "Which Britpop band released the 1994 album Parklife?", answer: Blur, difficulty: medium, tags: [music, 1990s] }
+  - { type: letter, text: "Who sang '...Baby One More Time' in 1998?", answer: Britney Spears, difficulty: easy, tags: [music, 1990s] }
+  - { type: letter, text: "What was the name of the 1996 toy craze, an electronic pet on a keyring that needed feeding?", answer: Tamagotchi, difficulty: easy, tags: [toys, 1990s] }
+  - { type: letter, text: "Which British boy band had hits with 'Back for Good' and 'Never Forget'?", answer: Take That, difficulty: easy, tags: [music, 1990s] }
+  - { type: letter, text: "Which sitcom features Ross, Rachel, Monica, Chandler, Joey and Phoebe?", answer: Friends, difficulty: easy, tags: [tv, 1990s] }
+  - { type: letter, text: "Which author wrote the first Harry Potter book, published in 1997?", answer: J.K. Rowling, difficulty: easy, tags: [books, 1990s] }
+  - { type: letter, text: "What was Nintendo's popular handheld games console launched in 1989 called?", answer: Game Boy, difficulty: easy, tags: [games, 1980s] }
+  - { type: letter, text: "Which 1993 Steven Spielberg film brought dinosaurs back to life on a theme park island?", answer: Jurassic Park, difficulty: easy, tags: [film, 1990s] }
+  - { type: letter, text: "Who sang 'Billie Jean' and released the album Thriller?", answer: Michael Jackson, difficulty: easy, tags: [music, 1980s] }
+  # number
+  - { type: number, text: "In what year was the film Titanic released?", answer: 1997, difficulty: easy, tags: [film, 1990s] }
+  - { type: number, text: "In what year did the Live Aid concerts take place?", answer: 1985, difficulty: medium, tags: [music, 1980s] }
+  - { type: number, text: "In what year did Nirvana release their album Nevermind?", answer: 1991, difficulty: medium, tags: [music, 1990s] }
+  - { type: number, text: "How many Teletubbies are there?", answer: 4, difficulty: easy, tags: [tv, 1990s] }
+  - { type: number, text: "How many main characters are there in Friends?", answer: 6, difficulty: easy, tags: [tv, 1990s] }
+  - { type: number, text: "In what year did the Spice Girls release their first single, 'Wannabe'?", answer: 1996, difficulty: medium, tags: [music, 1990s] }
+  # nearest
+  - { type: nearest, text: "In what year did the sitcom Friends first air?", answer: 1994, difficulty: medium, tags: [tv, 1990s] }
+  - { type: nearest, text: "In what year was the Nokia 3310 phone released?", answer: 2000, difficulty: hard, tags: [technology, 2000s] }
+  - { type: nearest, text: "In what year was the first Harry Potter film, The Philosopher's Stone, released in cinemas?", answer: 2001, difficulty: medium, tags: [film, 2000s] }
+  # ordering
+  - { type: ordering, text: "Put these films in order of release, earliest first.", items: [Back to the Future, Jurassic Park, The Matrix, Gladiator, Shrek], difficulty: medium, tags: [film] }
+  - { type: ordering, text: "Put the first five Harry Potter books in order of publication, first to last.", items: [Philosopher's Stone, Chamber of Secrets, Prisoner of Azkaban, Goblet of Fire, Order of the Phoenix], difficulty: medium, tags: [books] }
+  - { type: ordering, text: "Put these albums in order of release, earliest first.", items: [Like a Virgin, Bad, Nevermind, Morning Glory, The Marshall Mathers LP], difficulty: hard, tags: [music], info: "They came out in 1984, 1987, 1991, 1995 and 2000." }
+  - { type: ordering, text: "Put these actors in the order they first played James Bond in a film, earliest first.", items: [Sean Connery, Roger Moore, Timothy Dalton, Pierce Brosnan, Daniel Craig], difficulty: medium, tags: [film] }
+  - { type: ordering, text: "Put these Disney animated films in order of release, earliest first.", items: [The Little Mermaid, Beauty and the Beast, Aladdin, The Lion King, Mulan], difficulty: medium, tags: [film] }

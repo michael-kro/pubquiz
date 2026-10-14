@@ -165,6 +165,7 @@ test('ordering: shuffled for display, points per item in place plus a speed bonu
     answerText: '1 → 2 → 3 → 4 → 5',
     detail: '5 of 5 in the right place',
     correctIndex: undefined,
+    info: undefined,
   });
   assert.equal(game.teamView(partial.id)!.result!.points, 300);
   assert.equal(game.teamView(bad.id)!.result!.points, 100);

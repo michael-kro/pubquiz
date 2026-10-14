@@ -1,0 +1,61 @@
+category: Music
+region: universal
+questions:
+  - { type: multiple-choice, text: "Which English city is the hometown of The Beatles?", options: ["Liverpool", "Manchester", "London", "Birmingham"], answer: 0, difficulty: easy, tags: [bands] }
+  - { type: multiple-choice, text: "Which band released the 1973 album The Dark Side of the Moon?", options: ["Led Zeppelin", "Genesis", "Pink Floyd", "Yes"], answer: 2, difficulty: medium, tags: [albums] }
+  - { type: multiple-choice, text: "Which country did the pop group ABBA come from?", options: ["Norway", "Sweden", "Denmark", "Finland"], answer: 1, difficulty: easy, tags: [bands] }
+  - { type: multiple-choice, text: "In which city were U2 formed?", options: ["Belfast", "Cork", "Dublin", "Galway"], answer: 2, difficulty: medium, tags: [bands] }
+  - { type: multiple-choice, text: "Which two brothers were the core of the band Oasis?", options: ["Liam and Noel Gallagher", "Ray and Dave Davies", "Barry and Robin Gibb", "Nick and Joe Jonas"], answer: 0, difficulty: easy, tags: [bands] }
+  - { type: multiple-choice, text: "Which 1991 Nirvana album features a baby swimming underwater on its cover?", options: ["In Utero", "Bleach", "Nevermind", "Incesticide"], answer: 2, difficulty: medium, tags: [albums] }
+  - { type: multiple-choice, text: "Which US city is the home of the Motown record label?", options: ["Chicago", "Memphis", "Nashville", "Detroit"], answer: 3, difficulty: medium, tags: [history] }
+  - { type: multiple-choice, text: "In 2016 Bob Dylan won a Nobel Prize in which category?", options: ["Peace", "Literature", "Physics", "Medicine"], answer: 1, difficulty: medium, tags: [history] }
+  - { type: multiple-choice, text: "In which city was the composer Wolfgang Amadeus Mozart born?", options: ["Vienna", "Salzburg", "Berlin", "Prague"], answer: 1, difficulty: hard, tags: [classical] }
+  - { type: multiple-choice, text: "Who composed The Four Seasons?", options: ["Handel", "Haydn", "Bach", "Vivaldi"], answer: 3, difficulty: medium, tags: [classical] }
+  - { type: multiple-choice, text: "Which composer wrote the ballet Swan Lake?", options: ["Stravinsky", "Rachmaninoff", "Tchaikovsky", "Prokofiev"], answer: 2, difficulty: medium, tags: [classical] }
+  - { type: multiple-choice, text: "Which is the largest instrument of the standard orchestral string family?", options: ["Violin", "Viola", "Cello", "Double bass"], answer: 3, difficulty: easy, tags: [instruments] }
+  - { type: multiple-choice, text: "Which of these is NOT a brass instrument?", options: ["Trumpet", "Trombone", "Clarinet", "Tuba"], answer: 2, difficulty: easy, tags: [instruments] }
+  - { type: multiple-choice, text: "Which artist released the 1984 album Purple Rain?", options: ["Prince", "Michael Jackson", "Lionel Richie", "Stevie Wonder"], answer: 0, difficulty: medium, tags: [albums] }
+  - { type: multiple-choice, text: "The singer Adele has titled several of her albums, such as 19 and 21, after what?", options: ["Her age at the time", "Her birth year", "Her favourite numbers", "Tour dates"], answer: 0, difficulty: medium, tags: [albums] }
+  - { type: multiple-choice, text: "Which Spice Girl was nicknamed \"Posh\"?", options: ["Emma Bunton", "Victoria Adams (Beckham)", "Geri Halliwell", "Melanie Brown"], answer: 1, difficulty: easy, tags: [bands] }
+  - { type: multiple-choice, text: "Who was the lead singer of Led Zeppelin?", options: ["Roger Daltrey", "Robert Plant", "Steven Tyler", "Ozzy Osbourne"], answer: 1, difficulty: medium, tags: [bands] }
+  - { type: multiple-choice, text: "What is the rapper Eminem's real first name?", options: ["Marcus", "Martin", "Malcolm", "Marshall"], answer: 3, difficulty: hard, tags: [artists] }
+  - { type: multiple-choice, text: "Beyonce first became famous as a member of which group?", options: ["Destiny's Child", "TLC", "En Vogue", "Sugababes"], answer: 0, difficulty: medium, tags: [artists] }
+  - { type: multiple-choice, text: "Which singer is nicknamed \"The Boss\"?", options: ["Billy Joel", "Bon Jovi", "Bruce Springsteen", "Neil Diamond"], answer: 2, difficulty: medium, tags: [artists] }
+  - { type: multiple-choice, text: "Bob Marley is most associated with which style of music?", options: ["Ska", "Reggae", "Calypso", "Soca"], answer: 1, difficulty: easy, tags: [genres] }
+  - { type: multiple-choice, text: "The saxophone was invented by a Belgian instrument maker named what?", options: ["Adolphe Sax", "Antoine Besson", "Louis Armstrong", "Henri Selmer"], answer: 0, difficulty: hard, tags: [instruments] }
+  - { type: multiple-choice, text: "Where is the Glastonbury Festival held?", options: ["Devon", "Dorset", "Wiltshire", "Somerset"], answer: 3, difficulty: medium, tags: [history] }
+  - { type: multiple-choice, text: "Which band released the 1975 album A Night at the Opera?", options: ["Genesis", "Queen", "Wings", "Supertramp"], answer: 1, difficulty: medium, tags: [albums] }
+  - { type: multiple-choice, text: "Which Beatles album cover shows the band crossing a zebra crossing?", options: ["Revolver", "Help!", "Abbey Road", "Let It Be"], answer: 2, difficulty: easy, tags: [albums] }
+  - { type: multiple-choice, text: "Which band released the 1977 album Rumours?", options: ["Eagles", "Fleetwood Mac", "Genesis", "The Bee Gees"], answer: 1, difficulty: medium, tags: [albums] }
+  - { type: multiple-choice, text: "In musical notation, what does \"forte\" mean?", options: ["Soft", "Fast", "Slow", "Loud"], answer: 3, difficulty: medium, tags: [theory] }
+  - { type: multiple-choice, text: "Which singer is known as the \"Queen of Soul\"?", options: ["Whitney Houston", "Diana Ross", "Aretha Franklin", "Tina Turner"], answer: 2, difficulty: medium, tags: [artists] }
+  - { type: multiple-choice, text: "Which singer is known as the \"King of Pop\"?", options: ["Prince", "Michael Jackson", "Elton John", "Justin Timberlake"], answer: 1, difficulty: easy, tags: [artists] }
+  - { type: multiple-choice, text: "Which band was fronted by singer Debbie Harry?", options: ["The Pretenders", "Heart", "Eurythmics", "Blondie"], answer: 3, difficulty: medium, tags: [bands] }
+  - { type: multiple-choice, text: "Which composer wrote the opera The Magic Flute?", options: ["Verdi", "Mozart", "Puccini", "Wagner"], answer: 1, difficulty: medium, tags: [classical] }
+  - { type: multiple-choice, text: "Which Italian composer wrote the opera La Traviata?", options: ["Puccini", "Rossini", "Verdi", "Donizetti"], answer: 2, difficulty: hard, tags: [classical] }
+  - { type: multiple-choice, text: "Which band released the 1987 album The Joshua Tree?", options: ["R.E.M.", "U2", "Simple Minds", "INXS"], answer: 1, difficulty: medium, tags: [albums] }
+  - { type: letter, text: "Who was the lead singer of Queen?", answer: Freddie Mercury, difficulty: easy, tags: [artists] }
+  - { type: letter, text: "Who is the lead singer of The Rolling Stones?", answer: Mick Jagger, difficulty: easy, tags: [artists] }
+  - { type: letter, text: "Who was the lead singer and guitarist of Nirvana?", answer: Kurt Cobain, difficulty: medium, tags: [artists] }
+  - { type: letter, text: "Who was the drummer of The Beatles?", answer: Ringo Starr, difficulty: easy, tags: [bands] }
+  - { type: letter, text: "Which American singer-songwriter, who has been blind since shortly after birth, recorded Superstition?", answer: Stevie Wonder, difficulty: medium, tags: [artists] }
+  - { type: letter, text: "Which reggae star formed The Wailers and was born in Jamaica?", answer: Bob Marley, difficulty: easy, tags: [artists] }
+  - { type: letter, text: "Which German composer wrote nine symphonies, the last including the Ode to Joy, despite losing his hearing?", answer: Ludwig van Beethoven, difficulty: medium, tags: [classical] }
+  - { type: letter, text: "Which singer wrote Space Oddity and Heroes?", answer: David Bowie, difficulty: medium, tags: [artists] }
+  - { type: letter, text: "Which singer is known as \"The King of Rock and Roll\"?", answer: Elvis Presley, difficulty: easy, tags: [artists] }
+  - { type: number, text: "In what year was the Live Aid concert held?", answer: 1985, difficulty: medium, tags: [history] }
+  - { type: number, text: "In what year was The Beatles' album Sgt. Pepper's Lonely Hearts Club Band released?", answer: 1967, difficulty: medium, tags: [albums] }
+  - { type: number, text: "In what year was the Woodstock festival held?", answer: 1969, difficulty: medium, tags: [history] }
+  - { type: number, text: "In what year did ABBA win the Eurovision Song Contest with Waterloo?", answer: 1974, difficulty: hard, tags: [history] }
+  - { type: nearest, text: "How many piano sonatas did Beethoven write?", answer: 32, difficulty: hard, tags: [classical] }
+  - { type: nearest, text: "How many numbered symphonies are attributed to Mozart?", answer: 41, difficulty: hard, tags: [classical] }
+  - { type: nearest, text: "How many numbered symphonies are attributed to Joseph Haydn?", answer: 104, difficulty: hard, tags: [classical] }
+  - { type: ordering, text: "Put these Beatles albums in order of release, earliest first.", items: ["Please Please Me", "Rubber Soul", "Revolver", "Sgt. Pepper's Lonely Hearts Club Band", "Abbey Road"], difficulty: medium, tags: [albums] }
+  - { type: ordering, text: "Put these composers in order of birth, earliest first.", items: ["Vivaldi", "Bach", "Mozart", "Beethoven", "Chopin"], difficulty: medium, tags: [classical] }
+  - { type: ordering, text: "Put these bands in the order they formed, earliest first.", items: ["The Rolling Stones", "Led Zeppelin", "Queen", "U2", "Oasis"], difficulty: hard, tags: [bands] }
+  - { type: ordering, text: "Put these albums in order of release, earliest first.", items: ["The Dark Side of the Moon", "Rumours", "Thriller", "Nevermind", "21"], difficulty: medium, tags: [albums] }
+  - { type: ordering, text: "Put these Michael Jackson albums in order of release, earliest first.", items: ["Off the Wall", "Thriller", "Bad", "Dangerous", "HIStory"], difficulty: hard, tags: [albums] }
+  - { type: ordering, text: "Put these instruments in order from highest pitch to lowest pitch, highest first.", items: ["Piccolo", "Violin", "Viola", "Cello", "Double bass"], difficulty: medium, tags: [instruments] }
+  - { type: multiple-choice, text: "True or false? The Beatles came from Manchester.", options: ["True", "False"], answer: 1, difficulty: easy, tags: [bands] }
+  - { type: multiple-choice, text: "True or false? A cello is larger than a viola.", options: ["True", "False"], answer: 0, difficulty: easy, tags: [instruments] }
+  - { type: multiple-choice, text: "True or false? The trombone is a woodwind instrument.", options: ["True", "False"], answer: 1, difficulty: easy, tags: [instruments] }

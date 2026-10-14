@@ -8,6 +8,7 @@ import { EMBEDDED } from './embedded.ts';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PUBLIC_DIR = join(ROOT, 'public');
 const EXAMPLES_DIR = join(ROOT, 'examples');
+const BANK_DIR = join(ROOT, 'bank');
 const embedded = Object.keys(EMBEDDED).length > 0;
 
 /** A file under public/, or undefined if there's no such file (or it tries to escape the folder). */
@@ -39,6 +40,21 @@ export async function sampleQuizFiles(): Promise<Map<string, Buffer>> {
   return files;
 }
 
+/** The built-in question bank: file name → YAML text. */
+export async function bundledBankFiles(): Promise<Map<string, string>> {
+  const files = new Map<string, string>();
+  if (embedded) {
+    for (const [key, data] of Object.entries(EMBEDDED)) {
+      if (key.startsWith('bank/')) files.set(key.slice('bank/'.length), Buffer.from(data, 'base64').toString('utf8'));
+    }
+    return files;
+  }
+  for (const name of await readdir(BANK_DIR).catch(() => [] as string[])) {
+    if (/\.ya?ml$/i.test(name) && name !== 'example.yaml') files.set(name, await readFile(join(BANK_DIR, name), 'utf8'));
+  }
+  return files;
+}
+
 /** Every file to embed, as [key, absolute path]. Used by the build script. */
 export async function listEmbeddable(): Promise<[string, string][]> {
   const found: [string, string][] = [];
@@ -46,10 +62,11 @@ export async function listEmbeddable(): Promise<[string, string][]> {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
       const full = join(dir, entry.name);
       if (entry.isDirectory()) await walk(full, prefix);
-      else found.push([`${prefix}/${relative(prefix === 'public' ? PUBLIC_DIR : EXAMPLES_DIR, full).split(sep).join('/')}`, full]);
+      else found.push([`${prefix}/${relative(prefix === 'public' ? PUBLIC_DIR : prefix === 'bank' ? BANK_DIR : EXAMPLES_DIR, full).split(sep).join('/')}`, full]);
     }
   };
   await walk(PUBLIC_DIR, 'public');
   await walk(EXAMPLES_DIR, 'examples');
+  await walk(BANK_DIR, 'bank');
   return found.filter(([key]) => !key.endsWith('.session.json') && !key.includes('.results-'));
 }

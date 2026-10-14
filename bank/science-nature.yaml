@@ -1,0 +1,60 @@
+category: Science & Nature
+region: universal
+questions:
+  - { type: multiple-choice, text: "Which planet is known as the Red Planet?", options: ["Venus", "Mars", "Jupiter", "Mercury"], answer: 1, difficulty: easy, tags: [space] }
+  - { type: multiple-choice, text: "Which gas do plants absorb from the air for photosynthesis?", options: ["Oxygen", "Nitrogen", "Carbon dioxide", "Hydrogen"], answer: 2, difficulty: easy, tags: [plants] }
+  - { type: multiple-choice, text: "What is the chemical symbol for gold?", options: ["Ag", "Au", "Go", "Gd"], answer: 1, difficulty: medium, tags: [chemistry] }
+  - { type: multiple-choice, text: "The stapes, the smallest bone in the human body, is found in which part of the body?", options: ["Nose", "Wrist", "Foot", "Ear"], answer: 3, difficulty: medium, tags: [body] }
+  - { type: multiple-choice, text: "What is the largest mammal on Earth?", options: ["African elephant", "Blue whale", "Sperm whale", "Giraffe"], answer: 1, difficulty: easy, tags: [animals] }
+  - { type: multiple-choice, text: "Which blood cells carry oxygen around the body?", options: ["White blood cells", "Red blood cells", "Platelets", "Plasma cells"], answer: 1, difficulty: medium, tags: [body] }
+  - { type: multiple-choice, text: "Which part of a cell is often called its powerhouse?", options: ["Nucleus", "Ribosome", "Mitochondria", "Vacuole"], answer: 2, difficulty: medium, tags: [biology] }
+  - { type: multiple-choice, text: "Which force keeps the planets in orbit around the Sun?", options: ["Magnetism", "Gravity", "Friction", "Static electricity"], answer: 1, difficulty: easy, tags: [space] }
+  - { type: multiple-choice, text: "Which is the closest star to Earth?", options: ["Proxima Centauri", "Sirius", "The Sun", "Polaris"], answer: 2, difficulty: easy, tags: [space] }
+  - { type: multiple-choice, text: "What type of animal is a Komodo dragon?", options: ["Snake", "Lizard", "Crocodile", "Turtle"], answer: 1, difficulty: medium, tags: [animals] }
+  - { type: multiple-choice, text: "Which of these metals is attracted to magnets?", options: ["Copper", "Gold", "Silver", "Iron"], answer: 3, difficulty: easy, tags: [physics] }
+  - { type: multiple-choice, text: "Which planet is best known for its bright rings?", options: ["Jupiter", "Uranus", "Neptune", "Saturn"], answer: 3, difficulty: easy, tags: [space] }
+  - { type: multiple-choice, text: "What is the chemical formula for water?", options: ["HO2", "H2O", "H2O2", "OH"], answer: 1, difficulty: easy, tags: [chemistry] }
+  - { type: multiple-choice, text: "Which animal is the fastest on land?", options: ["Lion", "Cheetah", "Greyhound", "Horse"], answer: 1, difficulty: easy, tags: [animals] }
+  - { type: multiple-choice, text: "Which gas makes up most of Earth's atmosphere?", options: ["Oxygen", "Nitrogen", "Carbon dioxide", "Argon"], answer: 1, difficulty: medium }
+  - { type: multiple-choice, text: "What is the study of weather called?", options: ["Geology", "Astronomy", "Ecology", "Meteorology"], answer: 3, difficulty: medium }
+  - { type: multiple-choice, text: "Which part of a plant absorbs water from the soil?", options: ["Leaves", "Stem", "Roots", "Petals"], answer: 2, difficulty: easy, tags: [plants] }
+  - { type: multiple-choice, text: "Which type of rock is formed when lava cools and hardens?", options: ["Sedimentary", "Metamorphic", "Igneous", "Fossil"], answer: 2, difficulty: medium, tags: [earth] }
+  - { type: multiple-choice, text: "Which is the hottest planet in our solar system?", options: ["Mercury", "Venus", "Mars", "Jupiter"], answer: 1, difficulty: medium, tags: [space], info: "Venus is hotter than Mercury thanks to its thick, heat-trapping atmosphere." }
+  - { type: multiple-choice, text: "What is the pH of pure water at room temperature?", options: ["5", "7", "9", "14"], answer: 1, difficulty: medium, tags: [chemistry] }
+  - { type: multiple-choice, text: "Which element has the atomic number 1?", options: ["Helium", "Hydrogen", "Oxygen", "Lithium"], answer: 1, difficulty: medium, tags: [chemistry] }
+  - { type: multiple-choice, text: "Which scientist discovered penicillin?", options: ["Louis Pasteur", "Marie Curie", "Joseph Lister", "Alexander Fleming"], answer: 3, difficulty: medium }
+  - { type: multiple-choice, text: "What is the SI unit of electrical resistance?", options: ["Ohm", "Volt", "Watt", "Ampere"], answer: 0, difficulty: hard, tags: [physics] }
+  - { type: multiple-choice, text: "Which layer of the Earth do we live on?", options: ["Mantle", "Core", "Atmosphere", "Crust"], answer: 3, difficulty: easy, tags: [earth] }
+  - { type: multiple-choice, text: "Which planet has the shortest orbit around the Sun, and so the shortest year?", options: ["Mercury", "Venus", "Mars", "Earth"], answer: 0, difficulty: medium, tags: [space] }
+  - { type: multiple-choice, text: "What kind of animal is a dolphin?", options: ["Fish", "Mammal", "Reptile", "Amphibian"], answer: 1, difficulty: easy, tags: [animals] }
+  - { type: multiple-choice, text: "Which part of the eye changes size to control how much light enters?", options: ["Lens", "Retina", "Iris", "Cornea"], answer: 2, difficulty: medium, tags: [body] }
+  - { type: multiple-choice, text: "Which scientist published On the Origin of Species?", options: ["Gregor Mendel", "Charles Darwin", "Isaac Newton", "Louis Pasteur"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "What is the name of the galaxy that contains our solar system?", options: ["Andromeda", "Triangulum", "Whirlpool", "Milky Way"], answer: 3, difficulty: easy, tags: [space] }
+  - { type: multiple-choice, text: "True or false? Lightning never strikes the same place twice.", options: ["True", "False"], answer: 1, difficulty: easy, tags: [earth], info: "The Empire State Building is struck around 20 times a year." }
+  - { type: multiple-choice, text: "True or false? Botanically speaking, a tomato is a fruit.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [plants] }
+  - { type: multiple-choice, text: "True or false? Sound travels faster than light.", options: ["True", "False"], answer: 1, difficulty: easy, tags: [physics] }
+  - { type: letter, text: "Which element has the chemical symbol Fe?", answer: Iron, difficulty: medium, tags: [chemistry] }
+  - { type: letter, text: "Which is the largest planet in our solar system?", answer: Jupiter, difficulty: easy, tags: [space] }
+  - { type: letter, text: "Which scientist formulated the laws of motion and universal gravitation?", answer: Isaac Newton, difficulty: easy }
+  - { type: letter, text: "What is the process called by which a caterpillar becomes a butterfly?", answer: Metamorphosis, difficulty: medium, tags: [animals] }
+  - { type: letter, text: "Which bird lays the largest egg of any living bird?", answer: Ostrich, difficulty: medium, tags: [animals] }
+  - { type: letter, text: "Which gas makes up about 21 percent of the air we breathe?", answer: Oxygen, difficulty: medium }
+  - { type: letter, text: "Which is the tallest animal in the world?", answer: Giraffe, difficulty: easy, tags: [animals] }
+  - { type: letter, text: "Which scientist won Nobel Prizes in both Physics and Chemistry for her work on radioactivity?", answer: Marie Curie, difficulty: medium }
+  - { type: letter, text: "Which element has the chemical symbol Na?", answer: Sodium, difficulty: medium, tags: [chemistry] }
+  - { type: letter, text: "What is the name of the force that resists motion between two surfaces in contact?", answer: Friction, difficulty: easy, tags: [physics] }
+  - { type: number, text: "At what temperature in degrees Celsius does water boil at sea level?", answer: 100, difficulty: easy }
+  - { type: number, text: "How many planets are there in our solar system?", answer: 8, difficulty: easy, tags: [space] }
+  - { type: number, text: "What is the atomic number of carbon?", answer: 6, difficulty: medium, tags: [chemistry] }
+  - { type: number, text: "How many chromosomes are in a typical human body cell?", answer: 46, difficulty: medium, tags: [biology] }
+  - { type: number, text: "In what year did Charles Darwin publish On the Origin of Species?", answer: 1859, difficulty: hard }
+  - { type: number, text: "How many teeth does a typical adult human have, including wisdom teeth?", answer: 32, difficulty: medium, tags: [body] }
+  - { type: nearest, text: "What is the average distance from the Earth to the Moon, in kilometres?", answer: 384400, difficulty: medium, tags: [space] }
+  - { type: nearest, text: "Roughly how old is the Earth, in millions of years?", answer: 4540, difficulty: hard, tags: [earth] }
+  - { type: nearest, text: "How fast does sound travel through air at 20 degrees Celsius, in metres per second?", answer: 343, difficulty: hard, tags: [physics] }
+  - { type: ordering, text: "Put these planets in order of size, largest first.", items: [Jupiter, Saturn, Uranus, Neptune, Earth], difficulty: medium, tags: [space] }
+  - { type: ordering, text: "Put these planets in order of distance from the Sun, closest first.", items: [Venus, Earth, Mars, Saturn, Neptune], difficulty: easy, tags: [space] }
+  - { type: ordering, text: "Put these animals in order of typical adult size, smallest first.", items: [Ant, Mouse, Cat, Horse, Blue whale], difficulty: easy, tags: [animals] }
+  - { type: ordering, text: "Put these geological periods in order, earliest first.", items: [Cambrian, Devonian, Triassic, Jurassic, Cretaceous], difficulty: hard, tags: [earth] }
+  - { type: ordering, text: "Put these elements in order of atomic number, lowest first.", items: [Hydrogen, Helium, Carbon, Oxygen, Iron], difficulty: medium, tags: [chemistry] }
+  - { type: ordering, text: "Put these layers in order, starting from the outermost and moving towards the centre of the Earth.", items: [Atmosphere, Crust, Mantle, Outer core, Inner core], difficulty: medium, tags: [earth] }

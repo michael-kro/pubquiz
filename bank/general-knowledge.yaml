@@ -1,0 +1,63 @@
+category: General Knowledge
+region: universal
+questions:
+  - { type: multiple-choice, text: "How many sides does a hexagon have?", options: ["5", "6", "7", "8"], answer: 1, difficulty: easy, tags: [maths] }
+  - { type: multiple-choice, text: "Which colour do you get by mixing blue and yellow paint?", options: ["Green", "Purple", "Orange", "Brown"], answer: 0, difficulty: easy, tags: [art] }
+  - { type: multiple-choice, text: "What is the hardest naturally occurring substance?", options: ["Quartz", "Diamond", "Steel", "Granite"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "In chess, which piece can only move diagonally?", options: ["Rook", "Knight", "Bishop", "Queen"], answer: 2, difficulty: easy, tags: [games] }
+  - { type: multiple-choice, text: "Which language has the most native speakers in the world?", options: ["English", "Spanish", "Mandarin Chinese", "Hindi"], answer: 2, difficulty: medium, tags: [language] }
+  - { type: multiple-choice, text: "What is the main ingredient of guacamole?", options: ["Tomato", "Lime", "Pepper", "Avocado"], answer: 3, difficulty: easy, tags: [food] }
+  - { type: multiple-choice, text: "How many players from one team are on the pitch in a football (soccer) match?", options: ["9", "10", "11", "12"], answer: 2, difficulty: easy, tags: [sport] }
+  - { type: multiple-choice, text: "Which playwright wrote Romeo and Juliet?", options: ["Christopher Marlowe", "William Shakespeare", "Ben Jonson", "Charles Dickens"], answer: 1, difficulty: easy, tags: [literature] }
+  - { type: multiple-choice, text: "Salvador Dali was associated with which art movement?", options: ["Cubism", "Impressionism", "Pop Art", "Surrealism"], answer: 3, difficulty: medium, tags: [art] }
+  - { type: multiple-choice, text: "How many keys does a standard modern piano have?", options: ["76", "82", "88", "96"], answer: 2, difficulty: medium, tags: [music] }
+  - { type: multiple-choice, text: "In which sport would you perform a slam dunk?", options: ["Volleyball", "Basketball", "Netball", "Handball"], answer: 1, difficulty: easy, tags: [sport] }
+  - { type: multiple-choice, text: "What is the Japanese art of paper folding called?", options: ["Ikebana", "Kabuki", "Bonsai", "Origami"], answer: 3, difficulty: easy }
+  - { type: multiple-choice, text: "Which vitamin does the skin produce when exposed to sunlight?", options: ["Vitamin A", "Vitamin C", "Vitamin D", "Vitamin K"], answer: 2, difficulty: medium, tags: [health] }
+  - { type: multiple-choice, text: "In which country was the Rubik's Cube invented?", options: ["Hungary", "Japan", "United States", "Germany"], answer: 0, difficulty: medium, info: "Erno Rubik invented it in 1974 as a teaching tool." }
+  - { type: multiple-choice, text: "What is the currency of Japan?", options: ["Yuan", "Won", "Yen", "Baht"], answer: 2, difficulty: easy }
+  - { type: multiple-choice, text: "How many rings are on the Olympic flag?", options: ["4", "5", "6", "7"], answer: 1, difficulty: easy, tags: [sport] }
+  - { type: multiple-choice, text: "How many cards are in a standard deck of playing cards, not counting jokers?", options: ["48", "50", "54", "52"], answer: 3, difficulty: easy, tags: [games] }
+  - { type: multiple-choice, text: "Which of these instruments belongs to the brass family?", options: ["Clarinet", "Oboe", "Trombone", "Flute"], answer: 2, difficulty: easy, tags: [music] }
+  - { type: multiple-choice, text: "What is the main language spoken in Brazil?", options: ["Spanish", "Portuguese", "French", "English"], answer: 1, difficulty: easy, tags: [language] }
+  - { type: multiple-choice, text: "What does an ornithologist study?", options: ["Birds", "Insects", "Rocks", "Fish"], answer: 0, difficulty: medium }
+  - { type: multiple-choice, text: "Which Roman numeral represents 50?", options: ["C", "D", "M", "L"], answer: 3, difficulty: medium, tags: [maths] }
+  - { type: multiple-choice, text: "How many days are there in a leap year?", options: ["365", "366", "364", "367"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "Who wrote the novel Pride and Prejudice?", options: ["Charlotte Bronte", "Jane Austen", "George Eliot", "Mary Shelley"], answer: 1, difficulty: easy, tags: [literature] }
+  - { type: multiple-choice, text: "What shape is a standard stop sign?", options: ["Hexagon", "Pentagon", "Square", "Octagon"], answer: 3, difficulty: easy }
+  - { type: multiple-choice, text: "Which fruit is dried to make raisins?", options: ["Plums", "Grapes", "Figs", "Cherries"], answer: 1, difficulty: easy, tags: [food] }
+  - { type: multiple-choice, text: "In which sport is the Ryder Cup contested?", options: ["Tennis", "Cricket", "Rugby", "Golf"], answer: 3, difficulty: medium, tags: [sport] }
+  - { type: multiple-choice, text: "Which company created the video game character Mario?", options: ["Sega", "Sony", "Nintendo", "Atari"], answer: 2, difficulty: easy, tags: [games] }
+  - { type: multiple-choice, text: "What is the smallest prime number?", options: ["0", "1", "2", "3"], answer: 2, difficulty: medium, tags: [maths] }
+  - { type: multiple-choice, text: "What is the fear of spiders called?", options: ["Acrophobia", "Arachnophobia", "Claustrophobia", "Agoraphobia"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "How many legs does an insect have?", options: ["4", "6", "8", "10"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "What colour are aircraft flight recorders (black boxes) usually painted?", options: ["Black", "Red", "Yellow", "Orange"], answer: 3, difficulty: medium, info: "The bright orange colour makes them easier to find after a crash." }
+  - { type: multiple-choice, text: "True or false? A group of crows is called a murder.", options: ["True", "False"], answer: 0, difficulty: medium, tags: [animals] }
+  - { type: multiple-choice, text: "True or false? Goldfish have a memory of only three seconds.", options: ["True", "False"], answer: 1, difficulty: medium, tags: [animals], info: "Studies show goldfish can remember things for months." }
+  - { type: multiple-choice, text: "True or false? The Great Wall of China can be seen from the Moon with the naked eye.", options: ["True", "False"], answer: 1, difficulty: medium }
+  - { type: multiple-choice, text: "True or false? In tennis, a score of zero is called \"love\".", options: ["True", "False"], answer: 0, difficulty: easy, tags: [sport] }
+  - { type: letter, text: "Which Shakespeare play features the villain Iago?", answer: Othello, difficulty: medium, tags: [literature] }
+  - { type: letter, text: "Which Italian city is famous for its canals and gondolas?", answer: Venice, difficulty: easy }
+  - { type: letter, text: "Which author created the detective Sherlock Holmes?", answer: Arthur Conan Doyle, difficulty: medium, tags: [literature] }
+  - { type: letter, text: "What is the name of the wizarding school attended by Harry Potter?", answer: Hogwarts, difficulty: easy, tags: [literature] }
+  - { type: letter, text: "Which Dutch artist painted Starry Night?", answer: Vincent van Gogh, difficulty: easy, tags: [art] }
+  - { type: letter, text: "Which animal is nicknamed the \"ship of the desert\"?", answer: Camel, difficulty: easy }
+  - { type: letter, text: "Which sport is played with a shuttlecock?", answer: Badminton, difficulty: easy, tags: [sport] }
+  - { type: letter, text: "Which crumbly white cheese is a key ingredient of a Greek salad?", answer: Feta, difficulty: easy, tags: [food] }
+  - { type: letter, text: "Which scientist developed the theory of general relativity?", answer: Albert Einstein, difficulty: easy }
+  - { type: letter, text: "Which Disney film features a snowman called Olaf?", answer: Frozen, difficulty: easy, tags: [film] }
+  - { type: number, text: "In what year did the Titanic sink?", answer: 1912, difficulty: medium }
+  - { type: number, text: "In what year did humans first walk on the Moon?", answer: 1969, difficulty: easy }
+  - { type: number, text: "How many squares are there on a chessboard?", answer: 64, difficulty: easy, tags: [games] }
+  - { type: number, text: "In what year was the first Harry Potter book published?", answer: 1997, difficulty: medium, tags: [literature] }
+  - { type: number, text: "In what year were the first modern Olympic Games held in Athens?", answer: 1896, difficulty: hard, tags: [sport] }
+  - { type: number, text: "How many degrees are there in a right angle?", answer: 90, difficulty: easy, tags: [maths] }
+  - { type: nearest, text: "How many bones are there in an adult human body?", answer: 206, difficulty: medium }
+  - { type: nearest, text: "How many feet are there in a mile?", answer: 5280, difficulty: medium }
+  - { type: nearest, text: "Roughly how fast does light travel through a vacuum, in kilometres per second?", answer: 299792, difficulty: medium }
+  - { type: ordering, text: "Put these units of length in order, shortest first.", items: [Inch, Foot, Yard, Furlong, Mile], difficulty: medium }
+  - { type: ordering, text: "Put these Roman numerals in order of value, smallest first.", items: [IX, XIV, XL, LX, C], difficulty: medium, tags: [maths] }
+  - { type: ordering, text: "Put these numbers in order, smallest first.", items: [Hundred, Thousand, Million, Billion, Trillion], difficulty: easy, tags: [maths] }
+  - { type: ordering, text: "Put these units of time in order, shortest first.", items: [Second, Minute, Hour, Day, Week], difficulty: easy }
+  - { type: ordering, text: "Put these novels in order of first publication, earliest first.", items: [Pride and Prejudice, Jane Eyre, Great Expectations, Dracula, The Great Gatsby], difficulty: hard, tags: [literature] }
+  - { type: ordering, text: "Put these shapes in order of number of sides, fewest first.", items: [Triangle, Square, Pentagon, Hexagon, Octagon], difficulty: easy, tags: [maths] }

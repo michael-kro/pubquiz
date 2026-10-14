@@ -1,0 +1,63 @@
+category: History
+region: universal
+questions:
+  - { type: multiple-choice, text: "Who was the first President of the United States?", options: ["Thomas Jefferson", "George Washington", "John Adams", "Benjamin Franklin"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "Which ancient people built the city of Machu Picchu?", options: ["Aztec", "Maya", "Inca", "Olmec"], answer: 2, difficulty: easy }
+  - { type: multiple-choice, text: "In which city was Archduke Franz Ferdinand assassinated in 1914?", options: ["Vienna", "Belgrade", "Sarajevo", "Budapest"], answer: 2, difficulty: medium }
+  - { type: multiple-choice, text: "Who was the first woman to fly solo across the Atlantic Ocean?", options: ["Amy Johnson", "Amelia Earhart", "Bessie Coleman", "Harriet Quimby"], answer: 1, difficulty: medium }
+  - { type: multiple-choice, text: "Which Roman emperor founded the city of Constantinople?", options: ["Nero", "Augustus", "Constantine", "Trajan"], answer: 2, difficulty: medium }
+  - { type: multiple-choice, text: "What was the name of the ship that carried the Pilgrims to America in 1620?", options: ["Santa Maria", "Mayflower", "Endeavour", "Beagle"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "Which Roman emperor ordered the building of a wall across northern Britain, starting in AD 122?", options: ["Trajan", "Hadrian", "Nero", "Claudius"], answer: 1, difficulty: medium }
+  - { type: multiple-choice, text: "Who led Britain as Prime Minister through most of the Second World War, from 1940?", options: ["Winston Churchill", "Neville Chamberlain", "Clement Attlee", "Anthony Eden"], answer: 0, difficulty: easy }
+  - { type: multiple-choice, text: "Whose tomb was discovered by Howard Carter in 1922?", options: ["Ramesses II", "Khufu", "Akhenaten", "Tutankhamun"], answer: 3, difficulty: easy }
+  - { type: multiple-choice, text: "Which battle took place in 1066 and led to the Norman conquest of England?", options: ["Hastings", "Agincourt", "Bosworth", "Waterloo"], answer: 0, difficulty: easy }
+  - { type: multiple-choice, text: "Which French emperor was exiled to the island of Saint Helena, where he died?", options: ["Napoleon Bonaparte", "Louis XIV", "Charlemagne", "Maximilien Robespierre"], answer: 0, difficulty: easy }
+  - { type: multiple-choice, text: "Which of the Seven Wonders of the Ancient World stood in Alexandria?", options: ["Colossus", "Hanging Gardens", "Great Lighthouse", "Mausoleum"], answer: 2, difficulty: hard }
+  - { type: multiple-choice, text: "Which Italian town was buried by the eruption of Vesuvius in AD 79, alongside Pompeii?", options: ["Herculaneum", "Ostia", "Capua", "Naples"], answer: 0, difficulty: hard }
+  - { type: multiple-choice, text: "Which US President delivered the Gettysburg Address?", options: ["Ulysses Grant", "Thomas Jefferson", "Abraham Lincoln", "Theodore Roosevelt"], answer: 2, difficulty: easy }
+  - { type: multiple-choice, text: "Which English king sealed the Magna Carta in 1215?", options: ["Henry II", "Richard I", "John", "Edward I"], answer: 2, difficulty: medium }
+  - { type: multiple-choice, text: "Which Chinese dynasty built most of the Great Wall that survives today?", options: ["Han", "Tang", "Ming", "Qing"], answer: 2, difficulty: hard }
+  - { type: multiple-choice, text: "Who founded the Mongol Empire in the early 13th century?", options: ["Kublai Khan", "Genghis Khan", "Attila", "Tamerlane"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "Which war was fought in the United States between the Union and the Confederacy?", options: ["The Revolutionary War", "The American Civil War", "The War of 1812", "The Spanish-American War"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "Who was the last Tsar of Russia?", options: ["Nicholas II", "Alexander III", "Peter the Great", "Ivan the Terrible"], answer: 0, difficulty: medium }
+  - { type: multiple-choice, text: "Which explorer sailed from Spain in 1492 and reached the Caribbean?", options: ["Amerigo Vespucci", "Marco Polo", "Christopher Columbus", "John Cabot"], answer: 2, difficulty: easy }
+  - { type: multiple-choice, text: "Which treaty formally ended the First World War with Germany in 1919?", options: ["Treaty of Westphalia", "Treaty of Paris", "Treaty of Vienna", "Treaty of Versailles"], answer: 3, difficulty: medium }
+  - { type: multiple-choice, text: "Who was the first person to travel into space?", options: ["Alan Shepard", "Yuri Gagarin", "Neil Armstrong", "John Glenn"], answer: 1, difficulty: medium }
+  - { type: multiple-choice, text: "Which ancient people built the pyramids at Giza?", options: ["Romans", "Egyptians", "Greeks", "Persians"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "Which queen was on the English throne when the Spanish Armada was defeated in 1588?", options: ["Mary I", "Anne", "Victoria", "Elizabeth I"], answer: 3, difficulty: medium }
+  - { type: multiple-choice, text: "Who was the first wife of King Henry VIII?", options: ["Anne Boleyn", "Jane Seymour", "Catherine of Aragon", "Anne of Cleves"], answer: 2, difficulty: medium }
+  - { type: multiple-choice, text: "In which country did the Industrial Revolution begin?", options: ["France", "Germany", "Great Britain", "United States"], answer: 2, difficulty: easy }
+  - { type: multiple-choice, text: "Which US President was assassinated in Dallas in 1963?", options: ["Lyndon Johnson", "John F. Kennedy", "Richard Nixon", "Dwight Eisenhower"], answer: 1, difficulty: easy }
+  - { type: multiple-choice, text: "Which ancient Greek city-state was famous for its strict warrior culture?", options: ["Athens", "Corinth", "Sparta", "Thebes"], answer: 2, difficulty: easy }
+  - { type: multiple-choice, text: "Whose expedition was the first to sail around the world, between 1519 and 1522?", options: ["Vasco da Gama", "Ferdinand Magellan", "Francis Drake", "James Cook"], answer: 1, difficulty: hard, info: "Magellan was killed in the Philippines, and the voyage was completed by his crew." }
+  - { type: multiple-choice, text: "Which country gave the Statue of Liberty to the United States?", options: ["Britain", "Spain", "Italy", "France"], answer: 3, difficulty: easy }
+  - { type: multiple-choice, text: "The Black Death that swept Europe in the 14th century was an outbreak of which disease?", options: ["Smallpox", "Cholera", "Plague", "Typhoid"], answer: 2, difficulty: easy }
+  - { type: multiple-choice, text: "Which Carthaginian general famously crossed the Alps with war elephants?", options: ["Hannibal", "Hasdrubal", "Scipio", "Hamilcar"], answer: 0, difficulty: medium }
+  - { type: multiple-choice, text: "In 1893, which country became the first to give women the right to vote in national parliamentary elections?", options: ["New Zealand", "United Kingdom", "United States", "France"], answer: 0, difficulty: hard }
+  - { type: multiple-choice, text: "True or false? Cleopatra lived closer in time to the Moon landing than to the building of the Great Pyramid of Giza.", options: ["True", "False"], answer: 0, difficulty: hard }
+  - { type: multiple-choice, text: "True or false? Viking warriors wore horned helmets in battle.", options: ["True", "False"], answer: 1, difficulty: medium, info: "The horned helmet image comes mainly from 19th-century costume designs." }
+  - { type: multiple-choice, text: "True or false? The Hundred Years' War lasted exactly 100 years.", options: ["True", "False"], answer: 1, difficulty: medium, info: "It ran, on and off, from 1337 to 1453 - about 116 years." }
+  - { type: multiple-choice, text: "True or false? Abraham Lincoln was the first President of the United States.", options: ["True", "False"], answer: 1, difficulty: easy }
+  - { type: letter, text: "Which Roman leader was stabbed to death in the Senate on the Ides of March in 44 BC?", answer: Julius Caesar, difficulty: easy }
+  - { type: letter, text: "Which ocean liner sank after hitting an iceberg on its maiden voyage in 1912?", answer: Titanic, difficulty: easy }
+  - { type: letter, text: "Which English king had six wives?", answer: Henry VIII, difficulty: easy }
+  - { type: letter, text: "Which ancient people were ruled by Montezuma when the Spanish arrived in Mexico?", answer: Aztecs, difficulty: easy }
+  - { type: letter, text: "Which nurse, nicknamed the Lady with the Lamp, became famous during the Crimean War?", answer: Florence Nightingale, difficulty: easy }
+  - { type: letter, text: "Which admiral was killed at the Battle of Trafalgar in 1805?", answer: Horatio Nelson, difficulty: medium }
+  - { type: letter, text: "What was the capital of the Byzantine Empire?", answer: Constantinople, difficulty: medium }
+  - { type: letter, text: "Which Greek philosopher was the teacher of Alexander the Great?", answer: Aristotle, difficulty: medium }
+  - { type: number, text: "In what year did the Second World War end?", answer: 1945, difficulty: easy }
+  - { type: number, text: "In what year did Columbus first reach the Americas?", answer: 1492, difficulty: easy }
+  - { type: number, text: "In what year did the French Revolution begin?", answer: 1789, difficulty: medium }
+  - { type: number, text: "In what year did the Wall Street Crash take place?", answer: 1929, difficulty: medium }
+  - { type: number, text: "In what year was the American Declaration of Independence adopted?", answer: 1776, difficulty: easy }
+  - { type: number, text: "In what year did the First World War begin?", answer: 1914, difficulty: easy }
+  - { type: nearest, text: "How tall was the Great Pyramid of Giza when it was built, in metres?", answer: 147, difficulty: hard }
+  - { type: nearest, text: "Roughly how long is Hadrian's Wall, in kilometres?", answer: 117, difficulty: hard }
+  - { type: nearest, text: "For how many years did Queen Victoria reign?", answer: 63, difficulty: medium }
+  - { type: ordering, text: "Put these events in order, earliest first.", items: [Pyramids of Giza built, Rome founded, Julius Caesar killed, Western Roman Empire falls, Battle of Hastings], difficulty: hard }
+  - { type: ordering, text: "Put these English and British monarchs in order of when their reigns began, earliest first.", items: [Henry VIII, Elizabeth I, Charles I, Queen Anne, Queen Victoria], difficulty: medium }
+  - { type: ordering, text: "Put these US Presidents in order, earliest to take office first.", items: [George Washington, Thomas Jefferson, Abraham Lincoln, Theodore Roosevelt, John F. Kennedy], difficulty: medium }
+  - { type: ordering, text: "Put these Second World War events in order, earliest first.", items: [Invasion of Poland, Battle of Britain, Attack on Pearl Harbor, D-Day landings, Bombing of Hiroshima], difficulty: medium }
+  - { type: ordering, text: "Put these inventions or breakthroughs in order, earliest first.", items: [Gutenberg's printing press, Watt's steam engine, Bell's telephone, Wright brothers' first flight, World Wide Web], difficulty: medium }
+  - { type: ordering, text: "Put these journeys in order, earliest first.", items: [Marco Polo leaves for China, Columbus reaches the Americas, Magellan sets sail round the world, Captain Cook's first Pacific voyage, Amundsen reaches the South Pole], difficulty: hard }

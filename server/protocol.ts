@@ -93,7 +93,7 @@ export interface TeamView {
   /** The team's answer as readable text. */
   myAnswerText?: string;
   /** From the reveal onwards. */
-  result?: { correct: boolean; points: number; answerText: string; detail?: string; correctIndex?: number };
+  result?: { correct: boolean; points: number; answerText: string; detail?: string; correctIndex?: number; info?: string };
   /** On the leaderboard and at the end. */
   standings?: StandingRow[];
   /** Image for the next question, so phones can fetch it early. */
@@ -123,7 +123,7 @@ export interface HostView {
   network: NetworkStatus;
   /** `code` is blank on the TV screen: anyone with a team's code can take over its phone. */
   teams: { id: string; name: string; code: string; score: number; connected: boolean; answered: boolean }[];
-  question?: QuestionView & { answerText: string; answer?: number };
+  question?: QuestionView & { answerText: string; answer?: number; info?: string };
   answeredCount: number;
   connectedCount: number;
   /** Multiple choice: answers per option, once the question has closed. */
@@ -132,6 +132,8 @@ export interface HostView {
   review?: ReviewGroup[];
   /** Ordering: e.g. "3 of 8 teams got the order exactly right". Letter: how many teams tapped each letter. */
   summary?: string;
+  /** Nearest wins: every guess, closest first, once the question has closed. */
+  guesses?: { value: string; off: string; teams: string[]; winner: boolean }[];
   /** From the reveal: the quickest correct teams and what they earned for it. */
   fastest?: { name: string; points: number; place: number }[];
   standings: StandingRow[];
