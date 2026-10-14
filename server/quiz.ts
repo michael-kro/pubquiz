@@ -70,6 +70,17 @@ const QuestionSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('music'), ...common, accept }).strict(),
   // Teams type a number. Right if it matches, give or take `tolerance`.
   z.object({ type: z.literal('number'), ...common, answer: number, tolerance: z.number().min(0).max(1e12).default(0) }).strict(),
+  // Buzzin': teams race to buzz, the first answers out loud, and the host judges. A wrong answer locks that team out.
+  z
+    .object({
+      type: z.literal('buzzer'),
+      ...common,
+      /** What the host is looking for. Shown only to the host, until the reveal. */
+      answer: text,
+      /** Points taken off a team that buzzes and gets it wrong. */
+      penalty: z.number().int().min(0).max(10_000).default(0),
+    })
+    .strict(),
   // Teams type a number; whoever is closest wins the points.
   z.object({ type: z.literal('nearest'), ...common, answer: number }).strict(),
   // classic style: teams tap the first letter of the answer.

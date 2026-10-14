@@ -442,6 +442,20 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (hostOnly()) game?.advance();
         return;
 
+      case 'buzz': {
+        if (conn.role !== 'team' || !conn.teamId || !game) return send(conn, { t: 'error', message: 'Join a team first.' });
+        const result = game.buzz(conn.teamId, latencyOf(conn), msg.elapsedMs);
+        if (!result.ok) send(conn, { t: 'error', message: result.error });
+        return;
+      }
+
+      case 'judge': {
+        if (!hostOnly() || !game) return;
+        const result = game.judge(msg.correct);
+        if (!result.ok) send(conn, { t: 'error', message: result.error });
+        return;
+      }
+
       case 'pause':
       case 'resume':
       case 'extend':

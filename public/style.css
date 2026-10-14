@@ -511,6 +511,42 @@ input {
 .clip-bar button { background: var(--surface-2); color: var(--text); padding: 0.5em 1em; border-radius: var(--radius); font-weight: 700; }
 .clip-bar .clip-time { color: var(--muted); font-variant-numeric: tabular-nums; }
 
+.buzzer-screen { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.big-buzzer {
+  align-self: center;
+  width: min(80vw, 340px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  margin: 16px 0;
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #fff;
+  background: radial-gradient(circle at 35% 30%, #ff7b6b, #d82a1a 70%);
+  box-shadow: 0 10px 0 #8e1a10, 0 18px 30px #0008;
+  transition: transform 0.06s, box-shadow 0.06s;
+  padding: 16px;
+  line-height: 1.15;
+}
+.big-buzzer:active:not(:disabled) { transform: translateY(8px); box-shadow: 0 2px 0 #8e1a10, 0 6px 12px #0008; }
+.big-buzzer:disabled { background: radial-gradient(circle at 35% 30%, #666c80, #3a3f52 70%); box-shadow: 0 6px 0 #22263a; font-size: 1.4rem; color: #c9ccd6; }
+.big-buzzer.answering { background: radial-gradient(circle at 35% 30%, #5be08f, #17a255 70%); box-shadow: 0 10px 0 #0e6a37, 0 18px 30px #0008; color: #04210f; font-size: 1.8rem; }
+.big-buzzer.queued { background: radial-gradient(circle at 35% 30%, #f9d36a, #d99a1a 70%); box-shadow: 0 6px 0 #8a5d08; color: #2b1b00; font-size: 1.6rem; }
+
+.buzz-card { margin: 16px auto; max-width: 720px; padding: 22px; border-radius: var(--radius); background: var(--surface); text-align: center; }
+.buzz-card.live { outline: 4px solid var(--right); }
+.buzz-card .who { font-size: clamp(1.8rem, 4vw, 3.2rem); font-weight: 900; margin: 0; overflow-wrap: anywhere; }
+.buzz-card .answer-for-host { font-size: 1.4rem; margin: 8px 0 14px; }
+.buzz-card .answer-for-host strong { color: var(--right); }
+.judge-buttons { display: flex; gap: 14px; justify-content: center; }
+.judge-buttons button { font-size: 1.3rem; font-weight: 800; padding: 0.7em 1.6em; border-radius: var(--radius); color: #fff; }
+.host .judge-buttons button.right { background: #17a255 !important; color: #fff !important; }
+.host .judge-buttons button.wrong { background: #d82a1a !important; color: #fff !important; }
+.buzz-list { list-style: none; padding: 0; margin: 16px auto 0; max-width: 640px; display: grid; gap: 6px; }
+.buzz-list li { display: flex; gap: 12px; align-items: center; padding: 8px 14px; border-radius: 10px; background: var(--surface); font-size: 1.15rem; }
+.buzz-list .name { flex: 1; font-weight: 700; overflow-wrap: anywhere; }
+.buzz-list .right { color: var(--right); font-weight: 800; }
+.buzz-list .wrong { color: var(--wrong); font-weight: 800; }
+
 /* Announcements for screen readers only */
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 

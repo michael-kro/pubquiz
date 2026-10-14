@@ -17,6 +17,8 @@ export const MAX_LATENCY_MS = 1500;
 /** How far a phone's own answer time may stray below the server's bound before it's not trusted. */
 export const CLIENT_TIME_TOLERANCE_MS = 150;
 export const MAX_EXTEND_SECONDS = 120;
+/** Buzzes that arrive within this long of the first are ordered by their latency-adjusted time, not arrival. */
+export const BUZZ_WINDOW_MS = 120;
 /** Share of the fastest-team bonus for 1st, 2nd and 3rd quickest. */
 const FAST_SHARES = [1, 0.6, 0.3];
 /** 1234.5 → "1234.5", without floating-point dust like 0.30000000000000004. */
@@ -46,6 +48,19 @@ interface Marked {
   detail?: string;
 }
 
+/** A Buzzin' question in progress. */
+interface BuzzState {
+  /** Teams that have buzzed and are waiting their turn, in order. */
+  queue: string[];
+  /** Teams that answered wrongly and are out for this question. */
+  locked: string[];
+  /** The team answering right now (the clock is held while they do). */
+  current?: string;
+  /** The clock was paused because a team is answering, so it must be resumed when they're judged. */
+  autoPaused: boolean;
+  winner?: string;
+}
+
 export interface GameSnapshot {
   version: 1;
   phase: Phase;
@@ -58,6 +73,7 @@ export interface GameSnapshot {
   skipped?: number[];
   photos?: [string, number][];
   photosEnabled?: boolean;
+  buzz?: [number, BuzzState][];
   displayOrders: [number, number[]][];
   overrides: [number, [string, boolean][]][];
 }
@@ -105,6 +121,8 @@ function answerText(q: Question): string {
       return q.tolerance > 0 ? `${q.answer} (give or take ${q.tolerance})` : String(q.answer);
     case 'nearest':
       return String(q.answer);
+    case 'buzzer':
+      return q.answer;
   }
 }
 
@@ -132,6 +150,9 @@ export class Game {
   private pausedAt: number | undefined;
   /** teamId → photo version, for teams that have uploaded one. The pictures themselves are in the PhotoStore. */
   private readonly photoVersions = new Map<string, number>();
+  /** Buzzin' questions, by question index. */
+  private readonly buzzStates = new Map<number, BuzzState>();
+  private buzzTimer: NodeJS.Timeout | undefined;
   /** The host can switch photos off for the whole quiz. */
   photosEnabled = true;
   /** Questions the host skipped: nobody scores on them. */
@@ -210,6 +231,7 @@ export class Game {
     if (!this.teams.delete(teamId)) return false;
     this.sentAt.delete(teamId);
     this.photoVersions.delete(teamId);
+    this.dropFromBuzz(teamId);
     if (this.phase === 'open' && this.everyoneAnswered()) this.closeQuestion();
     else this.changed();
     return true;
@@ -262,13 +284,24 @@ export class Game {
 
     const stored = this.validate(question, value);
     if (!stored.ok) return stored;
+    const timing = this.measure(teamId, latencyMs, clientElapsedMs);
+    if (timing.late) return fail("Too late, time's up.");
+    team.answers.set(this.questionIndex, { value: stored.value, answerMs: timing.answerMs });
+
+    if (this.everyoneAnswered()) this.closeQuestion();
+    else this.changed();
+    return { ok: true, value: null };
+  }
+
+  /**
+   * How long a team took, and whether it was too late. The phone times itself from when the question
+   * appeared on its screen, so delivery delay never counts against it. It is only trusted if it fits what
+   * the server saw: no more than the time since the question was sent, and no less than that minus the
+   * round trip (and a small tolerance).
+   */
+  private measure(teamId: string, latencyMs: number, clientElapsedMs?: number): { answerMs: number; late: boolean } {
     const latency = Math.min(Math.max(latencyMs, 0), MAX_LATENCY_MS);
     const receivedAt = this.now();
-    if (receivedAt - latency > this.endsAt) return fail("Too late, time's up.");
-
-    // The phone times itself from when the question appeared on its screen, so delivery delay never
-    // counts against it. It is only trusted if it fits what the server saw: no more than the time since
-    // the question was sent, and no less than that minus the round trip (and a small tolerance).
     const sinceSent = receivedAt - (this.sentAt.get(teamId) ?? this.openedAt);
     let answerMs = Math.max(0, sinceSent - latency);
     if (
@@ -279,11 +312,112 @@ export class Game {
     ) {
       answerMs = clientElapsedMs;
     }
-    team.answers.set(this.questionIndex, { value: stored.value, answerMs });
+    return { answerMs, late: receivedAt - latency > (this.pausedAt === undefined ? this.endsAt : this.endsAt + (receivedAt - this.pausedAt)) };
+  }
 
-    if (this.everyoneAnswered()) this.closeQuestion();
-    else this.changed();
+  // Buzzin' questions
+
+  private buzzState(index: number): BuzzState {
+    let state = this.buzzStates.get(index);
+    if (!state) this.buzzStates.set(index, (state = { queue: [], locked: [], autoPaused: false }));
+    return state;
+  }
+
+  /** A team presses the buzzer. */
+  buzz(teamId: string, latencyMs = 0, clientElapsedMs?: number): Result<null> {
+    const team = this.teams.get(teamId);
+    const question = this.currentQuestion;
+    if (!team) return fail('Your team is not in this quiz.');
+    if (this.phase !== 'open' || question?.type !== 'buzzer') return fail('There is nothing to buzz right now.');
+    const state = this.buzzState(this.questionIndex);
+    if (this.pausedAt !== undefined && !state.autoPaused) return fail('The quiz master has paused the quiz.');
+    if (state.locked.includes(teamId)) return fail("You're out for this question.");
+    if (state.current === teamId || state.queue.includes(teamId)) return fail('You have already buzzed.');
+    const timing = this.measure(teamId, latencyMs, clientElapsedMs);
+    if (timing.late) return fail("Too late, time's up.");
+
+    team.answers.set(this.questionIndex, { value: 'buzz', answerMs: timing.answerMs });
+    state.queue.push(teamId);
+    // Nobody is answering yet: wait a moment for any buzzes that were actually earlier but arrived later.
+    if (!state.current && !this.buzzTimer) {
+      this.buzzTimer = setTimeout(() => this.settleBuzz(this.questionIndex), BUZZ_WINDOW_MS);
+    }
+    this.changed();
     return { ok: true, value: null };
+  }
+
+  /** Picks who answers first, once the short window for near-simultaneous buzzes has passed. */
+  private settleBuzz(index: number): void {
+    clearTimeout(this.buzzTimer);
+    this.buzzTimer = undefined;
+    const state = this.buzzStates.get(index);
+    if (!state || state.current || this.phase !== 'open' || index !== this.questionIndex) return;
+    const time = (id: string) => this.teams.get(id)?.answers.get(index)?.answerMs ?? Infinity;
+    state.queue.sort((a, b) => time(a) - time(b));
+    this.promoteBuzzer(state);
+    this.changed();
+  }
+
+  /** Hands the question to the next team in line, holding the clock while they answer. */
+  private promoteBuzzer(state: BuzzState): void {
+    while (state.queue.length && !this.teams.has(state.queue[0]!)) state.queue.shift();
+    state.current = state.queue.shift();
+    if (state.current && this.pausedAt === undefined) {
+      this.pausedAt = this.now();
+      state.autoPaused = true;
+      clearTimeout(this.timer);
+      this.timer = undefined;
+    }
+  }
+
+  /** The host's verdict on the team that is answering. */
+  judge(correct: boolean): Result<null> {
+    const question = this.currentQuestion;
+    const state = this.buzzStates.get(this.questionIndex);
+    if (this.phase !== 'open' || question?.type !== 'buzzer') return fail('There is no buzzer question to judge.');
+    if (!state?.current) return fail('No team is answering right now.');
+    const team = this.teams.get(state.current);
+    const answer = team?.answers.get(this.questionIndex);
+    if (answer) answer.value = correct ? 'right' : 'wrong';
+    if (correct) {
+      state.winner = state.current;
+      state.current = undefined;
+      this.closeQuestion();
+      return { ok: true, value: null };
+    }
+    state.locked.push(state.current);
+    state.current = undefined;
+    this.promoteBuzzer(state);
+    if (!state.current) {
+      // Nobody else is waiting: everyone who isn't out can buzz again, and the clock carries on.
+      if (state.autoPaused && this.pausedAt !== undefined) {
+        state.autoPaused = false;
+        this.resumeClock();
+      }
+      const stillIn = [...this.teams.values()].filter((t) => t.connected && !state.locked.includes(t.id));
+      if (stillIn.length === 0) {
+        this.closeQuestion();
+        return { ok: true, value: null };
+      }
+    }
+    this.changed();
+    return { ok: true, value: null };
+  }
+
+  /** A team that leaves a Buzzin' question (removed by the host) no longer holds up the others. */
+  private dropFromBuzz(teamId: string): void {
+    const state = this.buzzStates.get(this.questionIndex);
+    if (!state || this.phase !== 'open') return;
+    state.queue = state.queue.filter((id) => id !== teamId);
+    state.locked = state.locked.filter((id) => id !== teamId);
+    if (state.current === teamId) {
+      state.current = undefined;
+      this.promoteBuzzer(state);
+      if (!state.current && state.autoPaused && this.pausedAt !== undefined) {
+        state.autoPaused = false;
+        this.resumeClock();
+      }
+    }
   }
 
   /** Checks an answer's shape and converts it to what is stored. */
@@ -310,6 +444,8 @@ export class Game {
       case 'nearest':
         if (typeof value !== 'number' || !Number.isFinite(value) || Math.abs(value) > 1e12) return fail('Type a number.');
         return { ok: true, value };
+      case 'buzzer':
+        return fail('Press the buzzer.');
       case 'ordering': {
         const display = this.displayOrders.get(this.questionIndex)!;
         const valid =
@@ -387,6 +523,7 @@ export class Game {
   /** Stops the clock for everyone. Teams can't answer until it's resumed. */
   pause(): Result<null> {
     if (this.phase !== 'open') return fail('There is no question to pause.');
+    if (this.buzzStates.get(this.questionIndex)?.current) return fail('A team is answering. Judge them first.');
     if (this.pausedAt !== undefined) return fail('Already paused.');
     this.pausedAt = this.now();
     clearTimeout(this.timer);
@@ -398,14 +535,20 @@ export class Game {
   /** Carries on from where it stopped: every deadline moves by the time spent paused. */
   resume(): Result<null> {
     if (this.pausedAt === undefined) return fail('Not paused.');
+    if (this.buzzStates.get(this.questionIndex)?.current) return fail('A team is answering. Judge them first.');
+    this.resumeClock();
+    this.changed();
+    return { ok: true, value: null };
+  }
+
+  private resumeClock(): void {
+    if (this.pausedAt === undefined) return;
     const shift = this.now() - this.pausedAt;
     this.pausedAt = undefined;
     this.openedAt += shift;
     this.endsAt += shift;
     for (const [teamId, at] of this.sentAt) this.sentAt.set(teamId, at + shift);
     this.startTimer();
-    this.changed();
-    return { ok: true, value: null };
   }
 
   /** Adds time to the question in progress. */
@@ -424,6 +567,8 @@ export class Game {
   skip(): Result<null> {
     if (this.phase !== 'open' && this.phase !== 'closed') return fail('Only a question that has not been revealed can be skipped.');
     this.skipped.add(this.questionIndex);
+    clearTimeout(this.buzzTimer);
+    this.buzzTimer = undefined;
     this.pausedAt = undefined;
     clearTimeout(this.timer);
     this.timer = undefined;
@@ -437,6 +582,7 @@ export class Game {
 
   dispose(): void {
     clearTimeout(this.timer);
+    clearTimeout(this.buzzTimer);
   }
 
   // Saving and restoring, so a crash or restart mid-quiz loses nothing.
@@ -454,6 +600,7 @@ export class Game {
       skipped: [...this.skipped],
       photos: [...this.photoVersions],
       photosEnabled: this.photosEnabled,
+      buzz: [...this.buzzStates].map(([index, state]) => [index, structuredClone(state)] as [number, BuzzState]),
       displayOrders: [...this.displayOrders],
       overrides: [...this.overrides].map(([index, marks]) => [index, [...marks]]),
     };
@@ -473,16 +620,22 @@ export class Game {
     game.pausedAt = snapshot.pausedAt;
     for (const [id, version] of snapshot.photos ?? []) game.photoVersions.set(id, version);
     game.photosEnabled = snapshot.photosEnabled ?? true;
+    for (const [index, state] of snapshot.buzz ?? []) game.buzzStates.set(index, structuredClone(state));
     for (const index of snapshot.skipped ?? []) game.skipped.add(index);
     for (const [index, order] of snapshot.displayOrders) game.displayOrders.set(index, order);
     for (const [index, marks] of snapshot.overrides) game.overrides.set(index, new Map(marks));
     if (game.phase === 'open' && game.pausedAt === undefined) game.startTimer();
+    // A buzz that was still waiting out its short window when the program stopped is settled now.
+    const buzzing = game.buzzStates.get(game.questionIndex);
+    if (game.phase === 'open' && buzzing && !buzzing.current && buzzing.queue.length) game.settleBuzz(game.questionIndex);
     return game;
   }
 
   private openQuestion(index: number): void {
     const question = this.quiz.questions[index];
     if (!question) return;
+    clearTimeout(this.buzzTimer);
+    this.buzzTimer = undefined;
     this.questionIndex = index;
     this.phase = 'open';
     this.pausedAt = undefined;
@@ -504,6 +657,15 @@ export class Game {
 
   private closeQuestion(): void {
     if (this.phase !== 'open') return;
+    clearTimeout(this.buzzTimer);
+    this.buzzTimer = undefined;
+    const buzzing = this.buzzStates.get(this.questionIndex);
+    if (buzzing) {
+      // Closing while a team is mid-answer (or queued) ends the turn without a verdict.
+      buzzing.current = undefined;
+      buzzing.queue = [];
+      buzzing.autoPaused = false;
+    }
     clearTimeout(this.timer);
     this.timer = undefined;
     this.pausedAt = undefined;
@@ -520,6 +682,7 @@ export class Game {
   }
 
   private everyoneAnswered(): boolean {
+    if (this.currentQuestion?.type === 'buzzer') return false; // Ends when the host judges it, or everyone is out.
     const connected = [...this.teams.values()].filter((t) => t.connected);
     return connected.length > 0 && connected.every((t) => t.answers.has(this.questionIndex));
   }
@@ -548,7 +711,7 @@ export class Game {
   /** What a team earns for being among the quickest correct answers to a question, if anything. */
   private fastBonusFor(questionIndex: number, teamId: string): { points: number; label: string; place: number } | undefined {
     const q = this.quiz.questions[questionIndex]!;
-    if (q.type === 'nearest') return undefined; // Closest wins; being quick means nothing.
+    if (q.type === 'nearest' || q.type === 'buzzer') return undefined; // Closest wins / the host judges: being quick adds nothing.
     const order = this.fastestOrder(questionIndex);
     const place = order.indexOf(teamId);
     if (place < 0) return undefined;
@@ -627,6 +790,12 @@ export class Game {
       case 'number': {
         const correct = Math.abs((answer.value as number) - q.answer) <= q.tolerance + 1e-9;
         return { correct, points: timed(correct, q.points) };
+      }
+      case 'buzzer': {
+        // Flat points for the team the host judged right; a penalty for a wrong answer; nothing for those who never got a turn.
+        if (answer.value === 'right') return { correct: true, points: q.points };
+        if (answer.value === 'wrong') return { correct: false, points: q.penalty ? -q.penalty : 0, detail: q.penalty ? `Wrong answer: -${q.penalty}` : 'Wrong answer' };
+        return { correct: false, points: 0, detail: 'Buzzed, but did not get to answer' };
       }
       case 'nearest': {
         // The closest guess wins the lot (ties share it); speed doesn't matter.
@@ -766,6 +935,8 @@ export class Game {
       case 'number':
       case 'nearest':
         return formatNumber(answer.value as number);
+      case 'buzzer':
+        return 'Buzzed';
       case 'ordering':
         return (answer.value as number[]).map((i) => q.items[i]).join(' → ');
     }
@@ -774,6 +945,39 @@ export class Game {
   private preloadImage(): string | undefined {
     if (this.phase === 'open' || this.phase === 'closed') return undefined;
     return this.quiz.questions[this.questionIndex + 1]?.imageUrl;
+  }
+
+  /** How a Buzzin' question looks to one team. */
+  private teamBuzzView(teamId: string): QuestionView['buzz'] {
+    if (this.currentQuestion?.type !== 'buzzer') return undefined;
+    const state = this.buzzStates.get(this.questionIndex) ?? { queue: [], locked: [], autoPaused: false };
+    const nameOf = (id?: string) => (id ? this.teams.get(id)?.name : undefined);
+    if (this.phase === 'open') {
+      const answering = nameOf(state.current);
+      if (state.current === teamId) return { state: 'answering', answering };
+      if (state.locked.includes(teamId)) return { state: 'locked', answering };
+      const place = state.queue.indexOf(teamId);
+      if (place >= 0) return { state: 'queued', answering, position: place + 1 + (state.current ? 1 : 0) };
+      return { state: 'ready', answering };
+    }
+    return { state: state.winner === teamId ? 'won' : state.locked.includes(teamId) ? 'locked' : 'over', answering: nameOf(state.winner) };
+  }
+
+  /** The order teams buzzed in, for the host and TV. */
+  private buzzers(): { name: string; status: 'answering' | 'queued' | 'wrong' | 'right' }[] | undefined {
+    if (this.currentQuestion?.type !== 'buzzer' || this.phase === 'lobby') return undefined;
+    const state = this.buzzStates.get(this.questionIndex);
+    if (!state) return [];
+    const row = (id: string | undefined, status: 'answering' | 'queued' | 'wrong' | 'right') => {
+      const name = id ? this.teams.get(id)?.name : undefined;
+      return name ? [{ name, status }] : [];
+    };
+    return [
+      ...row(state.winner, 'right'),
+      ...row(state.current, 'answering'),
+      ...state.queue.flatMap((id) => row(id, 'queued')),
+      ...state.locked.flatMap((id) => row(id, 'wrong')),
+    ];
   }
 
   teamView(teamId: string): TeamView | undefined {
@@ -800,7 +1004,7 @@ export class Game {
       // Phones never play the clip; the host or TV does.
       question: (() => {
         const view = this.questionView();
-        return view ? { ...view, audio: undefined } : undefined;
+        return view ? { ...view, audio: undefined, buzz: this.teamBuzzView(teamId) } : undefined;
       })(),
       myChoice: showQuestion && question?.type === 'multiple-choice' ? (answer?.value as number | undefined) : undefined,
       myAnswerText: showQuestion && question && answer ? this.describeAnswer(question, answer) : undefined,
@@ -913,6 +1117,7 @@ export class Game {
       review,
       summary,
       guesses,
+      buzzers: this.buzzers(),
       fastest: this.fastestTeams(),
       standings,
       preloadImage: this.preloadImage(),

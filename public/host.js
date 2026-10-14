@@ -166,7 +166,9 @@ document.addEventListener('keydown', (event) => {
   if ([' ', 'ArrowRight', 'PageDown', 'Enter'].includes(event.key)) {
     event.preventDefault();
     advance();
-  } else if ((event.key === 'p' || event.key === 'P') && state.phase === 'open') {
+  } else if ((event.key === 'y' || event.key === 'Y' || event.key === 'n' || event.key === 'N') && state.phase === 'open' && state.buzzers?.some((b) => b.status === 'answering')) {
+    socket?.send({ t: 'judge', correct: event.key.toLowerCase() === 'y' });
+  } else if ((event.key === 'p' || event.key === 'P') && state.phase === 'open' && !state.buzzers?.some((b) => b.status === 'answering')) {
     socket?.send({ t: state.question?.paused ? 'resume' : 'pause' });
   }
 });
@@ -644,7 +646,7 @@ function stage(s) {
             ? h('span', { class: 'countdown big', 'data-countdown': true })
             : h('span', { class: 'phase-label' }, s.phase === 'closed' ? "Time's up" : 'Answer'),
         ),
-        q.paused ? h('p', { class: 'paused-banner', role: 'status' }, '⏸ Paused') : null,
+        q.paused ? h('p', { class: 'paused-banner', role: 'status' }, s.buzzers?.some((b) => b.status === 'answering') ? '⏱ The clock is held while a team answers' : '⏸ Paused') : null,
         q.type === 'music' && !q.audio ? h('p', { class: 'music-badge' }, '🎵 Music round: play the track now') : null,
         clipBar(q),
         h('h1', { class: 'question-text' }, q.text),
@@ -770,7 +772,10 @@ function questionControls(s) {
     { class: 'question-controls' },
     s.phase === 'open'
       ? [
-          h('button', { onclick: () => socket.send({ t: q.paused ? 'resume' : 'pause' }), title: 'P' }, q.paused ? '▶ Resume' : '⏸ Pause'),
+          // While a team is answering a Buzzin' question the clock is held by the game; judging them releases it.
+          s.buzzers?.some((b) => b.status === 'answering')
+            ? null
+            : h('button', { onclick: () => socket.send({ t: q.paused ? 'resume' : 'pause' }), title: 'P' }, q.paused ? '▶ Resume' : '⏸ Pause'),
           h('button', { onclick: () => socket.send({ t: 'extend', seconds: 10 }) }, '+10 s'),
         ]
       : null,
@@ -838,6 +843,53 @@ function questionBody(s, q, reveal) {
         reveal ? null : h('p', { class: 'muted center' }, 'Teams put these in order.'),
         s.summary ? h('p', { class: 'center big' }, s.summary) : null,
       );
+
+    case 'buzzer': {
+      const current = s.buzzers?.find((b) => b.status === 'answering');
+      const winner = s.buzzers?.find((b) => b.status === 'right');
+      return h(
+        'div',
+        {},
+        h('p', { class: 'muted center' }, 'Teams buzz in. The first to buzz answers out loud.'),
+        current
+          ? h(
+              'div',
+              { class: 'buzz-card live' },
+              h('p', { class: 'muted' }, 'Buzzed first'),
+              h('p', { class: 'who' }, current.name),
+              TV ? h('p', { class: 'muted' }, 'is answering…') : h('p', { class: 'answer-for-host' }, 'Looking for: ', h('strong', {}, q.answerText)),
+              TV
+                ? null
+                : h(
+                    'div',
+                    { class: 'judge-buttons' },
+                    h('button', { class: 'right', onclick: () => socket.send({ t: 'judge', correct: true }), title: 'Y' }, '✓ Correct'),
+                    h('button', { class: 'wrong', onclick: () => socket.send({ t: 'judge', correct: false }), title: 'N' }, '✗ Wrong'),
+                  ),
+            )
+          : winner
+            ? h('div', { class: 'buzz-card' }, h('p', { class: 'muted' }, 'Got it'), h('p', { class: 'who' }, winner.name))
+            : s.phase === 'open'
+              ? h('div', { class: 'buzz-card' }, h('p', { class: 'who muted' }, 'Waiting for a buzz…'))
+              : null,
+        reveal ? h('p', { class: 'center big answer-reveal' }, 'Answer: ', h('strong', {}, q.answerText)) : null,
+        s.buzzers?.length
+          ? h(
+              'ul',
+              { class: 'buzz-list' },
+              s.buzzers.map((b) =>
+                h(
+                  'li',
+                  {},
+                  h('span', { class: b.status === 'right' ? 'right' : b.status === 'wrong' ? 'wrong' : 'muted' }, { right: '✓', wrong: '✗', answering: '🔔', queued: '⏳' }[b.status]),
+                  h('span', { class: 'name' }, b.name),
+                  h('span', { class: 'muted' }, { right: 'Correct', wrong: 'Wrong', answering: 'Answering', queued: 'Waiting' }[b.status]),
+                ),
+              ),
+            )
+          : null,
+      );
+    }
 
     case 'number':
     case 'nearest':

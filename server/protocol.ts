@@ -25,6 +25,9 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('resume') }),
   z.object({ t: z.literal('extend'), seconds: z.number().min(1).max(120).optional() }),
   z.object({ t: z.literal('skip') }),
+  // Buzzin' questions: a team buzzes, the host judges the team that is answering.
+  z.object({ t: z.literal('buzz'), elapsedMs: z.number().min(0).max(1_000_000).optional() }),
+  z.object({ t: z.literal('judge'), correct: z.boolean() }),
   z.object({ t: z.literal('kick'), teamId: z.string().max(200) }),
   z.object({ t: z.literal('mark'), key: z.string().max(400), correct: z.boolean() }),
   z.object({ t: z.literal('network'), action: z.enum(['use-lan', 'use-tunnel']) }),
@@ -72,6 +75,8 @@ export interface QuestionView {
   image?: string;
   /** A sound clip for the host and TV screens to play (never sent to phones). */
   audio?: string;
+  /** Buzzin' questions, from this team's side. */
+  buzz?: { state: 'ready' | 'queued' | 'answering' | 'locked' | 'won' | 'over'; answering?: string; position?: number };
   /** Multiple choice. */
   options?: string[];
   /** Ordering: the items in the shuffled order every team sees. */
@@ -144,6 +149,8 @@ export interface HostView {
   summary?: string;
   /** Nearest wins: every guess, closest first, once the question has closed. */
   guesses?: { value: string; off: string; teams: string[]; winner: boolean }[];
+  /** Buzzin' questions: who has buzzed, in order, and how it went. */
+  buzzers?: { name: string; status: 'answering' | 'queued' | 'wrong' | 'right' }[];
   /** From the reveal: the quickest correct teams and what they earned for it. */
   fastest?: { name: string; points: number; place: number }[];
   standings: StandingRow[];

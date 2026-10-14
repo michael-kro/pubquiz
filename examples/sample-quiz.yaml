@@ -5,6 +5,10 @@
 #   picture          image plus accept: the answers to accept. Teams type their answer.
 #   music            accept only. Play the track yourself; teams type their answer.
 #   ordering         items: exactly 5, listed in the CORRECT order. Teams see them shuffled.
+#   number           answer: a number. Teams type it. Optional tolerance: give or take.
+#   nearest          answer: a number. Teams type a guess and the closest wins (a good bonus question).
+#   buzzer           answer: what you're looking for. Teams get a big BUZZ button; the first to buzz answers
+#                    out loud and you press Correct or Wrong. A wrong team is out; optional penalty: points lost.
 #   letter           answer: the full answer. Teams tap its first letter on an A-Z keypad
 #                    (classic style). "The" is skipped and people go by first name, so
 #                    write "John Lennon" and the letter is J. Add letter: X if it can't be worked out.
@@ -119,3 +123,18 @@ rounds:
         text: Which Disney film features the song "Hakuna Matata"?
         answer: The Lion King
         seconds: 15
+
+  - name: Buzzers
+    questions:
+      - type: buzzer
+        text: Which city is the capital of Australia?
+        answer: Canberra
+        seconds: 30
+        penalty: 200
+        info: Not Sydney, and not Melbourne!
+      - type: number
+        text: In what year did humans first walk on the Moon?
+        answer: 1969
+      - type: nearest
+        text: How tall is Mount Everest, in metres?
+        answer: 8849

@@ -402,6 +402,7 @@ function phaseView(s) {
       );
 
     case 'open': {
+      if (q.type === 'buzzer') return buzzerScreen(s, q);
       const answered = s.myAnswerText != null || pending != null;
       const locked = answered || Boolean(q.paused);
       return h(
@@ -427,6 +428,17 @@ function phaseView(s) {
     }
 
     case 'closed':
+      if (q.type === 'buzzer') {
+        const b = q.buzz ?? {};
+        return h(
+          'section',
+          { class: 'screen center' },
+          questionHeader(q),
+          h('h1', {}, b.state === 'won' ? 'You got it!' : 'Round over'),
+          h('p', {}, b.answering && b.state !== 'won' ? `${b.answering} got it.` : b.state === 'won' ? 'Great buzz!' : 'Nobody got it.'),
+          h('p', { class: 'muted' }, 'Waiting for the reveal…'),
+        );
+      }
       return h(
         'section',
         { class: 'screen center' },
@@ -446,7 +458,7 @@ function phaseView(s) {
         'section',
         { class: `screen center result ${r.correct ? 'right' : r.points > 0 ? 'partial' : 'wrong'}` },
         questionHeader(q),
-        h('h1', {}, q.type === 'nearest' ? (r.correct ? 'Closest!' : !answered ? 'No answer' : 'Not the closest') : r.correct ? 'Correct!' : !answered ? 'No answer' : r.points > 0 ? 'Close!' : 'Wrong'),
+        h('h1', {}, q.type === 'buzzer' ? (r.correct ? 'You got it!' : r.detail?.startsWith('Wrong') ? 'Wrong!' : 'Not this time') : q.type === 'nearest' ? (r.correct ? 'Closest!' : !answered ? 'No answer' : 'Not the closest') : r.correct ? 'Correct!' : !answered ? 'No answer' : r.points > 0 ? 'Close!' : 'Wrong'),
         r.points > 0 ? h('p', { class: 'points' }, `+${r.points}`) : null,
         r.detail && answered ? h('p', {}, r.detail) : null,
         r.correct && q.type !== 'nearest' ? null : h('p', {}, q.type === 'ordering' ? 'The order was ' : 'The answer was ', h('strong', {}, answerLabel)),
@@ -469,6 +481,44 @@ function phaseView(s) {
     }
   }
   return h('section', { class: 'screen' });
+}
+
+/** Buzzin': one huge button. The first team to press it answers out loud. */
+function buzzerScreen(s, q) {
+  const b = q.buzz ?? { state: 'ready' };
+  const labels = {
+    ready: 'BUZZ!',
+    queued: `Buzzed! ${ordinal(b.position ?? 2)} in line`,
+    answering: "YOU'RE ANSWERING!",
+    locked: "You're out for this question",
+  };
+  const status = {
+    ready: b.answering ? `${b.answering} is answering…` : 'Get ready…',
+    queued: b.answering ? `${b.answering} is answering. You're next if they get it wrong.` : 'Waiting to see who was first…',
+    answering: 'Say your answer out loud to the quiz master.',
+    locked: b.answering ? `${b.answering} is answering…` : 'Wait for the next question.',
+  }[b.state];
+  return h(
+    'section',
+    { class: 'screen center buzzer-screen' },
+    h('div', { class: 'question-top' }, questionHeader(q), h('span', { class: 'countdown', 'data-countdown': true })),
+    q.paused && !b.answering ? h('p', { class: 'paused-banner', role: 'status' }, '⏸ Paused by the quiz master.') : null,
+    h('h2', { class: 'question-text' }, q.text),
+    h(
+      'button',
+      {
+        class: `big-buzzer ${b.state}`,
+        type: 'button',
+        disabled: b.state !== 'ready' || Boolean(q.paused),
+        onclick: () => {
+          if (navigator.vibrate) navigator.vibrate(60);
+          if (!socket.send({ t: 'buzz', elapsedMs: elapsedMs() })) showNotice('Not connected. Try again in a moment.');
+        },
+      },
+      labels[b.state],
+    ),
+    h('p', { class: 'muted' }, status),
+  );
 }
 
 function myAnswerLabel(s) {

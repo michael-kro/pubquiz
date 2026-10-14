@@ -80,8 +80,11 @@ See [examples/sample-quiz.yaml](examples/sample-quiz.yaml), which has every ques
 | `music` | A text box (you play the track) | `accept` |
 | `ordering` | 5 shuffled items to tap into order | `items`, listed in the correct order |
 | `letter` | An A–Z keypad: tap the answer's first letter | `answer`, e.g. `John Lennon` (letter J). Skip "The"; people go first name first. |
+| `buzzer` | One huge BUZZ button | `answer` (for you to judge with), optionally `penalty` |
 | `number` | A box to type a number | `answer`, and optionally `tolerance` (give or take) |
 | `nearest` | A box to type a number; the closest guess wins | `answer`. Good as a bonus question or tie-break. |
+
+**Buzzin' questions** work like a pub buzzer round. Read the question out; the first team to press BUZZ answers out loud, the game clock stops while they do, and you press **✓ Correct** or **✗ Wrong** (or **Y** / **N** on the keyboard). Right: the team scores the points and the question ends. Wrong: that team is out (and loses `penalty` points if you set one), the next team in the buzz order answers, and if nobody is waiting the clock carries on for everyone still in. Buzzes within a tenth of a second of each other are ordered by their latency-adjusted time, so a slow connection doesn't lose the buzz.
 
 Any question can also have `audio`, a sound clip (mp3, m4a, ogg or wav, up to 20 MB; a file next to the quiz, or a web address). It plays on the host or TV screen, never on phones: the clip bar has Play, Pause and Replay, it starts by itself when that screen's 🔊 sound is on, and pausing the game pauses the clip. Upload clips in the editor's **Audio clip** field. Zip exports and imports include them.
 

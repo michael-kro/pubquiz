@@ -11,6 +11,7 @@ const TYPES = {
   letter: 'First letter',
   number: 'Number',
   nearest: 'Nearest wins',
+  buzzer: 'Buzzer',
 };
 const ORDERING_ITEMS = 5;
 const SAVE_DELAY_MS = 700;
@@ -43,6 +44,7 @@ function blankQuestion(type = 'multiple-choice', from = {}) {
     letter: { answer: '' },
     number: { answer: 0 },
     nearest: { answer: 0 },
+    buzzer: { answer: '' },
   }[type];
   // Carry the answer across where the types are similar.
   if ((type === 'picture' || type === 'music') && from.accept) typed.accept = [...from.accept];
@@ -523,6 +525,17 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           q.answer = v;
           changed();
         }), 'answer', 'Teams type a number and the closest guess wins all the points. Speed doesn\'t count. Good as a bonus question or tie-break.');
+      case 'buzzer':
+        return [
+          field('Answer (only you see it, to judge with)', textInput(q.answer, (v) => {
+            q.answer = v;
+            changed();
+          }, { placeholder: 'e.g. Canberra' }), 'answer', "Teams get a big BUZZ button. The first to buzz answers out loud and you press Correct or Wrong. A wrong team is out, and the next in line gets a go."),
+          field('Penalty for a wrong answer (optional)', numberInput(q.penalty, '0', (v) => {
+            q.penalty = v;
+            changed();
+          }), 'penalty', 'Points taken off a team that buzzes and gets it wrong.'),
+        ];
       case 'letter': {
         const letter = (q.letter || normalise(q.answer)[0] || '?').toUpperCase();
         return [
@@ -640,7 +653,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
         q.info = v.trim() ? v : undefined;
         changed();
       }, { maxlength: '300' }), 'info'),
-      q.type === 'nearest' ? null : h(
+      q.type === 'nearest' || q.type === 'buzzer' ? null : h(
         'label',
         { class: 'check' },
         h('input', {
@@ -788,6 +801,8 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           return h('div', { class: 'options' }, q.options.map((o, i) =>
             h('div', { class: `option opt-${i}${i === q.answer ? ' chosen' : ''}` }, h('span', { class: 'letter' }, LETTERS[i]), h('span', {}, o || '…')),
           ));
+        case 'buzzer':
+          return h('div', { class: 'center' }, h('div', { class: 'big-buzzer', style: 'width:150px;margin:12px auto;font-size:1.3rem' }, 'BUZZ!'));
         case 'number':
         case 'nearest':
           return h('div', { class: 'text-answer' }, h('input', { disabled: true, placeholder: 'Type a number' }), h('div', { class: 'primary fake-button' }, 'Submit answer'));

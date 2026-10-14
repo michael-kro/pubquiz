@@ -51,7 +51,7 @@ test('parses a valid quiz, flattening rounds and applying defaults', () => {
 
 test('the bundled sample quiz is valid', async () => {
   const quiz = parseQuiz(await readFile(new URL('../examples/sample-quiz.yaml', import.meta.url), 'utf8'));
-  assert.equal(quiz.questions.length, 18);
+  assert.equal(quiz.questions.length, 21);
 });
 
 test('reports an answer outside the options with its location', () => {
