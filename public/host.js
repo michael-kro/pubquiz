@@ -1255,6 +1255,9 @@ function prizesEditor(s) {
   const current = [0, 1, 2].map((i) => s.prizes?.[i] ?? '');
   const send = () => {
     const values = [...document.querySelectorAll('.prize-input')].map((input) => input.value);
+    // A redraw can blur a box; only save when the text really differs from what the game has.
+    const saved = [0, 1, 2].map((i) => state?.prizes?.[i] ?? '');
+    if (values.every((v, i) => v.trim() === saved[i])) return;
     socket.send({ t: 'set-prizes', prizes: values });
   };
   return h(
