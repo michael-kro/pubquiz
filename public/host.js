@@ -1241,6 +1241,40 @@ function teamsPanel(s) {
     'aside',
     { class: 'teams' },
     h('h2', {}, `Teams ${s.teams.length}/${s.maxTeams}`),
+    TV && s.teamsHidden ? h('p', { class: 'muted' }, `${s.standings.length} ${s.standings.length === 1 ? 'team is' : 'teams are'} playing`) : null,
+    s.teams.length === 0 && !s.teamsHidden ? h('p', { class: 'muted small' }, 'No teams yet.') : null,
+    h(
+      'ul',
+      {},
+      s.teams.map((team) =>
+        h(
+          'li',
+          { class: team.connected ? '' : 'offline', title: team.connected ? 'Connected' : 'Disconnected' },
+          h('span', { class: 'dot', 'aria-label': team.connected ? 'connected' : 'disconnected' }),
+          avatar(team.name, team.photo, 26),
+          h('span', { class: 'name' }, team.name),
+          !TV && team.photo ? h('button', { class: 'remove-photo', title: `Remove ${team.name}'s photo`, 'aria-label': `Remove ${team.name}'s photo`, onclick: () => confirm(`Remove ${team.name}'s photo?`) && socket.send({ t: 'remove-photo', teamId: team.id }) }, '🚫') : null,
+          !TV && team.code ? h('span', { class: 'team-code-small', title: 'Team code: lets this team carry on from another phone' }, team.code) : null,
+          s.phase === 'open' && team.answered ? h('span', { class: 'tick', 'aria-label': 'answered' }, '✓') : null,
+          h('span', { class: 'score' }, team.score),
+          TV ? null : h(
+            'button',
+            {
+              class: 'kick',
+              title: `Remove ${team.name}`,
+              'aria-label': `Remove ${team.name}`,
+              onclick: () => {
+                if (confirm(`Remove "${team.name}" from the quiz? Their score will be lost.`)) {
+                  socket.send({ t: 'kick', teamId: team.id });
+                }
+              },
+            },
+            '×',
+          ),
+        ),
+      ),
+    ),
+    TV ? null : h('h3', { class: 'panel-heading' }, 'Options'),
     TV
       ? null
       : h(
@@ -1282,39 +1316,6 @@ function teamsPanel(s) {
           ' Team photos',
         ),
     TV ? null : h('button', { type: 'button', class: 'codes-button', onclick: () => { codesOpen = true; render(); } }, '🔑 Team codes'),
-    TV && s.teamsHidden ? h('p', { class: 'muted' }, `${s.standings.length} ${s.standings.length === 1 ? 'team is' : 'teams are'} playing`) : null,
-    s.teams.length === 0 && !s.teamsHidden ? h('p', { class: 'muted small' }, 'No teams yet.') : null,
-    h(
-      'ul',
-      {},
-      s.teams.map((team) =>
-        h(
-          'li',
-          { class: team.connected ? '' : 'offline', title: team.connected ? 'Connected' : 'Disconnected' },
-          h('span', { class: 'dot', 'aria-label': team.connected ? 'connected' : 'disconnected' }),
-          avatar(team.name, team.photo, 26),
-          h('span', { class: 'name' }, team.name),
-          !TV && team.photo ? h('button', { class: 'remove-photo', title: `Remove ${team.name}'s photo`, 'aria-label': `Remove ${team.name}'s photo`, onclick: () => confirm(`Remove ${team.name}'s photo?`) && socket.send({ t: 'remove-photo', teamId: team.id }) }, '🚫') : null,
-          !TV && team.code ? h('span', { class: 'team-code-small', title: 'Team code: lets this team carry on from another phone' }, team.code) : null,
-          s.phase === 'open' && team.answered ? h('span', { class: 'tick', 'aria-label': 'answered' }, '✓') : null,
-          h('span', { class: 'score' }, team.score),
-          TV ? null : h(
-            'button',
-            {
-              class: 'kick',
-              title: `Remove ${team.name}`,
-              'aria-label': `Remove ${team.name}`,
-              onclick: () => {
-                if (confirm(`Remove "${team.name}" from the quiz? Their score will be lost.`)) {
-                  socket.send({ t: 'kick', teamId: team.id });
-                }
-              },
-            },
-            '×',
-          ),
-        ),
-      ),
-    ),
   );
 }
 

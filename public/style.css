@@ -333,6 +333,7 @@ input {
 
 .teams { grid-area: teams; background: var(--surface); padding: 20px 16px; overflow: auto; border-left: 1px solid var(--surface-2); }
 .teams h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.teams .panel-heading { margin: 22px 0 8px; padding-top: 14px; border-top: 1px solid var(--surface-2); font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .teams ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
 .teams li { display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-radius: 8px; }
 .teams li:hover { background: var(--surface-2); }
