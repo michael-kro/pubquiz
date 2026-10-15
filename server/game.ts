@@ -1009,11 +1009,11 @@ export class Game {
   }
 
   /** For the host and TV: who earned the speed bonus on the question just revealed. */
-  fastestTeams(): { name: string; points: number; place: number }[] {
+  fastestTeams(): { name: string; points: number; place: number; photo?: string }[] {
     if (!this.isRevealed(this.questionIndex) || this.questionIndex < 0) return [];
     return this.fastestOrder(this.questionIndex).flatMap((id) => {
       const bonus = this.fastBonusFor(this.questionIndex, id);
-      return bonus ? [{ name: this.teams.get(id)!.name, points: bonus.points, place: bonus.place + 1 }] : [];
+      return bonus ? [{ name: this.teams.get(id)!.name, points: bonus.points, place: bonus.place + 1, photo: this.photoUrl(id) }] : [];
     });
   }
 

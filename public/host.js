@@ -561,13 +561,35 @@ function followRevealClip(after) {
   }
 }
 
+for (const event of ['play', 'pause', 'ended']) {
+  revealClip.addEventListener(event, () => {
+    const button = document.querySelector('.reveal-clip-toggle');
+    if (button) button.textContent = revealClip.paused ? '▶ Play clip' : '⏸ Stop clip';
+  });
+}
+
 function revealClipBar(q) {
   if (!q.revealAudio) return null;
   return h(
     'div',
     { class: 'clip-bar reveal-clip' },
     h('span', { class: 'clip-title' }, `🎬 ${q.revealCaption || 'Bonus clip'}`),
-    TV ? null : h('button', { type: 'button', onclick: () => { revealClip.currentTime = 0; void revealClip.play().catch(() => {}); } }, '▶ Play clip'),
+    TV
+      ? null
+      : h(
+          'button',
+          {
+            type: 'button',
+            class: 'primary reveal-clip-toggle',
+            onclick: () => {
+              if (revealClip.paused) {
+                revealClip.currentTime = 0;
+                void revealClip.play().catch(() => showNotice('The browser blocked the sound. Click the 🔊 button first, then try again.'));
+              } else revealClip.pause();
+            },
+          },
+          revealClip.paused ? '▶ Play clip' : '⏸ Stop clip',
+        ),
   );
 }
 
@@ -900,14 +922,22 @@ function miniBoard(s) {
 
 /** The quickest correct teams, with what the speed bonus gave them. */
 function fastestBlock(s) {
-  if (!s.fastest?.length) return null;
   const names = ['Fastest', '2nd fastest', '3rd fastest'];
+  if (s.fastest?.length) {
+    return h(
+      'ul',
+      { class: 'fastest' },
+      s.fastest.map((f) =>
+        h('li', {}, h('span', { class: 'bolt' }, '⚡'), avatar(f.name, f.photo, 44), h('span', { class: 'fastest-name' }, f.name), h('span', { class: 'muted' }, names[f.place - 1]), h('span', { class: 'gained' }, `+${f.points}`)),
+      ),
+    );
+  }
+  // No speed bonus on this quiz: still name the quickest right answer.
+  if (!s.speedster || (TV && s.teamsHidden)) return null;
   return h(
     'ul',
     { class: 'fastest' },
-    s.fastest.map((f) =>
-      h('li', {}, h('span', { class: 'bolt' }, '⚡'), h('span', { class: 'fastest-name' }, f.name), h('span', { class: 'muted' }, names[f.place - 1]), h('span', { class: 'gained' }, `+${f.points}`)),
-    ),
+    h('li', {}, h('span', { class: 'bolt' }, '⚡'), avatar(s.speedster.name, s.speedster.photo, 44), h('span', { class: 'fastest-name' }, s.speedster.name), h('span', { class: 'muted' }, 'Fastest right answer')),
   );
 }
 

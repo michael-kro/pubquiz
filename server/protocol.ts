@@ -211,7 +211,7 @@ export interface HostView {
   /** Buzzin' questions: who has buzzed, in order, and how it went. */
   buzzers?: { name: string; status: 'answering' | 'queued' | 'wrong' | 'right' }[];
   /** From the reveal: the quickest correct teams and what they earned for it. */
-  fastest?: { name: string; points: number; place: number }[];
+  fastest?: { name: string; points: number; place: number; photo?: string }[];
   standings: StandingRow[];
   preloadImage?: string;
   /** The host can end this quiz and go back to the library. */
