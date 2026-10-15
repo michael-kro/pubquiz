@@ -65,8 +65,8 @@ test('phones that lose signal mid-question: the question carries on, and they ca
   cAgain.send({ t: 'answer', value: 0 });
   b.client.send({ t: 'answer', value: 1 });
 
-  // Every connected team has answered, so it closes without waiting for D.
-  const closed = await host.state('closed');
+  // Every connected team has answered, so it closes once D has been gone past the short grace period.
+  const closed = await host.state('closed', () => true, 12_000);
   assert.deepEqual(
     closed.teams.map((t: Message) => [t.name, t.connected, t.answered]),
     [

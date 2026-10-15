@@ -726,6 +726,7 @@ function topBar(s) {
     h('a', { class: 'button', href: `/screen?key=${encodeURIComponent(s.screenKey)}`, target: '_blank', rel: 'noopener', title: 'Open this on the TV or projector' }, 'TV screen ↗'),
     h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Join: ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)]),
     breakControl(s),
+    s.pendingTeams?.length ? h('button', { type: 'button', class: 'pending-pill', title: 'Let in every team that is waiting', onclick: () => socket.send({ t: 'admit-all' }) }, `⏳ ${s.pendingTeams.length} waiting · Admit`) : null,
     TV
       ? null
       : h('button', {
@@ -772,7 +773,7 @@ function stage(s) {
           h('p', { class: 'big' }, s.joinUrl.replace(/^https?:\/\//, '')),
           h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
           h('p', { class: 'muted' }, `One phone per team. ${s.teams.length} of ${s.maxTeams} teams joined.`),
-          TV ? prizeList(s.prizes, true) : prizesEditor(s),
+          TV ? [entryFeeBanner(s), prizeList(s.prizes, true)] : [entryFeeEditor(s), prizesEditor(s)],
           TV
             ? null
             : h(
@@ -1249,6 +1250,75 @@ function reviewPanel(s, q) {
   );
 }
 
+/** The entry fee, large, for the TV start screen. */
+function entryFeeBanner(s) {
+  if (!s.entryFee) return null;
+  return h('p', { class: 'entry-fee big' }, '💷 Entry fee: ', h('strong', {}, s.entryFee), s.requireAdmission ? h('span', { class: 'muted' }, ' · pay the quiz master, then you are in') : null);
+}
+
+/** The optional entry fee, and whether teams must be admitted (once they've paid), set on the start screen. */
+let feeTimer;
+function entryFeeEditor(s) {
+  return h(
+    'fieldset',
+    { class: 'prizes-editor fee-editor' },
+    h('legend', {}, 'Entry fee (optional)'),
+    h(
+      'label',
+      {},
+      h('span', { class: 'prize-medal' }, '💷'),
+      h('input', {
+        class: 'fee-input',
+        'data-keep': 'entry-fee',
+        maxlength: '40',
+        placeholder: 'e.g. £5 per team',
+        'aria-label': 'Entry fee',
+        value: s.entryFee ?? '',
+        oninput: (e) => {
+          clearTimeout(feeTimer);
+          const fee = e.target.value;
+          feeTimer = setTimeout(() => socket.send({ t: 'set-entry-fee', fee }), 400);
+        },
+        onblur: (e) => {
+          clearTimeout(feeTimer);
+          if (e.target.value.trim() !== (state?.entryFee ?? '')) socket.send({ t: 'set-entry-fee', fee: e.target.value });
+        },
+      }),
+    ),
+    h(
+      'label',
+      { class: 'check', title: 'New teams wait on their phone until you press Admit, so you can check they have paid.' },
+      h('input', { type: 'checkbox', checked: s.requireAdmission, onchange: (e) => socket.send({ t: 'require-admission', on: e.target.checked }) }),
+      ' Teams wait to be admitted (tick once they have paid)',
+    ),
+  );
+}
+
+/** Teams that have joined and are waiting for the host to confirm payment. */
+function pendingPanel(s) {
+  if (TV || !s.pendingTeams?.length) return null;
+  return h(
+    'div',
+    { class: 'pending-teams' },
+    h('h3', { class: 'panel-heading pending-heading' }, `Waiting to be admitted (${s.pendingTeams.length})`),
+    h(
+      'ul',
+      {},
+      s.pendingTeams.map((t) =>
+        h(
+          'li',
+          { class: t.connected ? '' : 'offline' },
+          h('span', { class: 'dot', 'aria-label': t.connected ? 'connected' : 'disconnected' }),
+          h('span', { class: 'name' }, t.name),
+          h('button', { type: 'button', class: 'primary admit', onclick: () => socket.send({ t: 'admit', teamId: t.id }) }, 'Admit'),
+          h('button', { type: 'button', class: 'kick', title: `Turn ${t.name} away`, 'aria-label': `Turn ${t.name} away`, onclick: () => confirm(`Turn "${t.name}" away?`) && socket.send({ t: 'kick', teamId: t.id }) }, '×'),
+        ),
+      ),
+    ),
+    s.pendingTeams.length > 1 ? h('button', { type: 'button', class: 'admit-all', onclick: () => socket.send({ t: 'admit-all' }) }, 'Admit all') : null,
+  );
+}
+
 /** The optional prizes for 1st to 3rd, typed on the start screen and shown to everyone as they type. */
 let prizeTimer;
 function prizesEditor(s) {
@@ -1338,6 +1408,7 @@ function teamsPanel(s) {
   return h(
     'aside',
     { class: 'teams' },
+    pendingPanel(s),
     h('h2', {}, `Teams ${s.teams.length}/${s.maxTeams}`),
     TV && s.teamsHidden ? h('p', { class: 'muted' }, `${s.standings.length} ${s.standings.length === 1 ? 'team is' : 'teams are'} playing`) : null,
     s.teams.length === 0 && !s.teamsHidden ? h('p', { class: 'muted small' }, 'No teams yet.') : null,
@@ -1373,6 +1444,14 @@ function teamsPanel(s) {
       ),
     ),
     TV ? null : h('h3', { class: 'panel-heading' }, 'Options'),
+    TV
+      ? null
+      : h(
+          'label',
+          { class: 'check photos-toggle', title: 'New teams wait on their phone until you press Admit, so you can check they have paid.' },
+          h('input', { type: 'checkbox', checked: s.requireAdmission, onchange: (e) => socket.send({ t: 'require-admission', on: e.target.checked }) }),
+          ' Teams wait to be admitted (paid)',
+        ),
     TV
       ? null
       : h(

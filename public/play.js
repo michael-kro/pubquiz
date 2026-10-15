@@ -15,7 +15,7 @@ function announce() {
     const r = state.result;
     if (state.onBreak) text = 'The quiz is on a break.';
     else text = {
-      lobby: "You're in. Waiting for the quiz master to start.",
+      lobby: state.pendingAdmission ? 'Waiting for the quiz master to admit your team.' : "You're in. Waiting for the quiz master to start.",
       reading: 'The quiz master is asking the question. The timer has not started.',
       wagering: q && `Wager round. The category is ${q.category || 'a secret'}. Place your bet.`,
       open: q && `${q.paused ? 'Paused. ' : ''}Question ${q.roundQuestion} of ${q.roundQuestions}. ${q.text}`,
@@ -404,15 +404,30 @@ function questionImage(q) {
   return q.image ? h('img', { class: 'question-image', src: q.image, alt: '' }) : null;
 }
 
+/** Joined, but the quiz master has to confirm the entry fee before the team is in. */
+function waitingScreen(s) {
+  return h(
+    'section',
+    { class: 'screen center waiting-card' },
+    brandBlock(),
+    h('h1', {}, 'Nearly there!'),
+    s.entryFee ? [h('p', {}, 'The entry fee is'), h('p', { class: 'waiting-fee' }, s.entryFee)] : null,
+    h('p', {}, 'Pay the quiz master and they will let your team in. This screen updates by itself.'),
+    h('p', { class: 'muted' }, `Your team: ${s.teamName}`),
+  );
+}
+
 function phaseView(s) {
   const q = s.question;
   switch (s.phase) {
     case 'lobby':
+      if (s.pendingAdmission) return waitingScreen(s);
       return h(
         'section',
         { class: 'screen center' },
         brandBlock(),
         h('h1', {}, "You're in!"),
+        s.entryFee ? h('p', { class: 'entry-fee' }, '💷 Entry fee: ', h('strong', {}, s.entryFee)) : null,
         prizeList(s.prizes),
         h('p', {}, 'Waiting for the quiz master to start.'),
         h('p', { class: 'muted' }, `${s.teamCount} ${s.teamCount === 1 ? 'team has' : 'teams have'} joined`),

@@ -223,6 +223,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       // The host can keep team names off the TV (the leaderboard still shows who is winning).
       teams: view.tvShowTeams ? view.teams.map((t) => ({ ...t, code: '' })) : [],
       teamsHidden: !view.tvShowTeams,
+      pendingTeams: [],
       screenKey: '',
       canEnd: false,
     };
@@ -527,6 +528,22 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
       case 'set-prizes':
         if (hostOnly()) game?.setPrizes(msg.prizes);
+        return;
+
+      case 'admit':
+        if (hostOnly()) game?.admit(msg.teamId);
+        return;
+
+      case 'admit-all':
+        if (hostOnly()) game?.admitAll();
+        return;
+
+      case 'set-entry-fee':
+        if (hostOnly()) game?.setEntryFee(msg.fee);
+        return;
+
+      case 'require-admission':
+        if (hostOnly()) game?.setRequireAdmission(msg.on);
         return;
 
       case 'lock-joining':

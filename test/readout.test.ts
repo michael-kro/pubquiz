@@ -281,3 +281,36 @@ test('optional prizes for 1st to 3rd: set by the host, seen by everyone, saved w
   game.dispose();
   assert.throws(() => parseQuiz(QUIZ.replace('readOut: true', 'readOut: true\nprizes: [a, b, c, d]')), /prizes/);
 });
+
+test('"close early" waits briefly for a phone that just dropped, then stops waiting', () => {
+  let clock = 9_000_000;
+  const game = new Game(parseQuiz(QUIZ.replace('readOut: true', 'readOut: false')), { now: () => clock });
+  const [a, b] = ['A', 'B'].map((n) => {
+    const r = game.join(n);
+    assert.ok(r.ok);
+    return r.value;
+  });
+  game.advance();
+  game.disconnect(b!.id); // B's signal blips
+  clock += 300;
+  game.answer(a!.id, 1);
+  assert.equal(game.phase, 'open', 'still waiting for B, who has only just dropped');
+  game.rejoin({ token: b!.token });
+  game.answer(b!.id, 1);
+  assert.equal(game.phase, 'closed', 'B came back and answered: done');
+  game.dispose();
+
+  let later = 9_000_000;
+  const g2 = new Game(parseQuiz(QUIZ.replace('readOut: true', 'readOut: false')), { now: () => later });
+  const [x, y] = ['X', 'Y'].map((n) => {
+    const r = g2.join(n);
+    assert.ok(r.ok);
+    return r.value;
+  });
+  g2.advance();
+  g2.disconnect(y!.id);
+  later += 7_000; // gone for longer than the grace period
+  g2.answer(x!.id, 1);
+  assert.equal(g2.phase, 'closed', 'a phone that has been gone a while no longer holds the question up');
+  g2.dispose();
+});

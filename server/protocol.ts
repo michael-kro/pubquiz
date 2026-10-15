@@ -33,6 +33,10 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('read-out'), on: z.boolean() }),
   z.object({ t: z.literal('rotate-key') }),
   z.object({ t: z.literal('lock-joining'), locked: z.boolean() }),
+  z.object({ t: z.literal('admit'), teamId: z.string().max(64) }),
+  z.object({ t: z.literal('admit-all') }),
+  z.object({ t: z.literal('set-entry-fee'), fee: z.string().max(80) }),
+  z.object({ t: z.literal('require-admission'), on: z.boolean() }),
   z.object({ t: z.literal('set-prizes'), prizes: z.array(z.string().max(120)).max(3) }),
   z.object({ t: z.literal('lock-on-start'), on: z.boolean() }),
   z.object({ t: z.literal('start-on-last'), on: z.boolean() }),
@@ -131,6 +135,10 @@ export interface TeamView {
   speedster?: { name: string; photo?: string; ms: number };
   /** Prizes for 1st, 2nd and 3rd ('' where there is none), when the host has set any. */
   prizes?: string[];
+  /** What it costs to play, if the host has said. */
+  entryFee?: string;
+  /** This team has joined but the host has not admitted it yet (it has to pay first). */
+  pendingAdmission?: boolean;
   phase: Phase;
   quizTitle: string;
   teamId: string;
@@ -196,6 +204,12 @@ export interface HostView {
   question?: QuestionView & { answerText: string; answer?: number; info?: string; answerEdited?: boolean; editable?: boolean; editValue?: number | string; hostText?: string };
   /** Show the team list on the TV. The host can hide it. */
   tvShowTeams: boolean;
+  /** What it costs to play ('' if nothing). */
+  entryFee: string;
+  /** New teams wait for the host to admit them. */
+  requireAdmission: boolean;
+  /** Teams that have joined and are waiting to be admitted (host screen only). */
+  pendingTeams: { id: string; name: string; code: string; connected: boolean }[];
   /** Read-out mode: the host announces multiple-choice answers before starting the timer. */
   readOut: boolean;
   /** No new teams can join (existing teams can still rejoin). */

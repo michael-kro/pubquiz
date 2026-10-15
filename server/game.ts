@@ -18,6 +18,8 @@ export const MAX_LATENCY_MS = 1500;
 export const CLIENT_TIME_TOLERANCE_MS = 150;
 export const MAX_EXTEND_SECONDS = 120;
 /** In a wager round a team may always bet at least this much, so a team on zero can still play. */
+/** "Close early" still waits this long for a phone that just dropped before it counts the team out. */
+export const REJOIN_GRACE_MS = 6000;
 export const WAGER_FLOOR = POINTS_UNIT / 5;
 /** Buzzes that arrive within this long of the first are ordered by their latency-adjusted time, not arrival. */
 export const BUZZ_WINDOW_MS = 120;
@@ -40,6 +42,8 @@ export interface Team {
   code: string;
   name: string;
   connected: boolean;
+  /** When the phone last dropped, so a brief blip doesn't make "close early" leave the team behind. */
+  leftAt?: number;
   /** Keyed by question index. */
   answers: Map<number, Answer>;
 }
@@ -84,6 +88,9 @@ export interface GameSnapshot {
   joiningLocked?: boolean;
   lockOnStart?: boolean;
   prizes?: string[];
+  entryFee?: string;
+  requireAdmission?: boolean;
+  pending?: { id: string; token: string; code: string; name: string; answers: [number, Answer][] }[];
   closeEarly?: boolean;
   readShown?: number;
   buzz?: [number, BuzzState][];
@@ -176,10 +183,16 @@ export class Game {
   /** Close a question once every team has answered, rather than always counting down. */
   closeEarly = true;
   private readShown = 0;
+  private graceTimer: ReturnType<typeof setTimeout> | undefined;
   /** In read-out mode, showing the last multiple-choice answer starts the timer. */
   startOnLastAnswer = true;
   /** The host has closed the door: no new teams can join (teams already in can still rejoin). */
   joiningLocked = false;
+  /** What it costs to play, shown on the start screen ('' for free). */
+  entryFee = '';
+  /** Teams wait in `pending` until the host admits them (after they've paid). */
+  requireAdmission = false;
+  readonly pending = new Map<string, Team>();
   /** Optional prizes for 1st, 2nd and 3rd ('' when not set). */
   prizes: string[] = ['', '', ''];
   /** Pressing Start quiz locks joining (the host can untick this in the lobby). */
@@ -212,6 +225,7 @@ export class Game {
     this.closeEarly = quiz.closeEarly ?? options.closeEarly ?? true;
     this.lockOnStart = options.lockOnStart ?? false;
     this.prizes = [0, 1, 2].map((i) => quiz.prizes?.[i] ?? '');
+    this.entryFee = quiz.entryFee ?? '';
     this.tvShowTeams = options.tvShowTeams ?? true;
   }
 
@@ -273,9 +287,9 @@ export class Game {
     const name = checked.name;
     if (this.phase === 'finished') return fail('This quiz has finished.');
     if (this.joiningLocked) return fail('The quiz master has closed the quiz to new teams. If your team is already in, use "Rejoin with your team code".');
-    if (this.teams.size >= MAX_TEAMS) return fail(`This quiz is full (${MAX_TEAMS} teams).`);
+    if (this.teams.size + this.pending.size >= MAX_TEAMS) return fail(`This quiz is full (${MAX_TEAMS} teams).`);
     const lower = name.toLowerCase();
-    if ([...this.teams.values()].some((t) => t.name.toLowerCase() === lower)) {
+    if ([...this.teams.values(), ...this.pending.values()].some((t) => t.name.toLowerCase() === lower)) {
       return fail('That team name is taken. Pick another.');
     }
 
@@ -287,6 +301,11 @@ export class Game {
       connected: true,
       answers: new Map(),
     };
+    if (this.requireAdmission) {
+      this.pending.set(team.id, team);
+      this.changed();
+      return { ok: true, value: team };
+    }
     this.teams.set(team.id, team);
     this.markSent(team);
     this.changed();
@@ -296,31 +315,45 @@ export class Game {
   private newTeamCode(): string {
     for (;;) {
       const code = Array.from({ length: TEAM_CODE_LENGTH }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join('');
-      if (![...this.teams.values()].some((t) => t.code === code)) return code;
+      if (![...this.teams.values(), ...this.pending.values()].some((t) => t.code === code)) return code;
     }
   }
 
   /** Finds a team by the token its phone saved, or by the team code typed in. */
   rejoin(credential: { token?: string; code?: string }): Team | undefined {
     const code = credential.code?.trim().toUpperCase();
-    const team = [...this.teams.values()].find(
+    const team = [...this.teams.values(), ...this.pending.values()].find(
       (t) => (credential.token !== undefined && t.token === credential.token) || (code !== undefined && t.code === code),
     );
     if (!team) return undefined;
     team.connected = true;
-    this.markSent(team);
+    team.leftAt = undefined;
+    if (this.teams.has(team.id)) this.markSent(team);
     this.changed();
     return team;
   }
 
   disconnect(teamId: string): void {
-    const team = this.teams.get(teamId);
+    const team = this.teams.get(teamId) ?? this.pending.get(teamId);
     if (!team) return;
     team.connected = false;
+    team.leftAt = this.now();
+    // If everyone else has answered, look again once the grace period is up.
+    if (this.phase === 'open' && this.closeEarly) {
+      clearTimeout(this.graceTimer);
+      this.graceTimer = setTimeout(() => {
+        if (this.phase === 'open' && this.everyoneAnswered()) this.closeQuestion();
+      }, REJOIN_GRACE_MS + 50);
+      this.graceTimer.unref?.();
+    }
     this.changed();
   }
 
   kick(teamId: string): boolean {
+    if (this.pending.delete(teamId)) {
+      this.changed();
+      return true;
+    }
     if (!this.teams.delete(teamId)) return false;
     this.sentAt.delete(teamId);
     this.photoVersions.delete(teamId);
@@ -351,6 +384,33 @@ export class Game {
 
   private prizesView(): string[] | undefined {
     return this.prizes.some(Boolean) ? this.prizes : undefined;
+  }
+
+  /** Lets a waiting team in (the host has checked it has paid). */
+  admit(teamId: string): boolean {
+    const team = this.pending.get(teamId);
+    if (!team) return false;
+    this.pending.delete(teamId);
+    this.teams.set(team.id, team);
+    this.markSent(team);
+    this.changed();
+    return true;
+  }
+
+  admitAll(): void {
+    for (const id of [...this.pending.keys()]) this.admit(id);
+  }
+
+  setEntryFee(fee: string): void {
+    this.entryFee = fee.replace(/[\p{Cc}\p{Cf}]/gu, '').trim().slice(0, 40);
+    this.changed();
+  }
+
+  /** With this on, new teams wait to be admitted. Turning it off lets everyone waiting in. */
+  setRequireAdmission(on: boolean): void {
+    this.requireAdmission = on;
+    if (!on) this.admitAll();
+    this.changed();
   }
 
   setLockOnStart(on: boolean): void {
@@ -403,7 +463,7 @@ export class Game {
 
   /** Finds a team by its saved login without touching its connection state. */
   teamByToken(token: string): Team | undefined {
-    return [...this.teams.values()].find((t) => t.token === token);
+    return [...this.teams.values(), ...this.pending.values()].find((t) => t.token === token);
   }
 
   private photoUrl(teamId: string): string | undefined {
@@ -412,11 +472,11 @@ export class Game {
   }
 
   getTeamNames(): string[] {
-    return [...this.teams.values()].map((t) => t.name);
+    return [...this.teams.values(), ...this.pending.values()].map((t) => t.name);
   }
 
   getTeam(teamId: string): Team | undefined {
-    return this.teams.get(teamId);
+    return this.teams.get(teamId) ?? this.pending.get(teamId);
   }
 
   // Play
@@ -830,6 +890,7 @@ export class Game {
   dispose(): void {
     clearTimeout(this.timer);
     clearTimeout(this.buzzTimer);
+    clearTimeout(this.graceTimer);
   }
 
   // Saving and restoring, so a crash or restart mid-quiz loses nothing.
@@ -856,6 +917,9 @@ export class Game {
       joiningLocked: this.joiningLocked,
       lockOnStart: this.lockOnStart,
       prizes: this.prizes,
+      entryFee: this.entryFee,
+      requireAdmission: this.requireAdmission,
+      pending: [...this.pending.values()].map((t) => ({ id: t.id, token: t.token, code: t.code, name: t.name, answers: [] })),
       closeEarly: this.closeEarly,
       readShown: this.readShown,
       buzz: [...this.buzzStates].map(([index, state]) => [index, structuredClone(state)] as [number, BuzzState]),
@@ -887,6 +951,9 @@ export class Game {
     game.joiningLocked = snapshot.joiningLocked ?? false;
     game.lockOnStart = snapshot.lockOnStart ?? game.lockOnStart;
     game.prizes = snapshot.prizes ?? game.prizes;
+    game.entryFee = snapshot.entryFee ?? game.entryFee;
+    game.requireAdmission = snapshot.requireAdmission ?? false;
+    for (const t of snapshot.pending ?? []) game.pending.set(t.id, { ...t, connected: false, answers: new Map() });
     game.startOnLastAnswer = snapshot.startOnLastAnswer ?? game.startOnLastAnswer;
     game.closeEarly = snapshot.closeEarly ?? game.closeEarly;
     for (const [index, state] of snapshot.buzz ?? []) game.buzzStates.set(index, structuredClone(state));
@@ -979,8 +1046,9 @@ export class Game {
   private everyoneAnswered(): boolean {
     if (!this.closeEarly) return false;
     if (this.currentQuestion?.type === 'buzzer') return false; // Ends when the host judges it, or everyone is out.
-    const connected = [...this.teams.values()].filter((t) => t.connected);
-    return connected.length > 0 && connected.every((t) => t.answers.has(this.questionIndex));
+    // Teams that are connected, or only just dropped, still have to answer.
+    const present = [...this.teams.values()].filter((t) => t.connected || (t.leftAt !== undefined && this.now() - t.leftAt < REJOIN_GRACE_MS));
+    return present.length > 0 && present.every((t) => t.answers.has(this.questionIndex));
   }
 
   private changed(): void {
@@ -1341,6 +1409,23 @@ export class Game {
   }
 
   teamView(teamId: string): TeamView | undefined {
+    const waiting = this.pending.get(teamId);
+    if (waiting) {
+      // Joined, but not yet admitted: just the start screen and what it costs.
+      return {
+        phase: 'lobby',
+        quizTitle: this.quiz.title,
+        teamId: waiting.id,
+        teamName: waiting.name,
+        teamCode: waiting.code,
+        photosEnabled: false,
+        score: 0,
+        rank: 0,
+        teamCount: this.teams.size,
+        entryFee: this.entryFee || undefined,
+        pendingAdmission: true,
+      };
+    }
     const team = this.teams.get(teamId);
     if (!team) return undefined;
     const standings = this.standings();
@@ -1358,6 +1443,7 @@ export class Game {
       onBreak: this.breakView(),
       speedster: this.speedster(),
       prizes: this.prizesView(),
+      entryFee: this.entryFee || undefined,
       teamCode: team.code,
       photo: this.photoUrl(team.id),
       photosEnabled: this.photosEnabled,
@@ -1465,6 +1551,9 @@ export class Game {
       maxTeams: MAX_TEAMS,
       photosEnabled: this.photosEnabled,
       tvShowTeams: this.tvShowTeams,
+      entryFee: this.entryFee,
+      requireAdmission: this.requireAdmission,
+      pendingTeams: [...this.pending.values()].map((t) => ({ id: t.id, name: t.name, code: t.code, connected: t.connected })),
       readOut: this.readOut,
       startOnLastAnswer: this.startOnLastAnswer,
       joiningLocked: this.joiningLocked,

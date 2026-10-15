@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { mock, test } from 'node:test';
-import { Game, MAX_LATENCY_MS, MAX_TEAMS, type Team } from '../server/game.ts';
+import { Game, MAX_LATENCY_MS, MAX_TEAMS, REJOIN_GRACE_MS, type Team } from '../server/game.ts';
 import type { Quiz } from '../server/quiz.ts';
 import { scoreAnswer } from '../server/scoring.ts';
 
@@ -158,8 +158,8 @@ test('a team that reconnects mid-question keeps its original start time', () => 
   game.dispose();
 });
 
-test('disconnected teams do not hold up auto-close; kicking the last holdout closes the question', () => {
-  const { game } = setup();
+test('a phone that has been gone a while does not hold up auto-close; kicking the last holdout closes the question', () => {
+  const { game, clock } = setup();
   const a = join(game, 'A');
   const b = join(game, 'B');
   const c = join(game, 'C');
@@ -167,6 +167,8 @@ test('disconnected teams do not hold up auto-close; kicking the last holdout clo
   game.disconnect(c.id);
   game.answer(a.id, 1);
   assert.equal(game.phase, 'open');
+  clock.advance(REJOIN_GRACE_MS + 100); // C has now been gone longer than the grace period
+  assert.equal(game.phase, 'open', 'B has not answered');
   assert.ok(game.kick(b.id));
   assert.equal(game.phase, 'closed');
   assert.equal(game.getTeam(b.id), undefined);
