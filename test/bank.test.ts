@@ -101,7 +101,7 @@ test('the bank API: summary, filters, paging, random picks, your own bank folder
   const library = new Library(await mkdtemp(join(tmpdir(), 'pubquiz-bank-')));
   await mkdir(join(library.dir, 'bank'), { recursive: true });
   await writeFile(join(library.dir, 'bank', 'pub-regulars.yaml'), FILE.replace('Test', 'Pub Regulars'));
-  const server = await createQuizServer({ closeEarly: true, library, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, library, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   const get = async (path: string) => {
     const res = await fetch(`http://127.0.0.1:${server.port}/api/bank${path}`, { headers: { 'x-host-key': server.hostKey } });
     assert.equal(res.status, 200);

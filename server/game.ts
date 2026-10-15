@@ -82,6 +82,7 @@ export interface GameSnapshot {
   readOut?: boolean;
   startOnLastAnswer?: boolean;
   joiningLocked?: boolean;
+  lockOnStart?: boolean;
   closeEarly?: boolean;
   readShown?: number;
   buzz?: [number, BuzzState][];
@@ -99,6 +100,8 @@ export interface GameOptions {
   nameFilter?: boolean;
   /** End a question as soon as every team has answered (default on here; the server turns it off so the clock always runs down). */
   closeEarly?: boolean;
+  /** Pressing Start quiz stops new teams joining (default off here; the server turns it on). */
+  lockOnStart?: boolean;
 }
 
 // No I, O, 0 or 1, so codes can't be misread.
@@ -174,6 +177,8 @@ export class Game {
   startOnLastAnswer = true;
   /** The host has closed the door: no new teams can join (teams already in can still rejoin). */
   joiningLocked = false;
+  /** Pressing Start quiz locks joining (the host can untick this in the lobby). */
+  lockOnStart = false;
   /** teamId → photo version, for teams that have uploaded one. The pictures themselves are in the PhotoStore. */
   private readonly photoVersions = new Map<string, number>();
   /** Set while the host has the quiz on a break: when it started, how long it is meant to last, and its facts. */
@@ -200,6 +205,7 @@ export class Game {
     this.readOut = quiz.readOut ?? false;
     this.startOnLastAnswer = quiz.startOnLastAnswer ?? true;
     this.closeEarly = quiz.closeEarly ?? options.closeEarly ?? true;
+    this.lockOnStart = options.lockOnStart ?? false;
   }
 
   /** The question as it stands now: the host may have changed its correct answer after time ran out. */
@@ -327,6 +333,11 @@ export class Game {
 
   setCloseEarly(on: boolean): void {
     this.closeEarly = on;
+    this.changed();
+  }
+
+  setLockOnStart(on: boolean): void {
+    this.lockOnStart = on;
     this.changed();
   }
 
@@ -647,7 +658,10 @@ export class Game {
     }
     switch (this.phase) {
       case 'lobby':
-        if (this.quiz.questions.length > 0) this.openQuestion(0);
+        if (this.quiz.questions.length > 0) {
+          if (this.lockOnStart) this.joiningLocked = true;
+          this.openQuestion(0);
+        }
         return;
       case 'wagering':
         this.beginReadingOrPlay();
@@ -823,6 +837,7 @@ export class Game {
       readOut: this.readOut,
       startOnLastAnswer: this.startOnLastAnswer,
       joiningLocked: this.joiningLocked,
+      lockOnStart: this.lockOnStart,
       closeEarly: this.closeEarly,
       readShown: this.readShown,
       buzz: [...this.buzzStates].map(([index, state]) => [index, structuredClone(state)] as [number, BuzzState]),
@@ -852,6 +867,7 @@ export class Game {
     game.readOut = snapshot.readOut ?? quiz.readOut ?? false;
     game.readShown = snapshot.readShown ?? 0;
     game.joiningLocked = snapshot.joiningLocked ?? false;
+    game.lockOnStart = snapshot.lockOnStart ?? game.lockOnStart;
     game.startOnLastAnswer = snapshot.startOnLastAnswer ?? game.startOnLastAnswer;
     game.closeEarly = snapshot.closeEarly ?? game.closeEarly;
     for (const [index, state] of snapshot.buzz ?? []) game.buzzStates.set(index, structuredClone(state));
@@ -1428,6 +1444,7 @@ export class Game {
       readOut: this.readOut,
       startOnLastAnswer: this.startOnLastAnswer,
       joiningLocked: this.joiningLocked,
+      lockOnStart: this.lockOnStart,
       closeEarly: this.closeEarly,
       reading: this.phase === 'reading' && question?.type === 'multiple-choice' ? { shown: this.readShown, total: question.options.length } : undefined,
       skipsLeaderboardNext: this.questionIndex >= 0 && this.skipsLeaderboardNext,

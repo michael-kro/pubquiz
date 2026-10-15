@@ -255,7 +255,7 @@ async function runLoadUnbounded(options: LoadOptions): Promise<LoadReport> {
     '    questions:',
     ...Array.from({ length: o.questions }, (_, i) => `      - { type: multiple-choice, text: "Question ${i + 1}", options: [a, b, c, d], answer: 0, seconds: ${o.seconds} }`),
   ].join('\n');
-  const server = await createQuizServer({ closeEarly: true, quiz: parseQuiz(yaml), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, quiz: parseQuiz(yaml), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   const proxy = await delayProxy(server.port, o.latencyMs, o.jitterMs);
   const loopDelay = monitorEventLoopDelay({ resolution: 5 });
   loopDelay.enable();

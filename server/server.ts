@@ -83,6 +83,8 @@ export interface ServerOptions {
   nameFilter?: boolean;
   /** End a question once every team has answered. Off by default: the timer always counts down. */
   closeEarly?: boolean;
+  /** Pressing Start quiz stops new teams joining. On by default; the host can untick it in the lobby. */
+  lockOnStart?: boolean;
   /** Keeps the host link the same across restarts. Defaults to the resumed session's key, or a new one. */
   hostKey?: string;
   port?: number;
@@ -295,6 +297,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     const gameOptions = {
       nameFilter: options.nameFilter,
       closeEarly: options.closeEarly ?? false,
+      lockOnStart: options.lockOnStart ?? true,
       onChange() {
         current.saver?.schedule();
         if (game.phase === 'finished' && session && !current.resultsWritten) {
@@ -513,6 +516,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
       case 'start-on-last':
         if (hostOnly()) game?.setStartOnLastAnswer(msg.on);
+        return;
+
+      case 'lock-on-start':
+        if (hostOnly()) game?.setLockOnStart(msg.on);
         return;
 
       case 'lock-joining':

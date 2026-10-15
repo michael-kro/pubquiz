@@ -246,3 +246,21 @@ test('locking the quiz stops new teams joining, but teams already in can rejoin'
   assert.ok(game.join('Late').ok);
   game.dispose();
 });
+
+test('pressing Start quiz locks the door when the host has asked for that', () => {
+  const game = new Game(parseQuiz(QUIZ), { lockOnStart: true });
+  game.join('A');
+  assert.equal(game.hostView().joiningLocked, false, 'open in the lobby');
+  assert.equal(game.hostView().lockOnStart, true);
+  game.advance();
+  assert.equal(game.joiningLocked, true);
+  assert.equal(game.join('Late').ok, false);
+  game.dispose();
+
+  const open = new Game(parseQuiz(QUIZ), { lockOnStart: true });
+  open.setLockOnStart(false);
+  open.join('A');
+  open.advance();
+  assert.ok(open.join('Late').ok, 'unticked: late teams can still join');
+  open.dispose();
+});

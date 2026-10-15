@@ -33,6 +33,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('read-out'), on: z.boolean() }),
   z.object({ t: z.literal('rotate-key') }),
   z.object({ t: z.literal('lock-joining'), locked: z.boolean() }),
+  z.object({ t: z.literal('lock-on-start'), on: z.boolean() }),
   z.object({ t: z.literal('start-on-last'), on: z.boolean() }),
   z.object({ t: z.literal('close-early'), on: z.boolean() }),
   z.object({ t: z.literal('start-timer') }),
@@ -194,6 +195,8 @@ export interface HostView {
   readOut: boolean;
   /** No new teams can join (existing teams can still rejoin). */
   joiningLocked: boolean;
+  /** Pressing Start quiz locks joining. */
+  lockOnStart: boolean;
   /** Read-out mode: the timer starts as soon as the last multiple-choice answer is shown. */
   startOnLastAnswer: boolean;
   /** Questions end as soon as every team has answered (otherwise the clock always runs down). */

@@ -17,7 +17,7 @@ const PNG = Buffer.from(
 
 async function setup(): Promise<{ server: QuizServer; library: Library; api: Api }> {
   const library = new Library(await mkdtemp(join(tmpdir(), 'pubquiz-library-')));
-  const server = await createQuizServer({ closeEarly: true, library, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, library, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   return { server, library, api: new Api(server) };
 }
 

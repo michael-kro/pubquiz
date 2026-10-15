@@ -720,6 +720,14 @@ function stage(s) {
           h('p', { class: 'big' }, s.joinUrl.replace(/^https?:\/\//, '')),
           h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
           h('p', { class: 'muted' }, `One phone per team. ${s.teams.length} of ${s.maxTeams} teams joined.`),
+          TV
+            ? null
+            : h(
+                'label',
+                { class: 'check', title: 'When you press Start quiz, no new teams can join. Teams already in can still rejoin.' },
+                h('input', { type: 'checkbox', checked: s.lockOnStart, onchange: (e) => socket.send({ t: 'lock-on-start', on: e.target.checked }) }),
+                ' 🔒 Lock the quiz when it starts (no new teams)',
+              ),
           s.network.mode === 'tunnel' && s.network.state === 'starting'
             ? h('p', { class: 'muted small' }, 'Setting up the internet link. Until then, teams need to be on the same Wi-Fi as this laptop.')
             : null,
