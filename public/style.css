@@ -834,6 +834,15 @@ input {
 .waiting-card { text-align: center; }
 .waiting-fee { font-size: 2rem; font-weight: 900; color: var(--accent); margin: 8px 0; }
 
+/* Clips (soundboard) */
+.clips-card { width: min(760px, 100%); }
+.clips-tools { display: flex; gap: 10px; align-items: center; margin: 12px 0; flex-wrap: wrap; }
+.clips-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.clips-list li { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; background: var(--surface-2); }
+.clips-list li.playing { outline: 2px solid var(--accent); }
+.clips-list .clip-name { flex: 1; font-weight: 600; overflow-wrap: anywhere; }
+.clip-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 70; background: var(--surface-2); padding: 12px 22px; border-radius: 999px; font-size: 1.3rem; font-weight: 700; box-shadow: 0 8px 30px #000a; animation: toast-in 0.25s ease-out both; }
+
 /* Team codes */
 .codes-button { width: 100%; margin: 6px 0; }
 .codes-overlay { position: fixed; inset: 0; z-index: 50; background: #000a; display: grid; place-items: center; padding: 16px; }
@@ -882,3 +891,4 @@ input {
 .standings li.me .gained, .standings li.me .up, .standings li.me .down { color: inherit; }
 
 @media (max-height: 760px) { .screen { padding-top: 14px; padding-bottom: 14px; } }
+.clips-list .kick { opacity: 1; position: static; }

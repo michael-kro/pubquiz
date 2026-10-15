@@ -10,6 +10,7 @@ import { readPublicFile } from './assets.ts';
 import { Game, type Team } from './game.ts';
 import type { Library } from './library.ts';
 import type { BrandingStore } from './branding.ts';
+import { ClipError, ClipStore, MAX_CLIP_BYTES } from './clips.ts';
 import { clientAddress, isLocalRequest, TokenBucket, WindowCounter } from './limits.ts';
 import { MAX_PHOTO_BYTES, PhotoStore, sniffImage } from './photos.ts';
 import { loadBundledFacts, pickFacts } from './facts.ts';
@@ -69,6 +70,8 @@ export interface ServerOptions {
   library?: Library;
   /** A short PIN the host can type at /host instead of using the secret link (for running the quiz from a phone). */
   hostPin?: string;
+  /** A folder of audio clips for the host's soundboard. */
+  clipsDir?: string;
   /** Only let the host controls be used from the machine running the quiz (not the network or the tunnel). */
   hostLocalOnly?: boolean;
   /** Called when the host key is changed from the host screen, so it can be saved. */
@@ -546,6 +549,20 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (hostOnly()) game?.setRequireAdmission(msg.on);
         return;
 
+      case 'play-clip': {
+        if (!hostOnly()) return;
+        if (!clips || !(await clips.has(msg.name))) return send(conn, { t: 'error', message: 'That clip is gone.' });
+        const title = (await clips.list()).find((c) => c.name === msg.name)?.title ?? msg.name;
+        for (const other of connections) {
+          if (other.role === 'screen') send(other, { t: 'play-clip', url: `/clip/${encodeURIComponent(msg.name)}?key=${screenKey}`, title });
+        }
+        return;
+      }
+
+      case 'stop-clips':
+        if (hostOnly()) for (const other of connections) if (other.role === 'screen') send(other, { t: 'stop-clips' });
+        return;
+
       case 'lock-joining':
         if (hostOnly()) game?.setJoiningLocked(msg.locked);
         return;
@@ -722,9 +739,79 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     return json(401, { error: 'Wrong PIN.' });
   }
 
+  const clips = options.clipsDir ? new ClipStore(options.clipsDir) : undefined;
+
+  /** Sends bytes, answering byte-range requests (Safari will only play audio from a server that does). */
+  function sendBytes(req: IncomingMessage, res: ServerResponse, data: Buffer, headers: Record<string, string>): void {
+    const range = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range ?? ''));
+    if (range && (range[1] || range[2])) {
+      const size = data.length;
+      const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
+      const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
+      if (start >= size || start > end) {
+        res.writeHead(416, { 'content-range': `bytes */${size}` }).end();
+        return;
+      }
+      res.writeHead(206, { ...headers, 'accept-ranges': 'bytes', 'content-range': `bytes ${start}-${end}/${size}`, 'content-length': end - start + 1 });
+      res.end(data.subarray(start, end + 1));
+      return;
+    }
+    res.writeHead(200, { ...headers, 'accept-ranges': 'bytes', 'content-length': data.length });
+    res.end(data);
+  }
+
+  /** The soundboard: /api/clips (list, upload, delete; host only) and /clip/<name> (played by the host and the TV). */
+  async function handleClips(req: IncomingMessage, res: ServerResponse, url: URL): Promise<boolean> {
+    const { pathname } = url;
+    const isApi = pathname === '/api/clips' || pathname.startsWith('/api/clips/');
+    if (!isApi && !pathname.startsWith('/clip/')) return false;
+    const json = (status: number, body: unknown) => {
+      res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      res.end(JSON.stringify(body));
+    };
+    const key = (req.headers['x-host-key'] as string | undefined) ?? url.searchParams.get('key') ?? undefined;
+    const isHost = isHostKey(key) && hostAllowed(req);
+    if (!clips) return void json(404, { error: 'Clips are not set up.' }), true;
+    try {
+      if (isApi) {
+        if (!isHost) return void json(401, { error: 'Use the host link printed when the quiz program started.' }), true;
+        const name = decodeURIComponent(pathname.slice('/api/clips/'.length));
+        if (pathname === '/api/clips' && req.method === 'GET') return void json(200, await clips.list()), true;
+        if (pathname === '/api/clips' && req.method === 'POST') {
+          const chunks: Buffer[] = [];
+          let size = 0;
+          for await (const chunk of req) {
+            size += (chunk as Buffer).length;
+            if (size > MAX_CLIP_BYTES) throw new ClipError('Clips can be at most 20 MB.', 413);
+            chunks.push(chunk as Buffer);
+          }
+          return void json(201, await clips.add(url.searchParams.get('name') ?? '', Buffer.concat(chunks), url.searchParams.get('title') ?? undefined)), true;
+        }
+        if (name && req.method === 'DELETE') {
+          await clips.remove(name);
+          return void json(200, { ok: true }), true;
+        }
+        return void json(404, { error: 'Not found.' }), true;
+      }
+      // Playing a clip: the host, or the TV (which has its own key).
+      if (!(isHost || keyIs(screenKey, key))) {
+        res.writeHead(404).end('Not found');
+        return true;
+      }
+      const clip = await clips.read(decodeURIComponent(pathname.slice('/clip/'.length)));
+      sendBytes(req, res, clip.data, { 'content-type': clip.contentType, 'cache-control': 'private, max-age=3600', 'x-content-type-options': 'nosniff' });
+      return true;
+    } catch (error) {
+      if (error instanceof ClipError) return void json(error.status, { error: error.message }), true;
+      throw error;
+    }
+  }
+
   async function handleHttp(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? '/', 'http://localhost');
     const { pathname } = url;
+
+    if (await handleClips(req, res, url)) return;
 
     if (pathname === '/branding.json' || pathname === '/branding/logo') {
       const branding = options.branding;

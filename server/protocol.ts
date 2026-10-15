@@ -33,6 +33,8 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('read-out'), on: z.boolean() }),
   z.object({ t: z.literal('rotate-key') }),
   z.object({ t: z.literal('lock-joining'), locked: z.boolean() }),
+  z.object({ t: z.literal('play-clip'), name: z.string().max(100) }),
+  z.object({ t: z.literal('stop-clips') }),
   z.object({ t: z.literal('admit'), teamId: z.string().max(64) }),
   z.object({ t: z.literal('admit-all') }),
   z.object({ t: z.literal('set-entry-fee'), fee: z.string().max(80) }),
@@ -266,6 +268,8 @@ export type ServerMessage =
   | { t: 'joined'; token: string; teamName: string }
   | { t: 'rejoin-failed' }
   | { t: 'host-key'; key: string }
+  | { t: 'play-clip'; url: string; title: string }
+  | { t: 'stop-clips' }
   | { t: 'error'; message: string }
   | { t: 'kicked' }
   | { t: 'replaced' };

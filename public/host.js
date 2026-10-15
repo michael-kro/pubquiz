@@ -62,6 +62,15 @@ async function loadLibrary() {
 
 let socket = null;
 
+// The TV plays clips the host sends it (its 🔊 sound button needs to have been pressed once, as for any browser).
+const tvClip = new Audio();
+function showClipToast(text) {
+  document.querySelector('.clip-toast')?.remove();
+  const toast = h('div', { class: 'clip-toast', role: 'status' }, text);
+  document.body.append(toast);
+  setTimeout(() => toast.remove(), 3500);
+}
+
 function connect() {
   socket = connectSocket({
     onOpen() {
@@ -80,6 +89,12 @@ function connect() {
         if (TV) flashSpeedster(state, true);
         preload(state.preloadImage);
         if (!TV) rememberKey();
+      } else if (message.t === 'play-clip' && TV) {
+        tvClip.src = message.url;
+        void tvClip.play().catch(() => {});
+        showClipToast(`🔊 ${message.title}`);
+      } else if (message.t === 'stop-clips' && TV) {
+        tvClip.pause();
       } else if (message.t === 'host-key') {
         key = message.key;
         rememberKey();
@@ -259,7 +274,7 @@ function render() {
     return;
   }
   if (state.phase === 'idle') {
-    keepFocus(() => app.replaceChildren(libraryView(state), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : ''));
+    keepFocus(() => app.replaceChildren(libraryView(state), clipsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : ''));
     return;
   }
   keepFocus(() => app.replaceChildren(
@@ -271,6 +286,7 @@ function render() {
       TV && state.teamsHidden ? null : teamsPanel(state),
     ),
     codesOverlay(state),
+    clipsOverlay(),
     notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '',
   ));
   tick();
@@ -439,6 +455,7 @@ function libraryView(s) {
       h('h1', {}, 'Your quizzes'),
       networkPill(s.network),
       h('span', { class: 'spacer' }),
+      h('button', { type: 'button', onclick: openClips, title: 'Play sound clips whenever you like' }, '🎵 Clips'),
       h('a', { class: 'button', href: '#branding' }, 'Branding'),
       h(
         'label',
@@ -724,6 +741,7 @@ function topBar(s) {
     h('a', { class: 'button', href: `/screen?key=${encodeURIComponent(s.screenKey)}`, target: '_blank', rel: 'noopener', title: 'Open this on the TV or projector' }, 'TV screen ↗'),
     h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Join: ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)]),
     breakControl(s),
+    h('button', { type: 'button', onclick: openClips, title: 'Play sound clips whenever you like' }, '🎵 Clips'),
     s.pendingTeams?.length ? h('button', { type: 'button', class: 'pending-pill', title: 'Let in every team that is waiting', onclick: () => socket.send({ t: 'admit-all' }) }, `⏳ ${s.pendingTeams.length} waiting · Admit`) : null,
     TV
       ? null
@@ -1371,6 +1389,120 @@ function keepFocus(draw) {
   next.value = value;
   next.focus();
   if (at != null) next.setSelectionRange(at, at);
+}
+
+// The soundboard: clips the host can play whenever they like, here or on the TV.
+let clipsOpen = false;
+let clipList = null;
+let clipFilter = '';
+let clipBusy = '';
+const soundboard = new Audio();
+let playingClip = '';
+for (const event of ['play', 'pause', 'ended']) {
+  soundboard.addEventListener(event, () => {
+    if (event !== 'play') playingClip = '';
+    else playingClip = decodeURIComponent((soundboard.src.match(/\/clip\/([^?]+)/) ?? [])[1] ?? '');
+    if (clipsOpen) render();
+  });
+}
+
+async function loadClips() {
+  try {
+    clipList = await api('GET', '/clips');
+  } catch (error) {
+    clipList = [];
+    showNotice(error.message);
+  }
+  render();
+}
+
+function openClips() {
+  clipsOpen = true;
+  if (clipList === null) void loadClips();
+  else render();
+}
+
+function closeClips() {
+  clipsOpen = false;
+  render();
+}
+
+function playHere(clip) {
+  if (playingClip === clip.name) {
+    soundboard.pause();
+    return;
+  }
+  soundboard.src = `/clip/${encodeURIComponent(clip.name)}?key=${encodeURIComponent(key)}`;
+  void soundboard.play().catch(() => showNotice('The browser blocked the sound. Click anywhere on the page, then try again.'));
+}
+
+async function uploadClips(files) {
+  for (const file of files) {
+    clipBusy = `Adding ${file.name}…`;
+    render();
+    try {
+      await api('POST', `/clips?name=${encodeURIComponent(file.name)}`, file);
+    } catch (error) {
+      showNotice(`${file.name}: ${error.message}`);
+    }
+  }
+  clipBusy = '';
+  await loadClips();
+}
+
+/** The soundboard panel: search, play here or on the TV, add and delete clips. */
+function clipsOverlay() {
+  if (TV || !clipsOpen) return null;
+  const needle = clipFilter.trim().toLowerCase();
+  const shown = (clipList ?? []).filter((c) => !needle || c.title.toLowerCase().includes(needle));
+  return h(
+    'div',
+    { class: 'codes-overlay clips-overlay', role: 'dialog', 'aria-label': 'Clips', onclick: (e) => e.target === e.currentTarget && closeClips() },
+    h(
+      'div',
+      { class: 'codes-card clips-card' },
+      h(
+        'div',
+        { class: 'codes-head' },
+        h('h2', {}, '🎵 Clips'),
+        h('span', { class: 'spacer' }),
+        h('button', { type: 'button', onclick: () => { soundboard.pause(); socket.send({ t: 'stop-clips' }); }, title: 'Stop the sound here and on the TV' }, '⏹ Stop all'),
+        h('button', { type: 'button', onclick: closeClips }, 'Close'),
+      ),
+      h(
+        'div',
+        { class: 'clips-tools' },
+        h('input', { type: 'search', class: 'library-search', 'data-keep': 'clip-search', placeholder: `Search ${(clipList ?? []).length} clips`, 'aria-label': 'Search clips', value: clipFilter, oninput: (e) => { clipFilter = e.target.value; render(); } }),
+        h('label', { class: 'button' }, '+ Add clips', h('input', { type: 'file', accept: 'audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/wav,.mp3,.m4a,.aac,.ogg,.opus,.wav', multiple: true, hidden: true, onchange: (e) => e.target.files.length && uploadClips([...e.target.files]) })),
+      ),
+      clipBusy ? h('p', { class: 'muted' }, clipBusy) : null,
+      clipList === null ? h('p', { class: 'muted' }, 'Loading…') : null,
+      clipList && clipList.length === 0 ? h('p', { class: 'muted' }, 'No clips yet. Add mp3, m4a, ogg or wav files (up to 20 MB each) and play them whenever you like.') : null,
+      clipList && clipList.length > 0 && shown.length === 0 ? h('p', { class: 'muted' }, `No clips match “${clipFilter.trim()}”.`) : null,
+      h(
+        'ul',
+        { class: 'clips-list' },
+        shown.map((clip) =>
+          h(
+            'li',
+            { class: playingClip === clip.name ? 'playing' : '' },
+            h('span', { class: 'clip-name' }, clip.title),
+            h('button', { type: 'button', class: 'primary', onclick: () => playHere(clip), title: 'Play on this device' }, playingClip === clip.name ? '⏸ Stop' : '▶ Play'),
+            h('button', { type: 'button', onclick: () => socket.send({ t: 'play-clip', name: clip.name }), title: 'Play on the TV screen (its 🔊 sound must be on)' }, '📺 TV'),
+            h('button', { type: 'button', class: 'kick', 'aria-label': `Delete ${clip.title}`, title: 'Delete this clip', onclick: async () => {
+              if (!confirm(`Delete the clip “${clip.title}”?`)) return;
+              try {
+                await api('DELETE', `/clips/${encodeURIComponent(clip.name)}`);
+              } catch (error) {
+                showNotice(error.message);
+              }
+              await loadClips();
+            } }, '🗑'),
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 let codesOpen = false;

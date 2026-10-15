@@ -8,3 +8,4 @@ dist/
 *.photos.json
 clips/audio/
 venues/*/movie-quotes/audio/
+venues/*/clips/

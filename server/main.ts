@@ -147,6 +147,8 @@ async function main(): Promise<void> {
       quiz: single?.quiz,
       session: single?.session,
       library,
+      // The host's soundboard lives with the library (or in the default library folder when a single quiz file is run).
+      clipsDir: join(library?.dir ?? resolve(DEFAULT_LIBRARY), 'clips'),
       hostKey: library ? await libraryHostKey(library.dir, values['new-key']) : values['new-key'] ? randomBytes(18).toString('base64url') : undefined,
       hostPin: hostPin?.trim(),
       hostLocalOnly: values['host-local-only'],
