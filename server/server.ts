@@ -206,7 +206,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       review: revealed ? view.review : undefined,
       // A list of guesses with how far off each was gives the answer away.
       guesses: revealed ? view.guesses : undefined,
-      teams: view.teams.map((t) => ({ ...t, code: '' })),
+      // The host can keep team names off the TV (the leaderboard still shows who is winning).
+      teams: view.tvShowTeams ? view.teams.map((t) => ({ ...t, code: '' })) : [],
+      teamsHidden: !view.tvShowTeams,
       screenKey: '',
       canEnd: false,
     };
@@ -451,6 +453,17 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (!result.ok) send(conn, { t: 'error', message: result.error });
         return;
       }
+
+      case 'set-answer': {
+        if (!hostOnly() || !game) return;
+        const result = game.setAnswer(msg.value);
+        if (!result.ok) send(conn, { t: 'error', message: result.error });
+        return;
+      }
+
+      case 'tv-teams':
+        if (hostOnly()) game?.setTvShowTeams(msg.visible);
+        return;
 
       case 'buzz': {
         if (conn.role !== 'team' || !conn.teamId || !game) return send(conn, { t: 'error', message: 'Join a team first.' });

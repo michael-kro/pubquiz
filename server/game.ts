@@ -73,6 +73,8 @@ export interface GameSnapshot {
   skipped?: number[];
   photos?: [string, number][];
   photosEnabled?: boolean;
+  answerEdits?: [number, number | string][];
+  tvShowTeams?: boolean;
   buzz?: [number, BuzzState][];
   displayOrders: [number, number[]][];
   overrides: [number, [string, boolean][]][];
@@ -148,6 +150,10 @@ export class Game {
   private readonly displayOrders = new Map<number, number[]>();
   /** Set while the host has the clock paused. */
   private pausedAt: number | undefined;
+  /** Correct answers the host changed, by question index. */
+  private readonly answerEdits = new Map<number, number | string>();
+  /** Show the team list on the TV screen. The host can hide it. */
+  tvShowTeams = true;
   /** teamId → photo version, for teams that have uploaded one. The pictures themselves are in the PhotoStore. */
   private readonly photoVersions = new Map<string, number>();
   /** Buzzin' questions, by question index. */
@@ -169,8 +175,54 @@ export class Game {
     this.nameFilter = options.nameFilter ?? true;
   }
 
+  /** The question as it stands now: the host may have changed its correct answer after time ran out. */
   get currentQuestion(): Question | undefined {
-    return this.quiz.questions[this.questionIndex];
+    return this.effectiveQuestion(this.questionIndex);
+  }
+
+  private effectiveQuestion(index: number): Question | undefined {
+    const q = this.quiz.questions[index];
+    const edit = this.answerEdits.get(index);
+    if (!q || edit === undefined) return q;
+    switch (q.type) {
+      case 'multiple-choice':
+      case 'number':
+      case 'nearest':
+        return { ...q, answer: edit as number };
+      case 'letter':
+        return { ...q, letter: edit as string };
+      default:
+        return q;
+    }
+  }
+
+  /**
+   * The host changes which answer is correct, after the question closes and before (or even after) the reveal.
+   * Multiple choice: the position of the right option. Letter: the letter. Number and nearest: the number.
+   */
+  setAnswer(value: number | string): Result<null> {
+    const original = this.quiz.questions[this.questionIndex];
+    if (!original || !['closed', 'reveal', 'leaderboard'].includes(this.phase)) return fail('The answer can be changed once time is up.');
+    switch (original.type) {
+      case 'multiple-choice':
+        if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value >= original.options.length) return fail('That is not one of the options.');
+        break;
+      case 'letter':
+        if (typeof value !== 'string' || !/^[A-Za-z]$/.test(value)) return fail('Use a single letter.');
+        value = value.toUpperCase();
+        break;
+      case 'number':
+      case 'nearest':
+        if (typeof value !== 'number' || !Number.isFinite(value) || Math.abs(value) > 1e12) return fail('Use a number.');
+        break;
+      default:
+        return fail("This kind of question's answer can't be changed here.");
+    }
+    const same = original.type === 'letter' ? value === original.letter : value === (original as { answer: number }).answer;
+    if (same) this.answerEdits.delete(this.questionIndex);
+    else this.answerEdits.set(this.questionIndex, value);
+    this.changed();
+    return { ok: true, value: null };
   }
 
   // Teams
@@ -242,6 +294,11 @@ export class Game {
     if (!this.teams.has(teamId)) return;
     if (version === undefined) this.photoVersions.delete(teamId);
     else this.photoVersions.set(teamId, version);
+    this.changed();
+  }
+
+  setTvShowTeams(visible: boolean): void {
+    this.tvShowTeams = visible;
     this.changed();
   }
 
@@ -613,6 +670,8 @@ export class Game {
       skipped: [...this.skipped],
       photos: [...this.photoVersions],
       photosEnabled: this.photosEnabled,
+      answerEdits: [...this.answerEdits],
+      tvShowTeams: this.tvShowTeams,
       buzz: [...this.buzzStates].map(([index, state]) => [index, structuredClone(state)] as [number, BuzzState]),
       displayOrders: [...this.displayOrders],
       overrides: [...this.overrides].map(([index, marks]) => [index, [...marks]]),
@@ -633,6 +692,8 @@ export class Game {
     game.pausedAt = snapshot.pausedAt;
     for (const [id, version] of snapshot.photos ?? []) game.photoVersions.set(id, version);
     game.photosEnabled = snapshot.photosEnabled ?? true;
+    for (const [index, value] of snapshot.answerEdits ?? []) game.answerEdits.set(index, value);
+    game.tvShowTeams = snapshot.tvShowTeams ?? true;
     for (const [index, state] of snapshot.buzz ?? []) game.buzzStates.set(index, structuredClone(state));
     for (const index of snapshot.skipped ?? []) game.skipped.add(index);
     for (const [index, order] of snapshot.displayOrders) game.displayOrders.set(index, order);
@@ -738,7 +799,7 @@ export class Game {
 
   /** The guesses closest to the answer of a "nearest" question, and how far off they are. */
   private nearestWinners(questionIndex: number): { winners: Set<number>; best: number } {
-    const q = this.quiz.questions[questionIndex]!;
+    const q = this.effectiveQuestion(questionIndex)!;
     if (q.type !== 'nearest') return { winners: new Set(), best: 0 };
     let best = Infinity;
     for (const team of this.teams.values()) {
@@ -778,7 +839,7 @@ export class Game {
 
   private baseMark(questionIndex: number, answer: Answer): Marked {
     if (this.skipped.has(questionIndex)) return { correct: false, points: 0, detail: 'Skipped by the quiz master' };
-    const q = this.quiz.questions[questionIndex]!;
+    const q = this.effectiveQuestion(questionIndex)!;
     const durationMs = q.seconds * 1000;
     // Only "speed" questions scale with time; music has no shared start, so it is flat unless asked.
     const wantsSpeed = q.mode === 'speed' && (q.speedBonus ?? q.type !== 'music');
@@ -1106,6 +1167,7 @@ export class Game {
       questionCount: this.quiz.questions.length,
       maxTeams: MAX_TEAMS,
       photosEnabled: this.photosEnabled,
+      tvShowTeams: this.tvShowTeams,
       skipsLeaderboardNext: this.questionIndex >= 0 && this.skipsLeaderboardNext,
       teams: teams.map((t) => ({
         id: t.id,
@@ -1123,6 +1185,10 @@ export class Game {
               answerText: answerText(question),
               answer: question.type === 'multiple-choice' ? question.answer : undefined,
               info: question.info,
+              answerEdited: this.answerEdits.has(this.questionIndex),
+              /** What the host can change: option, letter or number (for the edit controls). */
+              editable: ['multiple-choice', 'letter', 'number', 'nearest'].includes(question.type),
+              editValue: question.type === 'letter' ? question.letter : question.type === 'number' || question.type === 'nearest' ? question.answer : undefined,
             }
           : undefined,
       answeredCount: answered.length,

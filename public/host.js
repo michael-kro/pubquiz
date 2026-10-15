@@ -664,6 +664,7 @@ function stage(s) {
         q.image
           ? h('img', { class: `question-image host-image${s.review ? ' small' : ''}`, src: q.image, alt: '' })
           : null,
+        !TV && s.phase === 'closed' ? answerReview(s, q) : null,
         questionBody(s, q, reveal),
         reveal ? fastestBlock(s) : null,
         reveal && s.skipsLeaderboardNext ? miniBoard(s) : null,
@@ -714,6 +715,39 @@ function stage(s) {
     }
   }
   return h('div');
+}
+
+/** Time's up: the answer, for the host to check (and change) before it goes on the screens. */
+function answerReview(s, q) {
+  if (q.type === 'buzzer' || q.type === 'picture' || q.type === 'music') return null; // Typed answers have their own review list.
+  const edit = (() => {
+    if (!q.editable) return null;
+    if (q.type === 'multiple-choice') return h('span', { class: 'muted' }, 'Click an option below to change it.');
+    const isLetter = q.type === 'letter';
+    return h('input', {
+      class: 'answer-edit',
+      'aria-label': isLetter ? 'Correct letter' : 'Correct number',
+      value: String(q.editValue ?? ''),
+      maxlength: isLetter ? '1' : '20',
+      inputmode: isLetter ? 'text' : 'decimal',
+      // Sent when the host finishes typing, not on every key.
+      onchange: (e) => {
+        const raw = e.target.value.trim().replace(',', '.');
+        if (isLetter) socket.send({ t: 'set-answer', value: raw });
+        else if (/^-?\d+(\.\d+)?$/.test(raw)) socket.send({ t: 'set-answer', value: Number(raw) });
+        else showNotice('Type a number.');
+      },
+    });
+  })();
+  return h(
+    'div',
+    { class: 'answer-review', role: 'status' },
+    h('span', { class: 'answer-review-label' }, 'Answer'),
+    h('strong', { class: 'answer-review-text' }, q.answerText),
+    q.answerEdited ? h('span', { class: 'chip plain' }, 'changed') : null,
+    edit,
+    h('span', { class: 'muted small' }, 'Only you can see this until you press Reveal answer.'),
+  );
 }
 
 /** The top five, shown with the answer when the next press goes straight on to the next question. */
@@ -853,7 +887,12 @@ function questionBody(s, q, reveal) {
         q.options.map((option, i) =>
           h(
             'div',
-            { class: `option opt-${i}${reveal ? (i === q.answer ? ' correct' : ' dimmed') : ''}` },
+            {
+              class: `option opt-${i}${reveal ? (i === q.answer ? ' correct' : ' dimmed') : !TV && s.phase === 'closed' ? (i === q.answer ? ' marked-correct' : ' pickable') : ''}`,
+              // Time's up: the host can click a different option to change which one is right, before revealing.
+              onclick: !TV && s.phase === 'closed' ? () => socket.send({ t: 'set-answer', value: i }) : undefined,
+              title: !TV && s.phase === 'closed' ? (i === q.answer ? 'The current answer' : 'Click to make this the answer') : undefined,
+            },
             h('span', { class: 'letter' }, LETTERS[i]),
             h('span', { class: 'option-text' }, option),
             s.distribution ? h('span', { class: 'count' }, s.distribution[i]) : null,
@@ -1011,11 +1050,20 @@ function teamsPanel(s) {
       ? null
       : h(
           'label',
+          { class: 'check photos-toggle', title: 'Show the list of teams on the TV screen' },
+          h('input', { type: 'checkbox', checked: s.tvShowTeams, onchange: (e) => socket.send({ t: 'tv-teams', visible: e.target.checked }) }),
+          ' Show teams on the TV',
+        ),
+    TV
+      ? null
+      : h(
+          'label',
           { class: 'check photos-toggle', title: 'Let teams add a photo that shows on the screens' },
           h('input', { type: 'checkbox', checked: s.photosEnabled, onchange: (e) => socket.send({ t: 'photos', enabled: e.target.checked }) }),
           ' Team photos',
         ),
-    s.teams.length === 0 ? h('p', { class: 'muted small' }, 'No teams yet.') : null,
+    TV && s.teamsHidden ? h('p', { class: 'muted' }, `${s.standings.length} ${s.standings.length === 1 ? 'team is' : 'teams are'} playing`) : null,
+    s.teams.length === 0 && !s.teamsHidden ? h('p', { class: 'muted small' }, 'No teams yet.') : null,
     h(
       'ul',
       {},

@@ -26,6 +26,8 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('extend'), seconds: z.number().min(1).max(120).optional() }),
   z.object({ t: z.literal('skip') }),
   z.object({ t: z.literal('leaderboard') }),
+  z.object({ t: z.literal('set-answer'), value: z.union([z.number(), z.string().max(4)]) }),
+  z.object({ t: z.literal('tv-teams'), visible: z.boolean() }),
   // Buzzin' questions: a team buzzes, the host judges the team that is answering.
   z.object({ t: z.literal('buzz'), elapsedMs: z.number().min(0).max(1_000_000).optional() }),
   z.object({ t: z.literal('judge'), correct: z.boolean() }),
@@ -143,7 +145,11 @@ export interface HostView {
   skipsLeaderboardNext: boolean;
   /** The venue Wi-Fi, if the host set one up: shown on the host and TV lobby with its own QR code. */
   wifi?: { ssid: string; password?: string };
-  question?: QuestionView & { answerText: string; answer?: number; info?: string };
+  question?: QuestionView & { answerText: string; answer?: number; info?: string; answerEdited?: boolean; editable?: boolean; editValue?: number | string };
+  /** Show the team list on the TV. The host can hide it. */
+  tvShowTeams: boolean;
+  /** On the TV screen only: the host has hidden the team list, so `teams` is empty. */
+  teamsHidden?: boolean;
   answeredCount: number;
   connectedCount: number;
   /** Multiple choice: answers per option, once the question has closed. */

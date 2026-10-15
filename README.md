@@ -27,7 +27,13 @@ The host link stays the same between runs, so you can bookmark it.
 
 Show the QR code on a projector, and teams scan it to join. Use the yellow button (or Space, →, or a presentation clicker) to move through each question:
 
-**Start quiz → Close question → Reveal answer → Show leaderboard → Next question**
+**Start quiz → Close question → Reveal answer → Next question**
+
+The full leaderboard comes by itself at the end of each round, and mid-round the reveal shows the top five. Press **Leaderboard** any time after a reveal to show the full board first. If you'd rather have it after every question, set `leaderboard: question` under `scoring` (or choose it in the editor).
+
+**Checking the answer:** when time runs out the host screen shows the answer in a dashed box that only you can see, before you press Reveal answer. For multiple choice, click another option to change which one is right; for letter, number and nearest questions, edit the value. Scores follow, and you can still fix a slip after the reveal.
+
+**Hiding names on the TV:** untick **Show teams on the TV** to replace the team list on the TV with a count (the leaderboard still shows the standings).
 
 A question also closes on its own when time runs out or every connected team has answered.
 
