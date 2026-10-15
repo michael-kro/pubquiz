@@ -788,9 +788,16 @@ input {
 .view-switch button { border-radius: 0; background: var(--surface) !important; color: var(--muted); }
 .view-switch button.active { background: var(--accent) !important; color: var(--accent-text); }
 .quiz-cards.as-list { grid-template-columns: 1fr; gap: 8px; }
-.quiz-cards.as-list .quiz-card { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 6px 18px; padding: 12px 18px; }
-.quiz-cards.as-list .quiz-card h2 { flex: 1 1 260px; margin: 0; font-size: 1.1rem; }
-.quiz-cards.as-list .card-actions { margin-left: auto; }
+.quiz-cards.as-list .quiz-card { display: grid; grid-template-columns: minmax(150px, 1fr) 235px 560px; align-items: center; gap: 8px 16px; padding: 10px 16px; }
+.quiz-cards.as-list .quiz-card h2 { margin: 0; font-size: 1.1rem; }
+.quiz-cards.as-list .card-meta { display: grid; gap: 2px; font-size: 0.9rem; }
+.quiz-cards.as-list .card-actions { margin: 0; flex-wrap: nowrap; justify-content: flex-end; }
+.quiz-cards.as-list .card-actions { gap: 6px; }
+.quiz-cards.as-list .card-actions button, .quiz-cards.as-list .card-actions .button { padding: 8px 10px; white-space: nowrap; }
+@media (max-width: 1150px) {
+  .quiz-cards.as-list .quiz-card { grid-template-columns: 1fr auto; }
+  .quiz-cards.as-list .card-actions { grid-column: 1 / -1; flex-wrap: wrap; justify-content: flex-start; }
+}
 
 /* Prizes */
 .prizes-editor { border: 1px solid var(--surface-2); border-radius: var(--radius); padding: 10px 14px 12px; margin: 14px 0; display: grid; gap: 8px; text-align: left; }

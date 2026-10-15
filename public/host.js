@@ -497,14 +497,12 @@ function libraryView(s) {
                 { class: 'quiz-card' },
                 h('h2', {}, q.title),
                 h(
-                  'p',
-                  { class: 'muted' },
-                  `${q.rounds} ${q.rounds === 1 ? 'round' : 'rounds'} · ${q.questions} ${q.questions === 1 ? 'question' : 'questions'}`,
+                  'div',
+                  { class: 'card-meta' },
+                  h('p', { class: 'muted' }, `${q.rounds} ${q.rounds === 1 ? 'round' : 'rounds'} · ${q.questions} ${q.questions === 1 ? 'question' : 'questions'}`),
+                  q.problems ? h('p', { class: 'problem' }, `${q.problems} ${q.problems === 1 ? 'thing' : 'things'} to fix before it can run`) : null,
+                  q.unfinished ? h('p', { class: 'unfinished' }, `Unfinished: stopped at question ${q.unfinished.question} of ${q.unfinished.total}`) : null,
                 ),
-                q.problems
-                  ? h('p', { class: 'problem' }, `${q.problems} ${q.problems === 1 ? 'thing' : 'things'} to fix before it can run`)
-                  : null,
-                q.unfinished ? h('p', { class: 'unfinished' }, `Unfinished: stopped at question ${q.unfinished.question} of ${q.unfinished.total}`) : null,
                 h(
                   'div',
                   { class: 'card-actions' },
