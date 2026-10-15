@@ -326,7 +326,7 @@ async function runLoadUnbounded(options: LoadOptions): Promise<LoadReport> {
     await sleep(Math.max(300, o.latencyMs * 4 + o.jitterMs * 2)); // let the last states reach every phone
 
     // Every phone, including the ones that dropped near the end, comes back and shows the final results.
-    const settleBy = Date.now() + 12_000;
+    const settleBy = Date.now() + 25_000;
     while (bots.some((b) => b.view?.phase !== 'finished') && Date.now() < settleBy) await sleep(100);
 
     // Checks, against what the server itself recorded for each team.

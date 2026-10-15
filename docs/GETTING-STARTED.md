@@ -56,3 +56,15 @@ See [VENUE-TROUBLESHOOTING.md](VENUE-TROUBLESHOOTING.md).
 - `--host-local-only`: the host screen, host API, results download and PIN login only work on the laptop running the quiz. Requests through the internet tunnel or from another device on the Wi-Fi are refused. Teams and the TV screen are unaffected. (You can't run the quiz from a tablet in this mode.)
 - `--new-key`: make a new host key at start-up. In the host screen, **🔑 New key** does it mid-quiz: the old host link and TV link stop working at once, and the TV needs opening again from the **TV screen** button.
 - On shared public Wi-Fi, prefer the internet link (HTTPS) or your own router: in local mode the key travels over plain HTTP.
+
+## Entry fee, admitting teams, prizes
+
+On the start screen (before you press Start quiz) you can fill in an **entry fee** (for example "£5 per team") and up to three **prizes**. Both show big on the TV and on phones. Tick **Teams wait to be admitted** and new teams sit on a "Nearly there" screen on their phone until you press **Admit** next to their name (top of the right-hand panel, or **Admit** in the top bar), so you can check they have paid. Admit all, or turn a team away with ×. Waiting teams are not on the TV, the leaderboard or the results.
+
+## Picture questions that reveal slowly
+
+In the editor, tick **Reveal the picture slowly** on a picture question (or add `uncover: true` in the YAML). The picture starts behind black tiles that drop away, in a random order, as the time runs out. Everyone sees the same tiles. Faster answers still score more, so guessing early on a mostly-hidden picture is worth more.
+
+## Long quizzes and big nights
+
+`scripts/make-stress-quiz.ts` writes a 120-question quiz of long questions and long answers (the Quiz Pub library has one called "Stress Test"). `node scripts/stress.ts --external` plays it with 30 simulated phones, random reconnects and 4 extra teams knocking, then checks every phone's own results against the final scores. `scripts/sim-rounds.ts` plays 5 rounds of 10 with 20 teams and prints each round's scoreboard.

@@ -314,3 +314,26 @@ test('"close early" waits briefly for a phone that just dropped, then stops wait
   assert.equal(g2.phase, 'closed', 'a phone that has been gone a while no longer holds the question up');
   g2.dispose();
 });
+
+test('picture questions can be revealed slowly behind tiles; only the host decides, and other types refuse the option', () => {
+  const quiz = parseQuiz(`
+title: Uncover
+rounds:
+  - name: R
+    questions:
+      - { type: picture, text: Who?, image: "https://example.com/a.png", accept: [x], uncover: true }
+      - { type: picture, text: Who?, image: "https://example.com/a.png", accept: [x] }
+`);
+  const game = new Game(quiz);
+  game.join('A');
+  game.advance();
+  assert.equal(game.hostView().question!.uncover, true);
+  game.dispose();
+  const plain = new Game(quiz);
+  plain.join('A');
+  plain.advance();
+  plain.skip();
+  assert.equal(plain.hostView().question!.uncover, undefined);
+  plain.dispose();
+  assert.throws(() => parseQuiz('title: T\nrounds:\n  - name: R\n    questions:\n      - { type: letter, text: Q, answer: A, uncover: true }\n'), /uncover/);
+});
