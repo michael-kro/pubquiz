@@ -81,6 +81,8 @@ Options:
 
 ## Writing a quiz
 
+Writing it with an AI assistant? Hand it [docs/AI-QUIZ-GUIDE.md](docs/AI-QUIZ-GUIDE.md): a prompt and the whole format in one file. Check a file with `node scripts/check-quiz.ts quiz.yaml`.
+
 See [examples/sample-quiz.yaml](examples/sample-quiz.yaml), which has every question type:
 
 | Type | Teams see | You write |
@@ -112,8 +114,8 @@ scoring:
                        # flat: every correct answer scores the same
                        # first: flat, plus `bonus` extra points for the first correct team
   speedFactor: 0.5     # speed mode: a correct answer at the buzzer earns half the points
-  bonus: 500           # first mode
-  fastBonus: 250       # extra points for the quickest correct teams (0 = off)
+  bonus: 50            # first mode
+  fastBonus: 25        # extra points for the quickest correct teams (0 = off)
   fastPlaces: 3        # how many teams earn it: 1, 2 or 3 (100%, 60%, 30%)
   leaderboard: question  # or `round`: only show the leaderboard at the end of each round
 rounds:
@@ -121,7 +123,7 @@ rounds:
     mode: flat         # this round only
 ```
 
-Every question can also set `seconds` (default 20), `points` (default 1000), `image`, and `speedBonus`. A correct answer earns its full points if instant, falling to half at the deadline. The speed bonus is off by default for music, because teams can't answer until they recognise the track. Set `scoring.speedFactor: 0` to turn it off everywhere. Ordering gives half the points for items in the right place and half for getting the whole order right.
+Every question can also set `seconds` (default 20), `points` (default 100), `image`, and `speedBonus`. A correct answer earns its full points if instant, falling to half at the deadline. The speed bonus is off by default for music, because teams can't answer until they recognise the track. Set `scoring.speedFactor: 0` to turn it off everywhere. Ordering gives half the points for items in the right place and half for getting the whole order right.
 
 If the file has a mistake, the program says where, e.g. `Round 1, question 3, answer: must be the position of one of the options, counting from 0`.
 
