@@ -31,6 +31,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('set-answer'), value: z.union([z.number(), z.string().max(4)]) }),
   z.object({ t: z.literal('tv-teams'), visible: z.boolean() }),
   z.object({ t: z.literal('read-out'), on: z.boolean() }),
+  z.object({ t: z.literal('rotate-key') }),
   z.object({ t: z.literal('close-early'), on: z.boolean() }),
   z.object({ t: z.literal('start-timer') }),
   // Buzzin' questions: a team buzzes, the host judges the team that is answering.
@@ -232,6 +233,7 @@ export type ServerMessage =
   | { t: 'quiz-ended' }
   | { t: 'joined'; token: string; teamName: string }
   | { t: 'rejoin-failed' }
+  | { t: 'host-key'; key: string }
   | { t: 'error'; message: string }
   | { t: 'kicked' }
   | { t: 'replaced' };

@@ -37,6 +37,8 @@ Options:
       --no-photos        Don't let teams add a photo (the host can also switch photos off during a quiz)
       --no-name-filter   Allow any team name (the default blocks swearing; invisible characters are always removed)
       --host-pin <pin>   Let the host open /host by typing this PIN (6+ characters), e.g. from a phone
+      --host-local-only  Only allow the host screen on this laptop, not from the network or the internet link
+      --new-key          Make a new host key now (the old host link and TV link stop working)
       --no-open          Don't open the host screen in a browser
       --fresh            Start over instead of resuming an unfinished quiz
   -h, --help             Show this help
@@ -60,10 +62,10 @@ function fail(message: string): never {
 }
 
 /** The library's host key is kept on disk, so the host link (and any bookmark of it) survives restarts. */
-async function libraryHostKey(dir: string): Promise<string> {
+async function libraryHostKey(dir: string, renew = false): Promise<string> {
   const path = join(dir, '.host-key');
   const saved = (await readFile(path, 'utf8').catch(() => '')).trim();
-  if (/^[\w-]{20,}$/.test(saved)) return saved;
+  if (!renew && /^[\w-]{20,}$/.test(saved)) return saved;
   const key = randomBytes(18).toString('base64url');
   await mkdir(dir, { recursive: true });
   await writeFile(path, key, { mode: 0o600 });
@@ -99,6 +101,8 @@ async function main(): Promise<void> {
       'public-url': { type: 'string' },
       quizzes: { type: 'string' },
       'host-pin': { type: 'string' },
+      'host-local-only': { type: 'boolean', default: false },
+      'new-key': { type: 'boolean', default: false },
       'no-name-filter': { type: 'boolean', default: false },
       'no-photos': { type: 'boolean', default: false },
       'wifi-ssid': { type: 'string' },
@@ -143,8 +147,10 @@ async function main(): Promise<void> {
       quiz: single?.quiz,
       session: single?.session,
       library,
-      hostKey: library ? await libraryHostKey(library.dir) : undefined,
+      hostKey: library ? await libraryHostKey(library.dir, values['new-key']) : values['new-key'] ? randomBytes(18).toString('base64url') : undefined,
       hostPin: hostPin?.trim(),
+      hostLocalOnly: values['host-local-only'],
+      onHostKeyChange: library ? (key: string) => void writeFile(join(library.dir, '.host-key'), key, { mode: 0o600 }) : undefined,
       branding,
       nameFilter: !values['no-name-filter'],
       photos: !values['no-photos'],

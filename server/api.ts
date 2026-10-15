@@ -11,7 +11,7 @@ import { Library, LibraryError, MAX_AUDIO_UPLOAD, MAX_IMAGE_UPLOAD, MAX_IMPORT, 
 export interface ApiContext {
   library: Library;
   branding?: BrandingStore;
-  isHost(key: string | undefined): boolean;
+  isHost(key: string | undefined, req: IncomingMessage): boolean;
   /** Starts a library quiz; returns problems that stop it running, if any. */
   runQuiz(id: string, fresh: boolean): Promise<{ ok: true } | { ok: false; issues: string[] }>;
 }
@@ -49,7 +49,7 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
 export async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL, ctx: ApiContext): Promise<boolean> {
   if (!url.pathname.startsWith('/api/')) return false;
   const key = (req.headers['x-host-key'] as string | undefined) ?? url.searchParams.get('key') ?? undefined;
-  if (!ctx.isHost(key)) {
+  if (!ctx.isHost(key, req)) {
     sendJson(res, 401, { error: 'Use the host link printed when the quiz program started.' });
     return true;
   }

@@ -10,7 +10,7 @@ import { readPublicFile } from './assets.ts';
 import { Game, type Team } from './game.ts';
 import type { Library } from './library.ts';
 import type { BrandingStore } from './branding.ts';
-import { clientAddress, TokenBucket, WindowCounter } from './limits.ts';
+import { clientAddress, isLocalRequest, TokenBucket, WindowCounter } from './limits.ts';
 import { MAX_PHOTO_BYTES, PhotoStore, sniffImage } from './photos.ts';
 import { loadBundledFacts, pickFacts } from './facts.ts';
 import { lanAddress, wifiQrText } from './net.ts';
@@ -69,6 +69,10 @@ export interface ServerOptions {
   library?: Library;
   /** A short PIN the host can type at /host instead of using the secret link (for running the quiz from a phone). */
   hostPin?: string;
+  /** Only let the host controls be used from the machine running the quiz (not the network or the tunnel). */
+  hostLocalOnly?: boolean;
+  /** Called when the host key is changed from the host screen, so it can be saved. */
+  onHostKeyChange?(key: string): void;
   /** Name, colours and logo for every page. */
   branding?: BrandingStore;
   /** The Wi-Fi network teams can join, shown as a QR code beside the join code (for a travel router or hotspot). */
@@ -97,9 +101,9 @@ export interface QuizServer {
   /** The running quiz's room code, or '' when none is running. */
   readonly roomCode: string;
   port: number;
-  hostKey: string;
-  screenKey: string;
-  hostUrl: string;
+  readonly hostKey: string;
+  readonly screenKey: string;
+  readonly hostUrl: string;
   /** The link teams use right now: the internet link when it's up, otherwise the local address. */
   readonly joinUrl: string;
   readonly lanJoinUrl: string;
@@ -115,6 +119,8 @@ interface Connection {
   ws: WebSocket;
   role?: 'host' | 'team' | 'screen';
   address: string;
+  /** The connection came from the machine running the quiz itself. */
+  local: boolean;
   messages: TokenBucket;
   dropped: number;
   teamId?: string;
@@ -152,7 +158,7 @@ function latencyOf(conn: Connection): number {
 const newRoomCode = () => Array.from({ length: 4 }, () => ROOM_ALPHABET[randomInt(ROOM_ALPHABET.length)]).join('');
 
 export async function createQuizServer(options: ServerOptions): Promise<QuizServer> {
-  const hostKey = options.hostKey ?? options.session?.resume?.hostKey ?? randomBytes(18).toString('base64url');
+  let hostKey = options.hostKey ?? options.session?.resume?.hostKey ?? randomBytes(18).toString('base64url');
   const connections = new Set<Connection>();
   const teamConnections = new Map<string, Connection>();
   const instanceId = randomBytes(9).toString('base64url');
@@ -160,7 +166,8 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   const photoUploads = new WindowCounter(5, 60_000);
   const perAddress = new Map<string, number>();
   // Derived from the host key, so a TV left on /screen reconnects after a restart.
-  const screenKey = createHmac('sha256', hostKey).update('screen').digest('base64url').slice(0, 24);
+  const deriveScreenKey = () => createHmac('sha256', hostKey).update('screen').digest('base64url').slice(0, 24);
+  let screenKey = deriveScreenKey();
   let active: ActiveQuiz | undefined;
   let baseUrl = '';
   let joinUrl = '';
@@ -366,6 +373,22 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     return a.length === b.length && timingSafeEqual(a, b);
   }
   const isHostKey = (key: string | undefined) => keyIs(hostKey, key);
+  /** With --host-local-only the host controls work only from the laptop running the quiz. */
+  const hostAllowed = (req: IncomingMessage) => !options.hostLocalOnly || isLocalRequest(req);
+
+  /** Replaces the host key: the old host link and TV link stop working at once. */
+  function rotateHostKey(requester: Connection): void {
+    hostKey = randomBytes(18).toString('base64url');
+    screenKey = deriveScreenKey();
+    options.onHostKeyChange?.(hostKey);
+    for (const conn of [...connections]) {
+      if (conn === requester || (conn.role !== 'host' && conn.role !== 'screen')) continue;
+      send(conn, { t: 'error', message: 'The host key was changed. Open the new link.' });
+      conn.ws.close(4001, 'key changed');
+    }
+    send(requester, { t: 'host-key', key: hostKey });
+    broadcast();
+  }
 
   const builtInFacts = () => loadBundledFacts();
 
@@ -387,6 +410,11 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
     switch (msg.t) {
       case 'host':
+        if (options.hostLocalOnly && !conn.local) {
+          send(conn, { t: 'error', message: 'The host screen can only be used on the laptop running the quiz.' });
+          conn.ws.close(4001, 'not local');
+          return;
+        }
         if (!isHostKey(msg.key)) {
           send(conn, { t: 'error', message: 'Wrong host key. Use the host link printed when the quiz started.' });
           conn.ws.close(4001, 'bad key');
@@ -482,6 +510,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (!result.ok) send(conn, { t: 'error', message: result.error });
         return;
       }
+
+      case 'rotate-key':
+        if (hostOnly()) rotateHostKey(conn);
+        return;
 
       case 'read-out':
         if (hostOnly()) game?.setReadOut(msg.on);
@@ -619,6 +651,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     };
     if (req.method === 'GET') return json(200, { pin: Boolean(options.hostPin) });
     if (req.method !== 'POST' || !options.hostPin) return json(404, { error: 'Not found.' });
+    if (!hostAllowed(req)) return json(403, { error: 'The host screen can only be used on the laptop running the quiz.' });
 
     const now = Date.now();
     const address = clientAddress(req);
@@ -680,7 +713,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       const handled = await handleApi(req, res, url, {
         library: options.library,
         branding: options.branding,
-        isHost: isHostKey,
+        isHost: (key, req) => isHostKey(key) && hostAllowed(req),
         runQuiz: runLibraryQuiz,
       });
       if (handled) return;
@@ -729,7 +762,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     if (pathname === '/wifi-qr.svg') {
       // The Wi-Fi password is in the code, so only the host and TV screens (which show it anyway) may fetch it.
       const key = url.searchParams.get('key') ?? undefined;
-      if (!options.wifi || !(isHostKey(key) || keyIs(screenKey, key))) {
+      if (!options.wifi || !((isHostKey(key) && hostAllowed(req)) || keyIs(screenKey, key))) {
         res.writeHead(404).end('Not found');
         return;
       }
@@ -740,7 +773,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     }
 
     if (pathname === '/results.csv') {
-      if (!isHostKey(url.searchParams.get('key') ?? undefined) || !active) {
+      if (!isHostKey(url.searchParams.get('key') ?? undefined) || !hostAllowed(req) || !active) {
         res.writeHead(404).end('Not found');
         return;
       }
@@ -838,7 +871,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       return;
     }
     perAddress.set(address, open + 1);
-    const conn: Connection = { ws, address, missedPings: 0, rtts: [], messages: new TokenBucket(MESSAGE_BURST, MESSAGES_PER_SECOND), dropped: 0 };
+    const conn: Connection = { ws, address, local: isLocalRequest(req), missedPings: 0, rtts: [], messages: new TokenBucket(MESSAGE_BURST, MESSAGES_PER_SECOND), dropped: 0 };
     connections.add(conn);
     ws.on('pong', () => {
       if (conn.pingSentAt === undefined) return;
@@ -886,9 +919,15 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       return active?.roomCode ?? '';
     },
     port,
-    hostKey,
-    screenKey,
-    hostUrl: `http://localhost:${port}/host?key=${hostKey}`,
+    get hostKey() {
+      return hostKey;
+    },
+    get screenKey() {
+      return screenKey;
+    },
+    get hostUrl() {
+      return `http://localhost:${port}/host?key=${hostKey}`;
+    },
     get joinUrl() {
       return joinUrl;
     },

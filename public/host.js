@@ -80,6 +80,10 @@ function connect() {
         if (TV && !state.teamsHidden) flashSpeedster(state, true);
         preload(state.preloadImage);
         if (!TV) rememberKey();
+      } else if (message.t === 'host-key') {
+        key = message.key;
+        rememberKey();
+        showNotice('New host key saved in this browser. The old links no longer work; open the TV screen again from the TV screen button.');
       } else if (message.t === 'error') {
         if (state) showNotice(message.message);
         else if (!TV && storedKey() === key) {
@@ -640,6 +644,16 @@ function topBar(s) {
     h('a', { class: 'button', href: `/screen?key=${encodeURIComponent(s.screenKey)}`, target: '_blank', rel: 'noopener', title: 'Open this on the TV or projector' }, 'TV screen ↗'),
     h('span', { class: 'join-hint' }, 'Join: ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)),
     breakControl(s),
+    TV
+      ? null
+      : h('button', {
+          type: 'button',
+          class: 'link-button',
+          title: 'Make a new host key. The old host link and the TV screen link stop working.',
+          onclick: () => {
+            if (confirm('Make a new host key? The old host link and the TV screen stop working until you open the new TV link.')) socket.send({ t: 'rotate-key' });
+          },
+        }, '🔑 New key'),
     !TV && s.phase === 'reveal' && s.skipsLeaderboardNext
       ? h('button', { onclick: () => socket.send({ t: 'leaderboard' }), title: 'Show the full leaderboard first' }, 'Leaderboard')
       : null,

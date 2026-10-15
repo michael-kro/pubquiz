@@ -1,5 +1,6 @@
 // Protection against a few badly behaved clients: message floods, join guessing, odd team names.
 import type { IncomingMessage } from 'node:http';
+import { networkInterfaces } from 'node:os';
 
 /** Lets `capacity` actions happen at once, then `perSecond` more each second. */
 export class TokenBucket {
@@ -69,6 +70,17 @@ const LOOPBACK = /^(::1|127\.\d+\.\d+\.\d+|::ffff:127\.\d+\.\d+\.\d+)$/;
  * visitor's address in a header; that header is only believed when the connection is local, so
  * nobody on the network can pretend to be someone else.
  */
+/**
+ * True when the request comes from the machine running the quiz itself, not through the internet tunnel
+ * (which always adds forwarding headers) and not from another device on the network.
+ */
+export function isLocalRequest(req: IncomingMessage): boolean {
+  if (req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for']) return false;
+  const remote = (req.socket.remoteAddress ?? '').replace(/^::ffff:/, '');
+  if (LOOPBACK.test(remote) || LOOPBACK.test(`::ffff:${remote}`)) return true;
+  return Object.values(networkInterfaces()).some((list) => list?.some((i) => i.address === remote));
+}
+
 export function clientAddress(req: IncomingMessage): string {
   const remote = req.socket.remoteAddress ?? 'unknown';
   if (!LOOPBACK.test(remote)) return remote;
