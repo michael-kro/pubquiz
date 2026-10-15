@@ -531,13 +531,13 @@ function wageringScreen(s, q) {
 }
 
 /** The question with its answer controls. Once a team has answered it stays here, locked in, until the reveal. */
-/** "🔒 Locked in: 42 · 2.32 s", then what happens next, in one line. */
+/** "🔒 Locked in · 2.32 s · waiting for others", in one line. */
 function lockedLine(s, closed) {
   return h(
     'p',
     { class: 'locked-line', role: 'status' },
     '🔒 Locked in',
-    s.myAnswerText ? [': ', h('strong', {}, s.myAnswerText)] : null,
+    // The answer itself is already showing on the keys or the number display.
     s.myAnswerMs != null ? [' · ', h('strong', { class: 'answer-time' }, seconds(s.myAnswerMs))] : null,
     h('span', { class: 'muted' }, closed ? ' · waiting for the reveal' : ' · waiting for others'),
   );

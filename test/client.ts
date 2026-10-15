@@ -50,8 +50,8 @@ export class Client {
     }
   }
 
-  state(phase: string, extra: (view: Message) => boolean = () => true): Promise<Message> {
-    return this.waitFor((m) => m.t === 'state' && m.view.phase === phase && extra(m.view)).then((m) => m.view);
+  state(phase: string, extra: (view: Message) => boolean = () => true, timeoutMs?: number): Promise<Message> {
+    return this.waitFor((m) => m.t === 'state' && m.view.phase === phase && extra(m.view), timeoutMs).then((m) => m.view);
   }
 
   async close(): Promise<void> {
