@@ -598,6 +598,17 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           ),
           h('p', { class: 'letter-line' }, 'Teams tap ', h('strong', { class: 'letter-shown' }, letter)),
           field(
+            'Keypad',
+            h(
+              'select',
+              { 'aria-label': 'Keypad', onchange: (e) => { q.keypad = e.target.value === 'grouped' ? undefined : e.target.value; changed(); } },
+              h('option', { value: 'grouped', selected: (q.keypad ?? 'grouped') === 'grouped' }, 'Grouped keys: ABC, DEF, GHI…'),
+              h('option', { value: 'single', selected: q.keypad === 'single' }, 'All 26 letters'),
+            ),
+            'keypad',
+            'Grouped keys are quicker to tap and a bit easier.',
+          ),
+          field(
             'Different letter (optional)',
             textInput(q.letter, (v) => {
               q.letter = v.trim() ? v.trim().toUpperCase().slice(0, 1) : undefined;

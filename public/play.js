@@ -1,4 +1,4 @@
-import { confetti, avatar, brandBlock, breakPanel, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setBreak, setDeadline, tick } from './common.js';
+import { LETTER_GROUPS, confetti, avatar, brandBlock, breakPanel, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setBreak, setDeadline, tick } from './common.js';
 
 const TOKEN_KEY = 'pubquiz.team-token';
 const app = document.getElementById('app');
@@ -650,11 +650,11 @@ function answerInput(s, q, locked) {
       return h(
         'div',
         {},
-        h('p', { class: 'muted small center' }, 'Tap the first letter of the answer. Skip "The"; people go by first name (J for John Lennon).'),
+        h('p', { class: 'muted small center' }, `Tap the key with the first letter of the answer${q.keypad === 'single' ? '' : ' on it'}. Skip "The"; people go by first name (J for John Lennon).`),
         h(
           'div',
-          { class: 'keypad' },
-          [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].map((letter) =>
+          { class: q.keypad === 'single' ? 'keypad' : 'keypad grouped' },
+          (q.keypad === 'single' ? [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'] : LETTER_GROUPS).map((letter) =>
             h(
               'button',
               { class: `key${chosen === letter ? ' chosen' : ''}`, disabled: locked, onclick: () => sendAnswer(letter) },

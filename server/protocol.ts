@@ -89,6 +89,8 @@ export interface QuestionView {
   /** Host and TV only, once the answer is revealed: a fun clip to play, with its caption. */
   revealAudio?: string;
   revealCaption?: string;
+  /** Letter questions: which keypad the teams get. */
+  keypad?: 'grouped' | 'single';
   /** In a wager round: the category teams see while betting. */
   category?: string;
   /** A wager-round question. */

@@ -100,3 +100,37 @@ rounds:
   assert.deepEqual(place(), [1, 1]);
   game.dispose();
 });
+
+test('letter questions: a grouped keypad is the default, and a tap on the key holding the letter is right', () => {
+  const quiz = parseQuiz(`
+title: Letters
+scoring: { leaderboard: question }
+rounds:
+  - name: R
+    questions:
+      - { type: letter, text: Who sang Imagine?, answer: John Lennon }
+      - { type: letter, text: Who sang Hey Jude?, answer: Paul McCartney, keypad: single }
+`);
+  const game = new Game(quiz);
+  const [a, b, c] = ['A', 'B', 'C'].map((n) => {
+    const r = game.join(n);
+    assert.ok(r.ok);
+    return r.value;
+  });
+  game.advance();
+  assert.equal(game.hostView().question!.keypad, 'grouped');
+  assert.ok(game.answer(a!.id, 'JKL').ok);
+  assert.ok(game.answer(b!.id, 'j').ok, 'a single letter is still accepted');
+  assert.equal(game.answer(c!.id, 'XYZ').ok, false, 'not a key');
+  assert.ok(game.answer(c!.id, 'MNO').ok);
+  game.advance();
+  game.advance();
+  assert.equal(game.teamView(a!.id)!.result!.correct, true);
+  assert.equal(game.teamView(b!.id)!.result!.correct, true);
+  assert.equal(game.teamView(c!.id)!.result!.correct, false);
+  assert.match(game.hostView().summary!, /JKL ×1/);
+  game.advance();
+  game.advance();
+  assert.equal(game.hostView().question!.keypad, 'single');
+  game.dispose();
+});

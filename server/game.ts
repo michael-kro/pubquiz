@@ -2,7 +2,7 @@ import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { checkTeamName, MAX_NAME_LENGTH } from './limits.ts';
 import { matchAnswer, normalise } from './matching.ts';
 import type { AnswerValue, BreakView, HostView, Phase, QuestionView, ReviewGroup, StandingRow, TeamView } from './protocol.ts';
-import { isTextAnswer, ORDERING_ITEMS, type Question, type Quiz } from './quiz.ts';
+import { isTextAnswer, LETTER_GROUPS, ORDERING_ITEMS, type Question, type Quiz } from './quiz.ts';
 import { scoreAnswer } from './scoring.ts';
 
 export const MAX_TEAMS = 30;
@@ -566,8 +566,9 @@ export class Game {
         return { ok: true, value: text };
       }
       case 'letter': {
-        if (typeof value !== 'string' || !/^[A-Za-z]$/.test(value)) return fail('Tap a letter.');
-        return { ok: true, value: value.toUpperCase() };
+        const key = typeof value === 'string' ? value.toUpperCase() : '';
+        if (!/^[A-Z]$/.test(key) && !LETTER_GROUPS.includes(key)) return fail('Tap a key.');
+        return { ok: true, value: key };
       }
       case 'number':
       case 'nearest':
@@ -1007,7 +1008,7 @@ export class Game {
         return { correct, points: timed(correct, q.points) };
       }
       case 'letter': {
-        const correct = answer.value === q.letter;
+        const correct = (answer.value as string).includes(q.letter ?? '');
         return { correct, points: timed(correct, q.points) };
       }
       case 'number': {
@@ -1168,6 +1169,7 @@ export class Game {
       type: q.type,
       text: q.text,
       image: q.imageUrl,
+      keypad: q.type === 'letter' ? (q.keypad ?? 'grouped') : undefined,
       audio: q.audioUrl,
       revealAudio: this.phase === 'reveal' ? q.revealAudioUrl : undefined,
       revealCaption: this.phase === 'reveal' && q.revealAudioUrl ? q.revealCaption : undefined,
