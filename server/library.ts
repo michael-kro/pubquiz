@@ -70,6 +70,7 @@ function referencedFiles(draft: QuizDraft): string[] {
     for (const q of Array.isArray(round?.questions) ? round.questions : []) {
       if (typeof q?.image === 'string' && q.image.startsWith('images/')) files.add(q.image);
       if (typeof q?.audio === 'string' && q.audio.startsWith('audio/')) files.add(q.audio);
+      if (typeof q?.revealAudio === 'string' && q.revealAudio.startsWith('audio/')) files.add(q.revealAudio);
     }
   }
   return [...files];

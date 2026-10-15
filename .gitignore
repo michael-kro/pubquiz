@@ -6,3 +6,5 @@ dist/
 .serena/
 .host-key
 *.photos.json
+clips/audio/
+venues/*/movie-quotes/audio/

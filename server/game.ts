@@ -1120,6 +1120,8 @@ export class Game {
       text: q.text,
       image: q.imageUrl,
       audio: q.audioUrl,
+      revealAudio: this.phase === 'reveal' ? q.revealAudioUrl : undefined,
+      revealCaption: this.phase === 'reveal' && q.revealAudioUrl ? q.revealCaption : undefined,
       options: q.type === 'multiple-choice' ? q.options : undefined,
       items: q.type === 'ordering' ? this.displayOrders.get(this.questionIndex)!.map((i) => q.items[i]!) : undefined,
       seconds: q.seconds,
@@ -1220,7 +1222,7 @@ export class Game {
       // Phones never play the clip; the host or TV does.
       question: (() => {
         const view = this.questionView();
-        return view ? { ...view, audio: undefined, buzz: this.teamBuzzView(teamId) } : undefined;
+        return view ? { ...view, audio: undefined, revealAudio: undefined, revealCaption: undefined, buzz: this.teamBuzzView(teamId) } : undefined;
       })(),
       wagerInfo:
         question?.wager && ['wagering', 'open', 'closed', 'reveal'].includes(this.phase)

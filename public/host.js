@@ -533,6 +533,36 @@ function followClip(before, after) {
   }
 }
 
+// The reveal clip (a film quote, say) plays once when the answer is shown, and can be replayed.
+const revealClip = new Audio();
+revealClip.preload = 'auto';
+let revealClipFor = -1;
+
+function followRevealClip(after) {
+  const q = after.question;
+  if (after.phase !== 'reveal' || !q?.revealAudio) {
+    if (!revealClip.paused) revealClip.pause();
+    if (after.phase !== 'reveal') revealClipFor = -1;
+    return;
+  }
+  if (revealClipFor !== q.index) {
+    revealClipFor = q.index;
+    revealClip.src = q.revealAudio;
+    revealClip.currentTime = 0;
+    if (soundOn) revealClip.play().catch(() => {});
+  }
+}
+
+function revealClipBar(q) {
+  if (!q.revealAudio) return null;
+  return h(
+    'div',
+    { class: 'clip-bar reveal-clip' },
+    h('span', { class: 'clip-title' }, `🎬 ${q.revealCaption || 'Bonus clip'}`),
+    TV ? null : h('button', { type: 'button', onclick: () => { revealClip.currentTime = 0; void revealClip.play().catch(() => {}); } }, '▶ Play clip'),
+  );
+}
+
 function clipBar(q) {
   if (!q.audio) return null;
   return h(
@@ -547,6 +577,7 @@ function clipBar(q) {
 
 function playSoundsFor(before, after) {
   followClip(before, after);
+  followRevealClip(after);
   if (!soundOn || !audio || after.phase === 'idle' || before?.phase === after.phase) return;
   SOUNDS[after.phase]?.();
 }
@@ -679,6 +710,7 @@ function stage(s) {
         q.paused ? h('p', { class: 'paused-banner', role: 'status' }, s.buzzers?.some((b) => b.status === 'answering') ? '⏱ The clock is held while a team answers' : '⏸ Paused') : null,
         q.type === 'music' && !q.audio ? h('p', { class: 'music-badge' }, '🎵 Music round: play the track now') : null,
         clipBar(q),
+        revealClipBar(q),
         h('h1', { class: 'question-text' }, q.text),
         q.image
           ? h('img', { class: `question-image host-image${s.review ? ' small' : ''}`, src: q.image, alt: '' })

@@ -38,6 +38,10 @@ const common = {
   image: text.optional(),
   /** A sound clip, played on the host or TV screen (never on phones): a file path or an http(s) URL. */
   audio: text.optional(),
+  /** A fun clip (for example a film quote) the host or TV plays after the answer is revealed. */
+  revealAudio: text.optional(),
+  /** What to show beside the reveal clip, such as the film and the line. */
+  revealCaption: text.max(160).optional(),
   /** Faster correct answers earn more. Defaults to on, except for music. */
   speedBonus: z.boolean().optional(),
   /** In a wager round: the category teams see while they bet, before the question appears. */
@@ -159,6 +163,8 @@ export type Question = z.infer<typeof QuestionSchema> & {
   imageUrl?: string;
   /** Where the host and TV screens load the audio clip from, once resolved. */
   audioUrl?: string;
+  /** Where the reveal clip is loaded from, once resolved. */
+  revealAudioUrl?: string;
 };
 export type QuestionType = Question['type'];
 
@@ -271,6 +277,7 @@ function quizFromData(file: QuizFileData): Quiz {
         wagerCap: round.wagerCap,
         imageUrl: q.image && isUrl(q.image) ? q.image : undefined,
         audioUrl: q.audio && isUrl(q.audio) ? q.audio : undefined,
+        revealAudioUrl: q.revealAudio && isUrl(q.revealAudio) ? q.revealAudio : undefined,
       })),
     ),
     media: new Map(),
@@ -296,6 +303,24 @@ export async function loadMedia(quiz: Quiz, baseDir: string): Promise<void> {
           }
         } catch {
           issues.push(`${label}: can't find ${q.audio} (looked in ${baseDir})`);
+        }
+      }
+    }
+    if (q.revealAudio && !isUrl(q.revealAudio)) {
+      const label = `Question ${index + 1} ("${q.text}"), reveal clip`;
+      const ext = extname(q.revealAudio).toLowerCase();
+      const contentType = AUDIO_TYPES[ext];
+      if (!contentType) issues.push(`${label}: use a ${Object.keys(AUDIO_TYPES).join(', ')} file`);
+      else {
+        try {
+          if ((await stat(resolve(baseDir, q.revealAudio))).size > MAX_AUDIO_BYTES) issues.push(`${label}: ${q.revealAudio} is over 20 MB.`);
+          else {
+            const key = `q${index + 1}-reveal${ext}`;
+            quiz.media.set(key, { data: await readFile(resolve(baseDir, q.revealAudio)), contentType });
+            q.revealAudioUrl = `/media/${key}`;
+          }
+        } catch {
+          issues.push(`${label}: can't find ${q.revealAudio} (looked in ${baseDir})`);
         }
       }
     }

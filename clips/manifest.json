@@ -1,0 +1,187 @@
+{
+ "source": "https://www.moviesoundclips.net",
+ "clips": [
+  {
+   "path": "/movies1/thegladiator/entertain.mp3",
+   "file": "thegladiator-entertain.mp3",
+   "film": "Gladiator (2000)",
+   "quote": "Are you not entertained?!",
+   "question": "Which film features the line “Are you not entertained?!”",
+   "answer": "Gladiator",
+   "wrong": [
+    "Troy",
+    "Spartacus",
+    "300"
+   ]
+  },
+  {
+   "path": "/movies1/jaws/biggerboat.mp3",
+   "file": "jaws-biggerboat.mp3",
+   "film": "Jaws (1975)",
+   "quote": "You're going to need a bigger boat.",
+   "question": "In which film does Chief Brody say “You’re going to need a bigger boat”?",
+   "answer": "Jaws",
+   "wrong": [
+    "Orca",
+    "Deep Blue Sea",
+    "The Perfect Storm"
+   ]
+  },
+  {
+   "path": "/movies1/terminator2/baby.mp3",
+   "file": "terminator2-baby.mp3",
+   "film": "Terminator 2: Judgment Day (1991)",
+   "quote": "Hasta la vista, baby.",
+   "question": "Which film gave us “Hasta la vista, baby”?",
+   "answer": "Terminator 2: Judgment Day",
+   "wrong": [
+    "Predator",
+    "Total Recall",
+    "True Lies"
+   ]
+  },
+  {
+   "path": "/movies1/starwars4/force2.mp3",
+   "file": "starwars4-force2.mp3",
+   "film": "Star Wars: A New Hope (1977)",
+   "quote": "May the Force be with you.",
+   "question": "Which character says “May the Force be with you” in the very first Star Wars film?",
+   "answer": "Han Solo",
+   "wrong": [
+    "Luke Skywalker",
+    "Darth Vader",
+    "Obi-Wan Kenobi"
+   ]
+  },
+  {
+   "path": "/movies1/princessbride/inconceivable.mp3",
+   "file": "princessbride-inconceivable.mp3",
+   "film": "The Princess Bride (1987)",
+   "quote": "Inconceivable!",
+   "question": "Vizzini’s catchphrase “Inconceivable!” comes from which film?",
+   "answer": "The Princess Bride",
+   "wrong": [
+    "The NeverEnding Story",
+    "Labyrinth",
+    "Willow"
+   ]
+  },
+  {
+   "path": "/movies1/princessbride/killed.mp3",
+   "file": "princessbride-killed.mp3",
+   "film": "The Princess Bride (1987)",
+   "quote": "Hello. My name is Inigo Montoya.",
+   "question": "Who says “My name is Inigo Montoya. You killed my father. Prepare to die”?",
+   "answer": "Inigo Montoya",
+   "wrong": [
+    "Westley",
+    "Fezzik",
+    "Count Rugen"
+   ]
+  },
+  {
+   "path": "/movies1/apocalypsenow/smell.mp3",
+   "file": "apocalypsenow-smell.mp3",
+   "film": "Apocalypse Now (1979)",
+   "quote": "I love the smell of napalm in the morning.",
+   "question": "“I love the smell of napalm in the morning” is from which Vietnam War film?",
+   "answer": "Apocalypse Now",
+   "wrong": [
+    "Platoon",
+    "Full Metal Jacket",
+    "The Deer Hunter"
+   ]
+  },
+  {
+   "path": "/movies1/aliens/gameover.mp3",
+   "file": "aliens-gameover.mp3",
+   "film": "Aliens (1986)",
+   "quote": "Game over, man! Game over!",
+   "question": "Private Hudson panics “Game over, man!” in which film?",
+   "answer": "Aliens",
+   "wrong": [
+    "Alien",
+    "Predator",
+    "The Thing"
+   ]
+  },
+  {
+   "path": "/movies1/darkknight/serious.mp3",
+   "file": "darkknight-serious.mp3",
+   "film": "The Dark Knight (2008)",
+   "quote": "Why so serious?",
+   "question": "Which villain asks “Why so serious?”",
+   "answer": "The Joker",
+   "wrong": [
+    "The Riddler",
+    "Two-Face",
+    "The Penguin"
+   ]
+  },
+  {
+   "path": "/movies1/anchorman/classy.mp3",
+   "file": "anchorman-classy.mp3",
+   "film": "Anchorman (2004)",
+   "quote": "You stay classy, San Diego.",
+   "question": "Which news anchor signs off with “You stay classy, San Diego”?",
+   "answer": "Ron Burgundy",
+   "wrong": [
+    "Brick Tamland",
+    "Veronica Corningstone",
+    "Champ Kind"
+   ]
+  },
+  {
+   "path": "/movies1/wizardofoz/pretty.mp3",
+   "file": "wizardofoz-pretty.mp3",
+   "film": "The Wizard of Oz (1939)",
+   "quote": "I'll get you, my pretty, and your little dog too!",
+   "question": "“I’ll get you, my pretty, and your little dog too!” is said by whom?",
+   "answer": "The Wicked Witch of the West",
+   "wrong": [
+    "Glinda",
+    "Auntie Em",
+    "The Wizard"
+   ]
+  },
+  {
+   "path": "/movies1/dirtyharry/lucky.mp3",
+   "file": "dirtyharry-lucky.mp3",
+   "film": "Dirty Harry (1971)",
+   "quote": "Do you feel lucky, punk?",
+   "question": "Which Clint Eastwood character asks “Do you feel lucky, punk?”",
+   "answer": "Dirty Harry Callahan",
+   "wrong": [
+    "The Man with No Name",
+    "William Munny",
+    "Walt Kowalski"
+   ]
+  },
+  {
+   "path": "/movies1/castaway/wilson.mp3",
+   "file": "castaway-wilson.mp3",
+   "film": "Cast Away (2000)",
+   "quote": "Wilson!",
+   "question": "In Cast Away, what is the volleyball called?",
+   "answer": "Wilson",
+   "wrong": [
+    "Spalding",
+    "Mikasa",
+    "Chuck"
+   ]
+  },
+  {
+   "path": "/movies1/terminator2/live.mp3",
+   "file": "terminator2-live.mp3",
+   "film": "Terminator 2: Judgment Day (1991)",
+   "quote": "Come with me if you want to live.",
+   "question": "“Come with me if you want to live” is a line from which franchise?",
+   "answer": "Terminator",
+   "wrong": [
+    "Robocop",
+    "Mad Max",
+    "Die Hard"
+   ]
+  }
+ ]
+}

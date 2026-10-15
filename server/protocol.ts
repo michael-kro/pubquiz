@@ -81,6 +81,9 @@ export interface QuestionView {
   image?: string;
   /** A sound clip for the host and TV screens to play (never sent to phones). */
   audio?: string;
+  /** Host and TV only, once the answer is revealed: a fun clip to play, with its caption. */
+  revealAudio?: string;
+  revealCaption?: string;
   /** In a wager round: the category teams see while betting. */
   category?: string;
   /** A wager-round question. */

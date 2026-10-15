@@ -415,6 +415,52 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
     }
   }
 
+  async function uploadRevealClip(question, file) {
+    try {
+      const result = await api('POST', `/quizzes/${id}/audio?name=${encodeURIComponent(file.name)}`, file);
+      question.revealAudio = result.path;
+      changed({ structure: true });
+    } catch (error) {
+      const status = container.querySelector('[data-problem="revealAudio"]');
+      if (status) status.textContent = error.message;
+    }
+  }
+
+  /** A fun clip (such as a film quote) that plays on the host or TV after the answer is shown. */
+  function revealClipField(q) {
+    return field(
+      'Reveal clip (optional)',
+      h(
+        'div',
+        { class: 'audio-field' },
+        q.revealAudio ? h('audio', { controls: true, preload: 'none', src: audioUrl(q.revealAudio), 'aria-label': 'Preview of the reveal clip' }) : null,
+        h(
+          'div',
+          { class: 'image-actions' },
+          h('input', {
+            type: 'file',
+            accept: 'audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/wav,.mp3,.m4a,.aac,.ogg,.opus,.wav',
+            'aria-label': 'Upload a reveal clip',
+            onchange: (e) => e.target.files[0] && uploadRevealClip(q, e.target.files[0]),
+          }),
+          textInput(q.revealCaption ?? '', (v) => {
+            q.revealCaption = v.trim() || undefined;
+            changed();
+          }, { placeholder: 'Caption, e.g. Gladiator (2000)', 'aria-label': 'Reveal clip caption' }),
+          q.revealAudio
+            ? h('button', { type: 'button', class: 'link-button', onclick: () => {
+                delete q.revealAudio;
+                delete q.revealCaption;
+                changed({ structure: true });
+              } }, 'Remove clip')
+            : null,
+        ),
+      ),
+      'revealAudio',
+      'Plays on the host or TV after the answer is revealed. Great for a film quote.',
+    );
+  }
+
   function audioField(q) {
     return field(
       'Audio clip (optional)',
@@ -649,6 +695,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
       typeFields(q),
       imageField(q),
       audioField(q),
+      revealClipField(q),
       find(q.key)?.round.wager
         ? field('Category (teams see this while they bet)', textInput(q.category, (v) => {
             q.category = v.trim() ? v : undefined;
