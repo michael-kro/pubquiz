@@ -259,7 +259,7 @@ function render() {
     return;
   }
   if (state.phase === 'idle') {
-    app.replaceChildren(libraryView(state), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '');
+    keepFocus(() => app.replaceChildren(libraryView(state), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : ''));
     return;
   }
   keepFocus(() => app.replaceChildren(
@@ -368,11 +368,59 @@ async function importQuiz(file) {
   }
 }
 
+const VIEW_STORAGE = 'pubquiz.libraryView';
+let libraryMode = (() => {
+  try {
+    return localStorage.getItem(VIEW_STORAGE) === 'list' ? 'list' : 'tiles';
+  } catch {
+    return 'tiles';
+  }
+})();
+let libraryFilter = '';
+
+function setLibraryMode(mode) {
+  libraryMode = mode;
+  try {
+    localStorage.setItem(VIEW_STORAGE, mode);
+  } catch {
+    // The choice just isn't remembered.
+  }
+  render();
+}
+
+/** Search box and the tiles/list switch above the quizzes. */
+function libraryTools(total) {
+  return h(
+    'div',
+    { class: 'library-tools' },
+    h('input', {
+      type: 'search',
+      class: 'library-search',
+      'data-keep': 'library-search',
+      placeholder: `Search ${total} ${total === 1 ? 'quiz' : 'quizzes'}`,
+      'aria-label': 'Search quizzes',
+      value: libraryFilter,
+      oninput: (e) => {
+        libraryFilter = e.target.value;
+        render();
+      },
+    }),
+    h(
+      'div',
+      { class: 'view-switch', role: 'group', 'aria-label': 'How to show the quizzes' },
+      h('button', { type: 'button', class: libraryMode === 'tiles' ? 'active' : '', 'aria-pressed': String(libraryMode === 'tiles'), title: 'Tiles', onclick: () => setLibraryMode('tiles') }, '▦ Tiles'),
+      h('button', { type: 'button', class: libraryMode === 'list' ? 'active' : '', 'aria-pressed': String(libraryMode === 'list'), title: 'List', onclick: () => setLibraryMode('list') }, '☰ List'),
+    ),
+  );
+}
+
 function libraryView(s) {
   if (!s.library) {
     return h('section', { class: 'screen center' }, h('h1', {}, 'No quiz running'), h('p', {}, 'Restart the program to run a quiz.'));
   }
   const items = library.items;
+  const needle = libraryFilter.trim().toLowerCase();
+  const shown = items?.filter((q) => !needle || q.title.toLowerCase().includes(needle)) ?? [];
   const act = (fn) => async () => {
     try {
       await fn();
@@ -437,10 +485,13 @@ function libraryView(s) {
               'Add a sample quiz to try',
             ),
           )
-        : h(
+        : [
+            libraryTools(items.length),
+            shown.length === 0 ? h('p', { class: 'muted' }, `No quizzes match “${libraryFilter.trim()}”.`) : null,
+            h(
             'ul',
-            { class: 'quiz-cards' },
-            items.map((q) =>
+            { class: `quiz-cards${libraryMode === 'list' ? ' as-list' : ''}` },
+            shown.map((q) =>
               h(
                 'li',
                 { class: 'quiz-card' },
@@ -475,6 +526,7 @@ function libraryView(s) {
               ),
             ),
           ),
+          ],
   );
 }
 
