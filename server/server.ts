@@ -525,6 +525,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (hostOnly()) game?.setLockOnStart(msg.on);
         return;
 
+      case 'set-prizes':
+        if (hostOnly()) game?.setPrizes(msg.prizes);
+        return;
+
       case 'lock-joining':
         if (hostOnly()) game?.setJoiningLocked(msg.locked);
         return;

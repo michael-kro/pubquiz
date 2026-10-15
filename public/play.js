@@ -1,4 +1,4 @@
-import { LETTER_GROUPS, confetti, flashSpeedster, seconds, avatar, brandBlock, breakPanel, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setBreak, setDeadline, tick } from './common.js';
+import { LETTER_GROUPS, confetti, flashSpeedster, prizeList, seconds, avatar, brandBlock, breakPanel, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setBreak, setDeadline, tick } from './common.js';
 
 const TOKEN_KEY = 'pubquiz.team-token';
 const app = document.getElementById('app');
@@ -413,6 +413,7 @@ function phaseView(s) {
         { class: 'screen center' },
         brandBlock(),
         h('h1', {}, "You're in!"),
+        prizeList(s.prizes),
         h('p', {}, 'Waiting for the quiz master to start.'),
         h('p', { class: 'muted' }, `${s.teamCount} ${s.teamCount === 1 ? 'team has' : 'teams have'} joined`),
         photoPrompt(s),

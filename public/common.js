@@ -342,3 +342,12 @@ export function flashSpeedster(state, big = false) {
   setTimeout(() => overlay.classList.add('out'), 3200);
   setTimeout(() => overlay.remove(), 3700);
 }
+
+export const MEDALS = ['🥇', '🥈', '🥉'];
+
+/** The prizes for 1st, 2nd and 3rd as a short list; nothing at all if none were set. */
+export function prizeList(prizes, big = false) {
+  const rows = (prizes ?? []).map((text, i) => (text ? h('li', {}, h('span', { class: 'prize-medal' }, MEDALS[i]), h('span', { class: 'prize-text' }, text)) : null)).filter(Boolean);
+  if (rows.length === 0) return null;
+  return h('div', { class: `prizes${big ? ' big' : ''}` }, h('p', { class: 'prizes-title' }, 'Prizes'), h('ul', {}, rows));
+}

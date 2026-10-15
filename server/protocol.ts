@@ -33,6 +33,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('read-out'), on: z.boolean() }),
   z.object({ t: z.literal('rotate-key') }),
   z.object({ t: z.literal('lock-joining'), locked: z.boolean() }),
+  z.object({ t: z.literal('set-prizes'), prizes: z.array(z.string().max(120)).max(3) }),
   z.object({ t: z.literal('lock-on-start'), on: z.boolean() }),
   z.object({ t: z.literal('start-on-last'), on: z.boolean() }),
   z.object({ t: z.literal('close-early'), on: z.boolean() }),
@@ -128,6 +129,8 @@ export interface TeamView {
   onBreak?: BreakView;
   /** On the reveal: the team with the quickest right answer, to flash up. */
   speedster?: { name: string; photo?: string; ms: number };
+  /** Prizes for 1st, 2nd and 3rd ('' where there is none), when the host has set any. */
+  prizes?: string[];
   phase: Phase;
   quizTitle: string;
   teamId: string;
@@ -170,6 +173,8 @@ export interface HostView {
   onBreak?: BreakView;
   /** On the reveal: the team with the quickest right answer, to flash up. */
   speedster?: { name: string; photo?: string; ms: number };
+  /** Prizes for 1st, 2nd and 3rd ('' where there is none), when the host has set any. */
+  prizes?: string[];
   phase: Phase;
   quizTitle: string;
   questionCount: number;

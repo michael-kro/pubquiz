@@ -264,3 +264,20 @@ test('pressing Start quiz locks the door when the host has asked for that', () =
   assert.ok(open.join('Late').ok, 'unticked: late teams can still join');
   open.dispose();
 });
+
+test('optional prizes for 1st to 3rd: set by the host, seen by everyone, saved with the game', () => {
+  const game = new Game(parseQuiz(QUIZ.replace('readOut: true', 'readOut: true\nprizes: [A round of drinks]')));
+  const t = game.join('A');
+  assert.ok(t.ok);
+  assert.deepEqual(game.teamView(t.value.id)!.prizes, ['A round of drinks', '', ''], 'from the quiz file');
+  game.setPrizes(['Trophy', '  £20 bar tab ', '', 'ignored fourth']);
+  assert.deepEqual(game.hostView().prizes, ['Trophy', '£20 bar tab', '']);
+  assert.deepEqual(game.teamView(t.value.id)!.prizes, ['Trophy', '£20 bar tab', '']);
+  const restored = Game.restore(game.quiz, JSON.parse(JSON.stringify(game.snapshot())));
+  assert.deepEqual(restored.hostView().prizes, ['Trophy', '£20 bar tab', '']);
+  restored.dispose();
+  game.setPrizes(['', '', '']);
+  assert.equal(game.hostView().prizes, undefined, 'none set: nothing to show');
+  game.dispose();
+  assert.throws(() => parseQuiz(QUIZ.replace('readOut: true', 'readOut: true\nprizes: [a, b, c, d]')), /prizes/);
+});

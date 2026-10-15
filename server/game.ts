@@ -83,6 +83,7 @@ export interface GameSnapshot {
   startOnLastAnswer?: boolean;
   joiningLocked?: boolean;
   lockOnStart?: boolean;
+  prizes?: string[];
   closeEarly?: boolean;
   readShown?: number;
   buzz?: [number, BuzzState][];
@@ -179,6 +180,8 @@ export class Game {
   startOnLastAnswer = true;
   /** The host has closed the door: no new teams can join (teams already in can still rejoin). */
   joiningLocked = false;
+  /** Optional prizes for 1st, 2nd and 3rd ('' when not set). */
+  prizes: string[] = ['', '', ''];
   /** Pressing Start quiz locks joining (the host can untick this in the lobby). */
   lockOnStart = false;
   /** teamId → photo version, for teams that have uploaded one. The pictures themselves are in the PhotoStore. */
@@ -208,6 +211,7 @@ export class Game {
     this.startOnLastAnswer = quiz.startOnLastAnswer ?? true;
     this.closeEarly = quiz.closeEarly ?? options.closeEarly ?? true;
     this.lockOnStart = options.lockOnStart ?? false;
+    this.prizes = [0, 1, 2].map((i) => quiz.prizes?.[i] ?? '');
     this.tvShowTeams = options.tvShowTeams ?? true;
   }
 
@@ -337,6 +341,16 @@ export class Game {
   setCloseEarly(on: boolean): void {
     this.closeEarly = on;
     this.changed();
+  }
+
+  /** Sets the prizes for 1st, 2nd and 3rd. Blank means none. */
+  setPrizes(list: string[]): void {
+    this.prizes = [0, 1, 2].map((i) => (list[i] ?? '').replace(/[\p{Cc}\p{Cf}]/gu, '').trim().slice(0, 60));
+    this.changed();
+  }
+
+  private prizesView(): string[] | undefined {
+    return this.prizes.some(Boolean) ? this.prizes : undefined;
   }
 
   setLockOnStart(on: boolean): void {
@@ -841,6 +855,7 @@ export class Game {
       startOnLastAnswer: this.startOnLastAnswer,
       joiningLocked: this.joiningLocked,
       lockOnStart: this.lockOnStart,
+      prizes: this.prizes,
       closeEarly: this.closeEarly,
       readShown: this.readShown,
       buzz: [...this.buzzStates].map(([index, state]) => [index, structuredClone(state)] as [number, BuzzState]),
@@ -871,6 +886,7 @@ export class Game {
     game.readShown = snapshot.readShown ?? 0;
     game.joiningLocked = snapshot.joiningLocked ?? false;
     game.lockOnStart = snapshot.lockOnStart ?? game.lockOnStart;
+    game.prizes = snapshot.prizes ?? game.prizes;
     game.startOnLastAnswer = snapshot.startOnLastAnswer ?? game.startOnLastAnswer;
     game.closeEarly = snapshot.closeEarly ?? game.closeEarly;
     for (const [index, state] of snapshot.buzz ?? []) game.buzzStates.set(index, structuredClone(state));
@@ -1162,8 +1178,11 @@ export class Game {
     const ranks = this.rank(teams, (t) => scores.get(t)!, (t) => times.get(t)!);
     // From the reveal on, also say how each team moved and what the question was worth to it.
     const showMovement = this.isRevealed(this.questionIndex) && this.questionIndex >= 0;
-    const before = new Map(teams.map((t) => [t, this.scoreOf(t, this.questionIndex)]));
-    const timesBefore = new Map(teams.map((t) => [t, this.timeOf(t, this.questionIndex)]));
+    // A round's leaderboard compares with the end of the round before; any other board, with the question before.
+    const roundBoard = this.phase === 'leaderboard' && this.questionIndex >= 0 && this.quiz.leaderboard === 'round' && this.isLastInRound(this.questionIndex);
+    const baseIndex = roundBoard ? this.quiz.questions.findIndex((x) => x.roundIndex === this.quiz.questions[this.questionIndex]!.roundIndex) : this.questionIndex;
+    const before = new Map(teams.map((t) => [t, this.scoreOf(t, baseIndex)]));
+    const timesBefore = new Map(teams.map((t) => [t, this.timeOf(t, baseIndex)]));
     const previousRanks = showMovement ? this.rank(teams, (t) => before.get(t)!, (t) => timesBefore.get(t)!) : undefined;
     return teams
       .map((t) => ({
@@ -1174,7 +1193,7 @@ export class Game {
         photo: this.photoUrl(t.id),
         gained: showMovement ? scores.get(t)! - before.get(t)! : undefined,
         // Positive: moved up. Only meaningful once there was a previous question.
-        moved: previousRanks && this.questionIndex > 0 ? previousRanks.get(t)! - ranks.get(t)! : undefined,
+        moved: previousRanks && baseIndex > 0 ? previousRanks.get(t)! - ranks.get(t)! : undefined,
       }))
       .sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
   }
@@ -1338,6 +1357,7 @@ export class Game {
       teamName: team.name,
       onBreak: this.breakView(),
       speedster: this.speedster(),
+      prizes: this.prizesView(),
       teamCode: team.code,
       photo: this.photoUrl(team.id),
       photosEnabled: this.photosEnabled,
@@ -1441,6 +1461,7 @@ export class Game {
       questionCount: this.quiz.questions.length,
       onBreak: this.breakView(),
       speedster: this.speedster(),
+      prizes: this.prizesView(),
       maxTeams: MAX_TEAMS,
       photosEnabled: this.photosEnabled,
       tvShowTeams: this.tvShowTeams,

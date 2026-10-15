@@ -1,4 +1,4 @@
-import { avatar, brandBlock, brandLogo, breakPanel, connectSocket, flashSpeedster, seconds, h, LETTERS, loadBranding, ordinal, preload, setBreak, setDeadline, tick } from './common.js';
+import { avatar, brandBlock, brandLogo, breakPanel, connectSocket, flashSpeedster, MEDALS, prizeList, seconds, h, LETTERS, loadBranding, ordinal, preload, setBreak, setDeadline, tick } from './common.js';
 import { mountBranding } from './branding.js';
 import { mountEditor } from './editor.js';
 
@@ -262,7 +262,7 @@ function render() {
     app.replaceChildren(libraryView(state), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '');
     return;
   }
-  app.replaceChildren(
+  keepFocus(() => app.replaceChildren(
     h(
       'div',
       { class: `host-layout${TV && state.teamsHidden ? ' no-side' : ''}` },
@@ -272,7 +272,7 @@ function render() {
     ),
     codesOverlay(state),
     notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '',
-  );
+  ));
   tick();
   refreshClipBar();
 }
@@ -720,6 +720,7 @@ function stage(s) {
           h('p', { class: 'big' }, s.joinUrl.replace(/^https?:\/\//, '')),
           h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
           h('p', { class: 'muted' }, `One phone per team. ${s.teams.length} of ${s.maxTeams} teams joined.`),
+          TV ? prizeList(s.prizes, true) : prizesEditor(s),
           TV
             ? null
             : h(
@@ -801,6 +802,7 @@ function stage(s) {
           final ? 'Final results' : roundBreak ? `End of round ${q.roundNumber}: ${q.round}` : 'Leaderboard',
         ),
         final ? podium(s.standings) : null,
+        final ? prizeList(s.prizes, TV) : null,
         h(
           'ol',
           { class: 'standings two-col' },
@@ -1215,6 +1217,59 @@ function reviewPanel(s, q) {
       ),
     ),
   );
+}
+
+/** The optional prizes for 1st to 3rd, typed on the start screen and shown to everyone as they type. */
+let prizeTimer;
+function prizesEditor(s) {
+  const current = [0, 1, 2].map((i) => s.prizes?.[i] ?? '');
+  const send = () => {
+    const values = [...document.querySelectorAll('.prize-input')].map((input) => input.value);
+    socket.send({ t: 'set-prizes', prizes: values });
+  };
+  return h(
+    'fieldset',
+    { class: 'prizes-editor' },
+    h('legend', {}, 'Prizes (optional)'),
+    [0, 1, 2].map((i) =>
+      h(
+        'label',
+        {},
+        h('span', { class: 'prize-medal' }, MEDALS[i]),
+        h('input', {
+          class: 'prize-input',
+          'data-keep': `prize-${i}`,
+          maxlength: '60',
+          placeholder: ['1st prize', '2nd prize', '3rd prize'][i],
+          'aria-label': ['First', 'Second', 'Third'][i] + ' prize',
+          value: current[i],
+          oninput: () => {
+            clearTimeout(prizeTimer);
+            prizeTimer = setTimeout(send, 400);
+          },
+          onblur: () => {
+            clearTimeout(prizeTimer);
+            send();
+          },
+        }),
+      ),
+    ),
+  );
+}
+
+/** Redraws the page without dropping what the host is in the middle of typing. */
+function keepFocus(draw) {
+  const el = document.activeElement;
+  const id = el?.dataset?.keep;
+  const value = el?.value;
+  const at = el?.selectionStart;
+  draw();
+  if (!id) return;
+  const next = document.querySelector(`[data-keep="${id}"]`);
+  if (!next) return;
+  next.value = value;
+  next.focus();
+  if (at != null) next.setSelectionRange(at, at);
 }
 
 let codesOpen = false;
