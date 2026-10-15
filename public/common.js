@@ -351,3 +351,83 @@ export function prizeList(prizes, big = false) {
   if (rows.length === 0) return null;
   return h('div', { class: `prizes${big ? ' big' : ''}` }, h('p', { class: 'prizes-title' }, 'Prizes'), h('ul', {}, rows));
 }
+
+/** "+950" and an arrow for how far a team moved. */
+export function movement(row) {
+  const parts = [];
+  if (row.gained) parts.push(h('span', { class: 'gained' }, `+${row.gained}`));
+  if (row.moved) {
+    parts.push(
+      h(
+        'span',
+        { class: row.moved > 0 ? 'up' : 'down', 'aria-label': `${row.moved > 0 ? 'up' : 'down'} ${Math.abs(row.moved)}` },
+        `${row.moved > 0 ? '▲' : '▼'}${Math.abs(row.moved)}`,
+      ),
+    );
+  }
+  return h('span', { class: 'movement' }, parts);
+}
+
+// A leaderboard that rolls in from the bottom: last place first, climbing to the top, each score counting up.
+const ROLL_STEP_MS = 140;
+const ROLL_COUNT_MS = 900;
+let rollKey = '';
+let rollStart = 0;
+let rollFrame = 0;
+let rollDone;
+
+function finishRoll() {
+  cancelAnimationFrame(rollFrame);
+  for (const el of document.querySelectorAll('.standings .score[data-to]')) el.textContent = el.dataset.to;
+  document.querySelector('.standings.rolling')?.classList.remove('rolling');
+}
+
+/** Counts each score up from what it was to what it is, as its row arrives. */
+function rollTick() {
+  const scores = document.querySelectorAll('.standings.rolling .score[data-from]');
+  let running = false;
+  const now = performance.now() - rollStart;
+  for (const el of scores) {
+    if (el.dataset.from === '') continue;
+    const from = Number(el.dataset.from);
+    const to = Number(el.dataset.to);
+    const t = Math.min(1, Math.max(0, (now - Number(el.dataset.start)) / ROLL_COUNT_MS));
+    el.textContent = String(Math.round(from + (to - from) * (1 - (1 - t) ** 3)));
+    if (t < 1) running = true;
+  }
+  if (running || now < scores.length * ROLL_STEP_MS + ROLL_COUNT_MS) rollFrame = requestAnimationFrame(rollTick);
+}
+
+/**
+ * The standings list. It rolls in once each time `key` changes (a redraw part way through carries on where it was),
+ * and is skipped for people who prefer less motion. `cells(row, scoreElement)` builds what goes in each row.
+ */
+export function rollStandings(rows, { key, className = '', columns = () => 1, rowClass = () => '', cells }) {
+  if (key !== rollKey) {
+    rollKey = key;
+    rollStart = performance.now();
+  }
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const elapsed = performance.now() - rollStart;
+  const total = rows.length * ROLL_STEP_MS + ROLL_COUNT_MS + 600;
+  const animate = !reduced && elapsed < total;
+  const cols = columns(rows.length);
+  const list = h(
+    'ol',
+    { class: `standings ${className}${animate ? ' rolling' : ''}`, style: `--rows: ${Math.ceil(rows.length / cols)}; --cols: ${cols}` },
+    rows.map((row, i) => {
+      const order = rows.length - 1 - i; // the last row appears first
+      const from = row.gained ? row.score - row.gained : row.score;
+      const score = h('span', { class: 'score', 'data-from': animate ? String(from) : '', 'data-to': String(row.score), 'data-start': String(order * ROLL_STEP_MS) }, animate ? String(from) : String(row.score));
+      return h('li', { class: rowClass(row), style: animate ? `animation-delay: ${order * ROLL_STEP_MS - elapsed}ms` : '' }, cells(row, score));
+    }),
+  );
+  if (animate) {
+    cancelAnimationFrame(rollFrame);
+    rollFrame = requestAnimationFrame(rollTick);
+    // Whatever the frames did, the board always ends on the true scores.
+    clearTimeout(rollDone);
+    rollDone = setTimeout(finishRoll, total - elapsed + 50);
+  }
+  return list;
+}

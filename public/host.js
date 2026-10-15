@@ -1,4 +1,4 @@
-import { avatar, brandBlock, brandLogo, breakPanel, connectSocket, flashSpeedster, MEDALS, prizeList, seconds, h, LETTERS, loadBranding, ordinal, preload, setBreak, setDeadline, tick } from './common.js';
+import { avatar, brandBlock, brandLogo, breakPanel, connectSocket, flashSpeedster, MEDALS, movement, prizeList, rollStandings, seconds, h, LETTERS, loadBranding, ordinal, preload, setBreak, setDeadline, tick } from './common.js';
 import { mountBranding } from './branding.js';
 import { mountEditor } from './editor.js';
 
@@ -77,7 +77,7 @@ function connect() {
         state = message.view;
         setDeadline(state.question?.remainingMs, state.question?.paused);
         setBreak(state.onBreak);
-        if (TV && !state.teamsHidden) flashSpeedster(state, true);
+        if (TV) flashSpeedster(state, true);
         preload(state.preloadImage);
         if (!TV) rememberKey();
       } else if (message.t === 'host-key') {
@@ -803,7 +803,13 @@ function stage(s) {
         ),
         final ? podium(s.standings) : null,
         final ? prizeList(s.prizes, TV) : null,
-        rollingBoard(s, final),
+        rollStandings(s.standings.slice(final ? podiumSize(s.standings) : 0), {
+          key: `${s.quizTitle}:${s.phase}:${s.question?.index ?? ''}`,
+          className: 'two-col',
+          columns: (n) => (n > 8 ? 2 : 1),
+          rowClass: (row) => (row.rank <= 3 && !final ? 'top-three' : ''),
+          cells: (row, score) => [h('span', { class: 'rank' }, ordinal(row.rank)), avatar(row.name, row.photo, 36), h('span', { class: 'name' }, row.name), movement(row), score],
+        }),
         final && !TV
           ? h(
               'p',
@@ -937,7 +943,7 @@ function fastestBlock(s) {
     );
   }
   // No speed bonus on this quiz: still name the quickest right answer.
-  if (!s.speedster || (TV && s.teamsHidden)) return null;
+  if (!s.speedster) return null;
   return h(
     'ul',
     { class: 'fastest' },
@@ -946,20 +952,6 @@ function fastestBlock(s) {
 }
 
 /** "+950" and an arrow for how far a team moved. */
-function movement(row) {
-  const parts = [];
-  if (row.gained) parts.push(h('span', { class: 'gained' }, `+${row.gained}`));
-  if (row.moved) {
-    parts.push(
-      h(
-        'span',
-        { class: row.moved > 0 ? 'up' : 'down', 'aria-label': `${row.moved > 0 ? 'up' : 'down'} ${Math.abs(row.moved)}` },
-        `${row.moved > 0 ? '▲' : '▼'}${Math.abs(row.moved)}`,
-      ),
-    );
-  }
-  return h('span', { class: 'movement' }, parts);
-}
 
 /** Teams on the podium: everyone ranked 1st to 3rd, so ties are never left off. */
 function podiumSize(standings) {
@@ -1203,80 +1195,6 @@ function reviewPanel(s, q) {
       ),
     ),
   );
-}
-
-// The leaderboard rolls in from the bottom: last place first, climbing to the top, with each score counting up.
-const ROLL_STEP_MS = 140;
-const ROLL_COUNT_MS = 900;
-let rollKey = '';
-let rollStart = 0;
-let rollFrame = 0;
-let rollDone;
-
-function finishRoll() {
-  cancelAnimationFrame(rollFrame);
-  for (const el of document.querySelectorAll('.standings .score[data-to]')) el.textContent = el.dataset.to;
-  document.querySelector('.standings.rolling')?.classList.remove('rolling');
-}
-
-function rollingBoard(s, final) {
-  const rows = s.standings.slice(final ? podiumSize(s.standings) : 0);
-  const key = `${s.quizTitle}:${s.phase}:${s.question?.index ?? ''}`;
-  if (key !== rollKey) {
-    rollKey = key;
-    rollStart = performance.now();
-  }
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const elapsed = performance.now() - rollStart;
-  const total = rows.length * ROLL_STEP_MS + ROLL_COUNT_MS + 600;
-  const animate = !reduced && elapsed < total;
-  // Up to eight teams fit in one column; more are split over two, the top places on the left.
-  const columns = rows.length > 8 ? 2 : 1;
-  const perColumn = Math.ceil(rows.length / columns);
-  const list = h(
-    'ol',
-    { class: `standings two-col${animate ? ' rolling' : ''}`, style: `--rows: ${perColumn}; --cols: ${columns}` },
-    rows.map((row, i) => {
-      // The last row appears first; the delay is measured from the start of the roll, so a redraw mid-roll carries on seamlessly.
-      const order = rows.length - 1 - i;
-      const delay = order * ROLL_STEP_MS - elapsed;
-      const from = row.gained ? row.score - row.gained : row.score;
-      return h(
-        'li',
-        { class: `${row.rank <= 3 && !final ? 'top-three' : ''}`, style: animate ? `animation-delay: ${delay}ms` : '' },
-        h('span', { class: 'rank' }, ordinal(row.rank)),
-        avatar(row.name, row.photo, 36),
-        h('span', { class: 'name' }, row.name),
-        movement(row),
-        h('span', { class: 'score', 'data-from': animate ? String(from) : '', 'data-to': String(row.score), 'data-start': String(order * ROLL_STEP_MS) }, animate ? String(from) : String(row.score)),
-      );
-    }),
-  );
-  if (animate) {
-    cancelAnimationFrame(rollFrame);
-    rollFrame = requestAnimationFrame(rollTick);
-    // Whatever the frames did, the board always ends on the true scores.
-    clearTimeout(rollDone);
-    rollDone = setTimeout(finishRoll, total - elapsed + 50);
-  }
-  return list;
-}
-
-/** Counts each score up from what it was to what it is, as its row arrives. */
-function rollTick() {
-  const scores = document.querySelectorAll('.standings.rolling .score[data-from]');
-  let running = false;
-  const now = performance.now() - rollStart;
-  for (const el of scores) {
-    if (el.dataset.from === '') continue;
-    const from = Number(el.dataset.from);
-    const to = Number(el.dataset.to);
-    const t = Math.min(1, Math.max(0, (now - Number(el.dataset.start)) / ROLL_COUNT_MS));
-    const eased = 1 - (1 - t) ** 3;
-    el.textContent = String(Math.round(from + (to - from) * eased));
-    if (t < 1) running = true;
-  }
-  if (running || now < scores.length * ROLL_STEP_MS + ROLL_COUNT_MS) rollFrame = requestAnimationFrame(rollTick);
 }
 
 /** The optional prizes for 1st to 3rd, typed on the start screen and shown to everyone as they type. */

@@ -1059,7 +1059,7 @@ export class Game {
   /** The team that gave the quickest right answer on the question just revealed, to flash up on every screen. */
   speedster(): { name: string; photo?: string; ms: number } | undefined {
     const index = this.questionIndex;
-    if (this.phase !== 'reveal' || index < 0 || this.teams.size < 2 || this.skipped.has(index)) return undefined;
+    if (this.phase !== 'reveal' || index < 0 || this.teams.size < 1 || this.skipped.has(index)) return undefined;
     const q = this.effectiveQuestion(index);
     if (!q || q.type === 'buzzer' || q.type === 'nearest') return undefined;
     const id = this.fastestOrder(index)[0];

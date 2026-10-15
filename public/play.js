@@ -1,4 +1,4 @@
-import { LETTER_GROUPS, confetti, flashSpeedster, prizeList, seconds, avatar, brandBlock, breakPanel, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setBreak, setDeadline, tick } from './common.js';
+import { LETTER_GROUPS, confetti, flashSpeedster, movement, prizeList, rollStandings, seconds, avatar, brandBlock, breakPanel, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setBreak, setDeadline, tick } from './common.js';
 
 const TOKEN_KEY = 'pubquiz.team-token';
 const app = document.getElementById('app');
@@ -480,7 +480,7 @@ function phaseView(s) {
         final ? brandBlock() : null,
         h('h1', { class: 'center' }, final ? 'Final results' : 'Leaderboard'),
         h('p', { class: 'center big' }, `${final ? 'You finished' : "You're"} ${ordinal(s.rank)} of ${s.teamCount}`),
-        standingsList(s.standings, s.teamId, final ? Infinity : 10),
+        standingsList(s.standings, s.teamId, final ? Infinity : 10, `${s.quizTitle}:${s.phase}:${s.question?.index ?? ''}`),
       );
     }
   }
@@ -776,22 +776,13 @@ function answerInput(s, q, locked) {
   return null;
 }
 
-function standingsList(rows, myTeamId, limit) {
+function standingsList(rows, myTeamId, limit, key) {
   const shown = rows.filter((row, i) => i < limit || row.teamId === myTeamId);
-  return h(
-    'ol',
-    { class: 'standings' },
-    shown.map((row) =>
-      h(
-        'li',
-        { class: row.teamId === myTeamId ? 'me' : '' },
-        h('span', { class: 'rank' }, row.rank),
-        avatar(row.name, row.photo, 30),
-        h('span', { class: 'name' }, row.name),
-        h('span', { class: 'score' }, row.score),
-      ),
-    ),
-  );
+  return rollStandings(shown, {
+    key,
+    rowClass: (row) => (row.teamId === myTeamId ? 'me' : ''),
+    cells: (row, score) => [h('span', { class: 'rank' }, row.rank), avatar(row.name, row.photo, 30), h('span', { class: 'name' }, row.name), movement(row), score],
+  });
 }
 
 // Colours and logo first, so the page never flashes the default look.
