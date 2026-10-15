@@ -743,3 +743,15 @@ input {
 .chip.hard { background: #ef5b5b; color: #fff; }
 .bank-foot { display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; background: var(--surface); }
 .bank-modal button:not(.primary):not(.icon) { background: var(--surface-2); color: var(--text); padding: 0.5em 1em; font-weight: 600; }
+
+/* Number keypad */
+.numpad { display: grid; gap: 10px; margin-top: 8px; }
+.num-display { display: block; min-height: 84px; display: grid; align-items: center; justify-content: center; border-radius: 12px; background: var(--surface-2); font-size: 2.6rem; font-weight: 800; font-variant-numeric: tabular-nums; overflow: hidden; padding: 0 12px; }
+.num-display.empty::before { content: 'Type a number'; font-size: 1.1rem; font-weight: 500; opacity: 0.55; }
+.num-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.num-key { min-height: 66px; font-size: 1.8rem; font-weight: 800; }
+.num-key.alt { background: var(--surface-2); color: var(--text); font-size: 1.3rem; }
+.num-key.enter { background: var(--accent); color: var(--accent-text); }
+.num-extra { display: flex; gap: 10px; justify-content: center; }
+.num-key.small { min-height: 48px; min-width: 88px; font-size: 1.5rem; }
+.num-key:active { transform: scale(0.97); }

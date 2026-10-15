@@ -669,27 +669,40 @@ function answerInput(s, q, locked) {
     case 'nearest': {
       if (locked) return null;
       const valid = (text) => /^-?\d+([.,]\d+)?$/.test(text.trim());
-      const submit = (event) => {
-        event.preventDefault();
-        if (valid(draftText)) sendAnswer(Number(draftText.trim().replace(',', '.')));
-        else showNotice('Type a number: digits only, with a minus sign or decimal point if you need one.');
+      const display = h('output', { class: 'num-display', 'aria-label': 'Your answer', 'aria-live': 'polite' }, draftText);
+      const show = () => {
+        display.textContent = draftText;
+        display.classList.toggle('empty', !draftText);
       };
+      const press = (key) => {
+        if (key === 'C') draftText = '';
+        else if (draftText.length < 20) {
+          if (key === '-' && draftText !== '') return;
+          if (key === '.' && (draftText.includes('.') || draftText === '' || draftText === '-')) return;
+          draftText += key;
+        }
+        show();
+      };
+      const enter = () => {
+        if (valid(draftText)) sendAnswer(Number(draftText.trim().replace(',', '.')));
+        else showNotice('Enter a number first.');
+      };
+      const key = (label, extra = '', onclick = () => press(label)) => h('button', { type: 'button', class: `key num-key${extra}`, onclick }, label);
+      show();
       return h(
-        'form',
-        { class: 'text-answer', onsubmit: submit },
-        q.type === 'nearest' ? h('p', { class: 'muted small center' }, 'The closest guess wins. Speed doesn\'t matter.') : null,
-        h('input', {
-          name: 'answer',
-          'aria-label': 'Your answer, a number',
-          placeholder: 'Type a number',
-          value: draftText,
-          inputmode: 'decimal',
-          maxlength: '20',
-          autocomplete: 'off',
-          enterkeyhint: 'send',
-          oninput: (e) => (draftText = e.target.value),
-        }),
-        h('button', { class: 'primary', type: 'submit' }, 'Submit answer'),
+        'div',
+        { class: 'numpad' },
+        q.type === 'nearest' ? h('p', { class: 'muted small center' }, "The closest guess wins. Speed doesn't matter.") : null,
+        display,
+        h(
+          'div',
+          { class: 'num-grid' },
+          ['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => key(d)),
+          key('C', ' alt'),
+          key('0'),
+          key('enter', ' alt enter', enter),
+        ),
+        h('div', { class: 'num-extra' }, key('−', ' small', () => press('-')), key('.', ' small')),
       );
     }
 
