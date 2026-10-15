@@ -18,7 +18,7 @@ rounds:
 let server: QuizServer;
 
 before(async () => {
-  server = await createQuizServer({ quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  server = await createQuizServer({ closeEarly: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
 });
 
 after(async () => {

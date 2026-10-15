@@ -264,7 +264,7 @@ test('a snapshot keeps a paused clock and skipped questions', () => {
 });
 
 async function start(extra: Parameters<typeof createQuizServer>[0] = {}) {
-  return createQuizServer({ quiz: BASIC, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', ...extra });
+  return createQuizServer({ closeEarly: true, quiz: BASIC, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', ...extra });
 }
 
 test('only the host can pause, resume, extend or skip, over the socket', async () => {

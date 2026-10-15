@@ -66,7 +66,7 @@ test('a read-only branding folder (from the command line) cannot be changed', as
 const quiz = (await import('../server/quiz.ts')).parseQuiz('title: T\nrounds:\n  - name: R\n    questions:\n      - { type: letter, text: Q, answer: Abba }\n');
 
 test('pages get the branding from /branding.json and the logo from /branding/logo, with safe headers', async () => {
-  const plain = await createQuizServer({ quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const plain = await createQuizServer({ closeEarly: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   const base = (s: { port: number }) => `http://127.0.0.1:${s.port}`;
   assert.deepEqual(await (await fetch(`${base(plain)}/branding.json`)).json(), DEFAULT_BRANDING, 'no branding set up: the default look');
   assert.equal((await fetch(`${base(plain)}/branding/logo`)).status, 404);
@@ -75,7 +75,7 @@ test('pages get the branding from /branding.json and the logo from /branding/log
   const store = await fresh();
   await store.save({ name: 'The Quiz Pub', tagline: 'Your Friendly your town Bar', accent: '#f9b233', background: '#0a1f12' });
   await store.setLogo('logo.png', PNG);
-  const server = await createQuizServer({ quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', branding: store });
+  const server = await createQuizServer({ closeEarly: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', branding: store });
   const res = await fetch(`${base(server)}/branding.json`);
   const info = (await res.json()) as { name: string; logo: string; accent: string };
   assert.equal(info.name, 'The Quiz Pub');
@@ -92,7 +92,7 @@ test('pages get the branding from /branding.json and the logo from /branding/log
 test('the host edits branding through the API, and only the host can', async () => {
   const library = new Library(await mkdtemp(join(tmpdir(), 'pubquiz-lib-')));
   const store = new BrandingStore(join(library.dir, 'branding'));
-  const server = await createQuizServer({ library, branding: store, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const server = await createQuizServer({ closeEarly: true, library, branding: store, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   const api = `http://127.0.0.1:${server.port}/api/branding`;
   const asHost = { 'x-host-key': server.hostKey };
 

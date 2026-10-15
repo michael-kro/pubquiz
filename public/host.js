@@ -1182,6 +1182,14 @@ function teamsPanel(s) {
       ? null
       : h(
           'label',
+          { class: 'check photos-toggle', title: 'Off: the timer always counts down to zero, even when every team has answered' },
+          h('input', { type: 'checkbox', checked: s.closeEarly, onchange: (e) => socket.send({ t: 'close-early', on: e.target.checked }) }),
+          ' Close early when all have answered',
+        ),
+    TV
+      ? null
+      : h(
+          'label',
           { class: 'check photos-toggle', title: 'Let teams add a photo that shows on the screens' },
           h('input', { type: 'checkbox', checked: s.photosEnabled, onchange: (e) => socket.send({ t: 'photos', enabled: e.target.checked }) }),
           ' Team photos',

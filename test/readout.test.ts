@@ -173,3 +173,25 @@ rounds:
   assert.equal(game.hostView().speedster, undefined);
   game.dispose();
 });
+
+test('the server runs the clock down even when everyone has answered, unless closing early is switched on', async () => {
+  const { createQuizServer } = await import('../server/server.ts');
+  const { Client } = await import('./client.ts');
+  const server = await createQuizServer({ quiz: parseQuiz(QUIZ.replace('readOut: true', 'readOut: false')), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const host = await Client.connect(server.port);
+  host.send({ t: 'host', key: server.hostKey });
+  const ann = await Client.connect(server.port);
+  ann.send({ t: 'join', room: server.roomCode, name: 'Ann' });
+  await ann.waitFor((m) => m.t === 'joined');
+  host.send({ t: 'advance' });
+  await ann.state('open');
+  ann.send({ t: 'answer', value: 1 });
+  const view = await host.state('open', (v) => v.answeredCount === 1);
+  assert.equal(view.closeEarly, false);
+  await new Promise((r) => setTimeout(r, 300));
+  assert.equal(server.game!.phase, 'open', 'still counting down');
+  host.send({ t: 'close-early', on: true });
+  await host.state('open', (v) => v.closeEarly === true);
+  for (const c of [host, ann]) await c.close();
+  await server.close();
+});

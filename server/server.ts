@@ -77,6 +77,8 @@ export interface ServerOptions {
   photos?: boolean;
   /** Turn off the team-name word filter. */
   nameFilter?: boolean;
+  /** End a question once every team has answered. Off by default: the timer always counts down. */
+  closeEarly?: boolean;
   /** Keeps the host link the same across restarts. Defaults to the resumed session's key, or a new one. */
   hostKey?: string;
   port?: number;
@@ -285,6 +287,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     const roomCode = resume?.roomCode ?? newRoomCode();
     const gameOptions = {
       nameFilter: options.nameFilter,
+      closeEarly: options.closeEarly ?? false,
       onChange() {
         current.saver?.schedule();
         if (game.phase === 'finished' && session && !current.resultsWritten) {
@@ -482,6 +485,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
       case 'read-out':
         if (hostOnly()) game?.setReadOut(msg.on);
+        return;
+
+      case 'close-early':
+        if (hostOnly()) game?.setCloseEarly(msg.on);
         return;
 
       case 'start-timer':

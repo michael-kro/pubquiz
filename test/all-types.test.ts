@@ -11,7 +11,7 @@ let server: QuizServer;
 
 before(async () => {
   const quiz = await loadQuizFile(fileURLToPath(new URL('fixtures/all-types.yaml', import.meta.url)));
-  server = await createQuizServer({ quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  server = await createQuizServer({ closeEarly: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
 });
 
 after(async () => {

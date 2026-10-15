@@ -135,7 +135,7 @@ test('a changed answer is saved with the game', () => {
 });
 
 test('over the socket: only the host can change the answer or hide teams on the TV; the TV sees no teams, and never the answer early', async () => {
-  const server = await createQuizServer({ quiz: parseQuiz(yaml(MC)), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const server = await createQuizServer({ closeEarly: true, quiz: parseQuiz(yaml(MC)), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   const host = await Client.connect(server.port);
   host.send({ t: 'host', key: server.hostKey });
   const tv = await Client.connect(server.port);

@@ -80,6 +80,7 @@ export interface GameSnapshot {
   wagers?: [number, [string, number][]][];
   tvShowTeams?: boolean;
   readOut?: boolean;
+  closeEarly?: boolean;
   readShown?: number;
   buzz?: [number, BuzzState][];
   displayOrders: [number, number[]][];
@@ -94,6 +95,8 @@ export interface GameOptions {
   onChange?: () => void;
   /** Turn the team-name word filter off (invisible characters are always removed). Default on. */
   nameFilter?: boolean;
+  /** End a question as soon as every team has answered (default on here; the server turns it off so the clock always runs down). */
+  closeEarly?: boolean;
 }
 
 // No I, O, 0 or 1, so codes can't be misread.
@@ -162,6 +165,8 @@ export class Game {
   tvShowTeams = true;
   /** Multiple choice: announce the answers one by one before the timer starts. */
   readOut = false;
+  /** Close a question once every team has answered, rather than always counting down. */
+  closeEarly = true;
   private readShown = 0;
   /** teamId → photo version, for teams that have uploaded one. The pictures themselves are in the PhotoStore. */
   private readonly photoVersions = new Map<string, number>();
@@ -187,6 +192,7 @@ export class Game {
     this.onChange = options.onChange ?? (() => {});
     this.nameFilter = options.nameFilter ?? true;
     this.readOut = quiz.readOut ?? false;
+    this.closeEarly = quiz.closeEarly ?? options.closeEarly ?? true;
   }
 
   /** The question as it stands now: the host may have changed its correct answer after time ran out. */
@@ -308,6 +314,11 @@ export class Game {
     if (!this.teams.has(teamId)) return;
     if (version === undefined) this.photoVersions.delete(teamId);
     else this.photoVersions.set(teamId, version);
+    this.changed();
+  }
+
+  setCloseEarly(on: boolean): void {
+    this.closeEarly = on;
     this.changed();
   }
 
@@ -790,6 +801,7 @@ export class Game {
       wagers: [...this.wagers].map(([index, bets]) => [index, [...bets]] as [number, [string, number][]]),
       tvShowTeams: this.tvShowTeams,
       readOut: this.readOut,
+      closeEarly: this.closeEarly,
       readShown: this.readShown,
       buzz: [...this.buzzStates].map(([index, state]) => [index, structuredClone(state)] as [number, BuzzState]),
       displayOrders: [...this.displayOrders],
@@ -817,6 +829,7 @@ export class Game {
     game.tvShowTeams = snapshot.tvShowTeams ?? true;
     game.readOut = snapshot.readOut ?? quiz.readOut ?? false;
     game.readShown = snapshot.readShown ?? 0;
+    game.closeEarly = snapshot.closeEarly ?? game.closeEarly;
     for (const [index, state] of snapshot.buzz ?? []) game.buzzStates.set(index, structuredClone(state));
     for (const index of snapshot.skipped ?? []) game.skipped.add(index);
     for (const [index, order] of snapshot.displayOrders) game.displayOrders.set(index, order);
@@ -905,6 +918,7 @@ export class Game {
   }
 
   private everyoneAnswered(): boolean {
+    if (!this.closeEarly) return false;
     if (this.currentQuestion?.type === 'buzzer') return false; // Ends when the host judges it, or everyone is out.
     const connected = [...this.teams.values()].filter((t) => t.connected);
     return connected.length > 0 && connected.every((t) => t.answers.has(this.questionIndex));
@@ -1387,6 +1401,7 @@ export class Game {
       photosEnabled: this.photosEnabled,
       tvShowTeams: this.tvShowTeams,
       readOut: this.readOut,
+      closeEarly: this.closeEarly,
       reading: this.phase === 'reading' && question?.type === 'multiple-choice' ? { shown: this.readShown, total: question.options.length } : undefined,
       skipsLeaderboardNext: this.questionIndex >= 0 && this.skipsLeaderboardNext,
       teams: teams.map((t) => ({
