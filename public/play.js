@@ -16,7 +16,7 @@ function announce() {
     if (state.onBreak) text = 'The quiz is on a break.';
     else text = {
       lobby: "You're in. Waiting for the quiz master to start.",
-      reading: 'The quiz master is reading out the answers. The timer has not started.',
+      reading: 'The quiz master is asking the question. The timer has not started.',
       wagering: q && `Wager round. The category is ${q.category || 'a secret'}. Place your bet.`,
       open: q && `${q.paused ? 'Paused. ' : ''}Question ${q.roundQuestion} of ${q.roundQuestions}. ${q.text}`,
       closed: "Time's up.",

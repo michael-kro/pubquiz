@@ -128,7 +128,7 @@ export const QuizFile = z
     title: text,
     /** Fun facts for the break screen. Without any, the built-in facts are used. */
     facts: z.array(z.string().trim().min(1).max(200)).max(300).optional(),
-    /** Multiple choice: the host announces the answers one at a time and starts the timer. */
+    /** The host asks each question (and reads out multiple-choice answers one at a time) before starting the timer. */
     readOut: z.boolean().optional(),
     scoring: z
       .object({

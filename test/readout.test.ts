@@ -38,7 +38,7 @@ test('answers appear one at a time and the timer only starts when the host says'
   game.dispose();
 });
 
-test('start the timer early, switch the mode off, and other question types are unaffected', () => {
+test('start the timer early, switch the mode off, and other question types wait for the host too', () => {
   const game = new Game(parseQuiz(QUIZ));
   game.join('A');
   assert.equal(game.startTimerNow().ok, false);
@@ -49,7 +49,10 @@ test('start the timer early, switch the mode off, and other question types are u
   game.advance(); // close
   game.advance(); // reveal
   game.advance(); // leaderboard
-  game.advance(); // letter question skips reading
+  game.advance(); // the letter question waits too, with nothing to reveal
+  assert.equal(game.phase, 'reading');
+  assert.equal(game.hostView().reading, undefined);
+  game.advance();
   assert.equal(game.phase, 'open');
   game.dispose();
 

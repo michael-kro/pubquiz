@@ -717,7 +717,7 @@ function stage(s) {
         clipBar(q),
         revealClipBar(q),
         !TV && s.phase === 'reading'
-          ? h('p', { class: 'host-only' }, `Read each answer out loud, then press the button to show the next one (${s.reading?.shown ?? 0} of ${s.reading?.total ?? 0} showing). `, h('button', { type: 'button', onclick: () => socket.send({ t: 'start-timer' }) }, 'Start timer now (S)'))
+          ? h('p', { class: 'host-only' }, s.reading ? `Read each answer out loud, then press the button to show the next one (${s.reading.shown} of ${s.reading.total} showing). ` : 'Ask the question out loud, then start the timer. ', h('button', { type: 'button', onclick: () => socket.send({ t: 'start-timer' }) }, 'Start timer now (S)'))
           : null,
         h('h1', { class: 'question-text' }, q.text),
         q.image
@@ -1174,9 +1174,9 @@ function teamsPanel(s) {
       ? null
       : h(
           'label',
-          { class: 'check photos-toggle', title: 'Multiple choice: reveal the answers one at a time while you read them out, then start the timer yourself' },
+          { class: 'check photos-toggle', title: 'Every question waits while you ask it (multiple choice: reveal the answers one by one), then you start the timer' },
           h('input', { type: 'checkbox', checked: s.readOut, onchange: (e) => socket.send({ t: 'read-out', on: e.target.checked }) }),
-          ' Read answers out first',
+          ' Ask the question before the timer starts',
         ),
     TV
       ? null

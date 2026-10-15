@@ -619,7 +619,7 @@ export class Game {
         if (this.quiz.questions.length > 0) this.openQuestion(0);
         return;
       case 'wagering':
-        this.beginPlay();
+        this.beginReadingOrPlay();
         return;
       case 'reading':
         this.advanceReading();
@@ -844,7 +844,12 @@ export class Game {
       this.changed();
       return;
     }
-    if (this.readOut && question.type === 'multiple-choice') {
+    this.beginReadingOrPlay();
+  }
+
+  /** Read-out mode: the question is up but the clock waits while the host asks it (and reads the answers). */
+  private beginReadingOrPlay(): void {
+    if (this.readOut) {
       this.phase = 'reading';
       this.readShown = 0;
       this.changed();
