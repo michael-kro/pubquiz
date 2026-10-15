@@ -685,7 +685,7 @@ function stage(s) {
       return h(
         'div',
         { class: 'wager-stage' },
-        h('p', { class: 'question-meta center' }, `${q.round} · Question ${q.index + 1} of ${q.total}`),
+        h('p', { class: 'question-meta center' }, `${q.round} · Question ${q.roundQuestion} of ${q.roundQuestions}`),
         h('p', { class: 'wager-kicker' }, '🎲 Wager round'),
         h('h1', { class: 'wager-category' }, q.category || 'Place your bets'),
         h('p', { class: 'muted center big' }, 'Teams are betting before they see the question.'),
@@ -706,7 +706,7 @@ function stage(s) {
         h(
           'div',
           { class: 'question-top' },
-          h('p', { class: 'question-meta' }, `${q.round} · Question ${q.index + 1} of ${q.total}`),
+          h('p', { class: 'question-meta' }, `${q.round} · Question ${q.roundQuestion} of ${q.roundQuestions}`),
           s.phase === 'open'
             ? h('span', { class: 'countdown big', 'data-countdown': true })
             : h('span', { class: 'phase-label' }, s.phase === 'reading' ? 'Listen to the answers' : s.phase === 'closed' ? "Time's up" : 'Answer'),

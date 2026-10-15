@@ -18,7 +18,7 @@ function announce() {
       lobby: "You're in. Waiting for the quiz master to start.",
       reading: 'The quiz master is reading out the answers. The timer has not started.',
       wagering: q && `Wager round. The category is ${q.category || 'a secret'}. Place your bet.`,
-      open: q && `${q.paused ? 'Paused. ' : ''}Question ${q.index + 1} of ${q.total}. ${q.text}`,
+      open: q && `${q.paused ? 'Paused. ' : ''}Question ${q.roundQuestion} of ${q.roundQuestions}. ${q.text}`,
       closed: "Time's up.",
       reveal: r && `${r.correct ? 'Correct' : 'Not correct'}. ${r.points} points. The answer was ${r.answerText}.`,
       leaderboard: `You are ${ordinal(state.rank)} of ${state.teamCount}.`,
@@ -396,7 +396,7 @@ function joinForm() {
 }
 
 function questionHeader(q) {
-  return h('p', { class: 'question-meta' }, `${q.round} · Question ${q.index + 1} of ${q.total}`);
+  return h('p', { class: 'question-meta' }, `${q.round} · Question ${q.roundQuestion} of ${q.roundQuestions}`);
 }
 
 function questionImage(q) {
@@ -500,7 +500,7 @@ function wageringScreen(s, q) {
   return h(
     'section',
     { class: 'screen center wager-screen' },
-    h('p', { class: 'question-meta' }, `${q.round} · Question ${q.index + 1} of ${q.total}`),
+    h('p', { class: 'question-meta' }, `${q.round} · Question ${q.roundQuestion} of ${q.roundQuestions}`),
     h('p', { class: 'wager-kicker' }, '🎲 Wager round'),
     h('h1', { class: 'wager-category' }, q.category || 'Place your bets'),
     placed

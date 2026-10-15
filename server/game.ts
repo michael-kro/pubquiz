@@ -1128,6 +1128,13 @@ export class Game {
 
   // Views
 
+  /** Where the current question sits within its round. */
+  private roundPlace(roundIndex: number): { roundQuestion: number; roundQuestions: number } {
+    const inRound = this.quiz.questions.filter((x) => x.roundIndex === roundIndex);
+    const first = this.quiz.questions.findIndex((x) => x.roundIndex === roundIndex);
+    return { roundQuestion: this.questionIndex - first + 1, roundQuestions: inRound.length };
+  }
+
   private questionView(): QuestionView | undefined {
     const q = this.currentQuestion;
     if (!q || this.phase === 'lobby' || this.phase === 'finished') return undefined;
@@ -1140,6 +1147,7 @@ export class Game {
         roundNumber: q.roundIndex + 1,
         roundTotal: this.quiz.rounds.length,
         lastInRound: this.quiz.questions[this.questionIndex + 1]?.roundIndex !== q.roundIndex,
+        ...this.roundPlace(q.roundIndex),
         type: q.type,
         text: '',
         category: q.category,
@@ -1156,6 +1164,7 @@ export class Game {
       roundNumber: q.roundIndex + 1,
       roundTotal: this.quiz.rounds.length,
       lastInRound: this.quiz.questions[this.questionIndex + 1]?.roundIndex !== q.roundIndex,
+      ...this.roundPlace(q.roundIndex),
       type: q.type,
       text: q.text,
       image: q.imageUrl,

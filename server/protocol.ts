@@ -78,6 +78,9 @@ export interface QuestionView {
   roundTotal: number;
   /** The last question of its round: the leaderboard after it is a round break. */
   lastInRound: boolean;
+  /** This question's place within its round, 1-based, and how many questions the round has. */
+  roundQuestion: number;
+  roundQuestions: number;
   type: QuestionType;
   text: string;
   image?: string;

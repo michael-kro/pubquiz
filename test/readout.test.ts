@@ -75,3 +75,28 @@ test('a question skipped while being read, and a saved game that is mid-reading'
   assert.equal(game.questionIndex, 1);
   game.dispose();
 });
+
+test('a question knows its place within its round, not the whole quiz', () => {
+  const game = new Game(parseQuiz(`
+title: Rounds
+scoring: { leaderboard: question }
+rounds:
+  - name: One
+    questions:
+      - { type: letter, text: A, answer: Abba }
+      - { type: letter, text: B, answer: Abba }
+  - name: Two
+    questions:
+      - { type: letter, text: C, answer: Abba }
+`));
+  game.join('A');
+  const place = () => [game.hostView().question!.roundQuestion, game.hostView().question!.roundQuestions];
+  game.advance();
+  assert.deepEqual(place(), [1, 2]);
+  for (let i = 0; i < 3; i++) game.advance(); // close, reveal, leaderboard
+  game.advance();
+  assert.deepEqual(place(), [2, 2]);
+  for (let i = 0; i < 4; i++) game.advance();
+  assert.deepEqual(place(), [1, 1]);
+  game.dispose();
+});
