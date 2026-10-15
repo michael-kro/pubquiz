@@ -1,4 +1,4 @@
-import { avatar, brandBlock, brandLogo, breakPanel, connectSocket, flashSpeedster, h, LETTERS, loadBranding, ordinal, preload, setBreak, setDeadline, tick } from './common.js';
+import { avatar, brandBlock, brandLogo, breakPanel, connectSocket, flashSpeedster, seconds, h, LETTERS, loadBranding, ordinal, preload, setBreak, setDeadline, tick } from './common.js';
 import { mountBranding } from './branding.js';
 import { mountEditor } from './editor.js';
 
@@ -928,7 +928,7 @@ function fastestBlock(s) {
       'ul',
       { class: 'fastest' },
       s.fastest.map((f) =>
-        h('li', {}, h('span', { class: 'bolt' }, '⚡'), avatar(f.name, f.photo, 44), h('span', { class: 'fastest-name' }, f.name), h('span', { class: 'muted' }, names[f.place - 1]), h('span', { class: 'gained' }, `+${f.points}`)),
+        h('li', {}, h('span', { class: 'bolt' }, '⚡'), avatar(f.name, f.photo, 44), h('span', { class: 'fastest-name' }, f.name), h('span', { class: 'muted' }, `${names[f.place - 1]} · ${seconds(f.ms)}`), h('span', { class: 'gained' }, `+${f.points}`)),
       ),
     );
   }
@@ -937,7 +937,7 @@ function fastestBlock(s) {
   return h(
     'ul',
     { class: 'fastest' },
-    h('li', {}, h('span', { class: 'bolt' }, '⚡'), avatar(s.speedster.name, s.speedster.photo, 44), h('span', { class: 'fastest-name' }, s.speedster.name), h('span', { class: 'muted' }, 'Fastest right answer')),
+    h('li', {}, h('span', { class: 'bolt' }, '⚡'), avatar(s.speedster.name, s.speedster.photo, 44), h('span', { class: 'fastest-name' }, s.speedster.name), h('span', { class: 'muted' }, `Fastest right answer · ${seconds(s.speedster.ms)}`)),
   );
 }
 

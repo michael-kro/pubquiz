@@ -17,6 +17,8 @@ export function h(tag, attrs = {}, ...children) {
 }
 
 export const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+/** 2320 ms becomes "2.32 s". */
+export const seconds = (ms) => `${(ms / 1000).toFixed(2)} s`;
 export const LETTER_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'T', 'U', 'QV', 'W', 'Y', 'XZ'];
 
 export function ordinal(n) {
@@ -330,11 +332,11 @@ export function flashSpeedster(state, big = false) {
   const key = `${state.quizTitle}:${state.question.index}`;
   if (key === lastFlashKey) return;
   lastFlashKey = key;
-  const { name, photo } = state.speedster;
+  const { name, photo, ms } = state.speedster;
   const overlay = h(
     'div',
     { class: `speedster${big ? ' big' : ''}`, role: 'status', onclick: () => overlay.remove() },
-    h('div', { class: 'speedster-card' }, h('p', { class: 'speedster-kicker' }, '⚡ Fastest right answer'), avatar(name, photo, big ? 320 : 200), h('p', { class: 'speedster-name' }, name)),
+    h('div', { class: 'speedster-card' }, h('p', { class: 'speedster-kicker' }, '⚡ Fastest right answer'), avatar(name, photo, big ? 320 : 200), h('p', { class: 'speedster-name' }, name), h('p', { class: 'speedster-time' }, seconds(ms))),
   );
   document.body.append(overlay);
   setTimeout(() => overlay.classList.add('out'), 3200);

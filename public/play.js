@@ -1,4 +1,4 @@
-import { LETTER_GROUPS, confetti, flashSpeedster, avatar, brandBlock, breakPanel, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setBreak, setDeadline, tick } from './common.js';
+import { LETTER_GROUPS, confetti, flashSpeedster, seconds, avatar, brandBlock, breakPanel, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setBreak, setDeadline, tick } from './common.js';
 
 const TOKEN_KEY = 'pubquiz.team-token';
 const app = document.getElementById('app');
@@ -556,6 +556,7 @@ function questionScreen(s, q, closed) {
           s.myAnswerText && q.type !== 'multiple-choice' && q.type !== 'letter'
             ? ['Locked in: ', h('strong', {}, s.myAnswerText), '. ']
             : 'Answer locked in. ',
+          s.myAnswerMs != null ? h('strong', { class: 'answer-time' }, `Your time: ${seconds(s.myAnswerMs)}. `) : null,
           closed ? 'Waiting for the reveal…' : 'Waiting for the other teams…',
         )
       : null,

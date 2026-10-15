@@ -769,6 +769,8 @@ input {
 .speedster.out { opacity: 0; transition: opacity 0.4s; }
 .speedster-card { display: grid; justify-items: center; gap: 14px; text-align: center; padding: 20px; animation: speedster-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
 .speedster-kicker { margin: 0; font-size: 1.4rem; font-weight: 900; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; }
+.speedster-time { margin: 0; font-size: 2.4rem; font-weight: 900; font-variant-numeric: tabular-nums; color: var(--accent); }
+.speedster.big .speedster-time { font-size: 4rem; }
 .speedster-name { margin: 0; font-size: 2rem; font-weight: 900; overflow-wrap: anywhere; }
 .speedster .avatar { border: 6px solid var(--accent); box-shadow: 0 0 60px var(--accent); }
 .speedster.big .speedster-kicker { font-size: 3rem; }

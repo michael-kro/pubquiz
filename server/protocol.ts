@@ -124,7 +124,7 @@ export interface TeamView {
   /** Set while the host has the quiz on a break. */
   onBreak?: BreakView;
   /** On the reveal: the team with the quickest right answer, to flash up. */
-  speedster?: { name: string; photo?: string };
+  speedster?: { name: string; photo?: string; ms: number };
   phase: Phase;
   quizTitle: string;
   teamId: string;
@@ -142,6 +142,8 @@ export interface TeamView {
   myChoice?: number;
   /** The team's answer as readable text. */
   myAnswerText?: string;
+  /** How long this team took to lock in its answer, in milliseconds. */
+  myAnswerMs?: number;
   /** In a wager round: the most this team may bet, and what it bet (once it has). */
   wagerInfo?: { cap: number; amount?: number };
   /** From the reveal onwards. */
@@ -164,7 +166,7 @@ export interface ReviewGroup {
 export interface HostView {
   onBreak?: BreakView;
   /** On the reveal: the team with the quickest right answer, to flash up. */
-  speedster?: { name: string; photo?: string };
+  speedster?: { name: string; photo?: string; ms: number };
   phase: Phase;
   quizTitle: string;
   questionCount: number;
@@ -211,7 +213,7 @@ export interface HostView {
   /** Buzzin' questions: who has buzzed, in order, and how it went. */
   buzzers?: { name: string; status: 'answering' | 'queued' | 'wrong' | 'right' }[];
   /** From the reveal: the quickest correct teams and what they earned for it. */
-  fastest?: { name: string; points: number; place: number; photo?: string }[];
+  fastest?: { name: string; points: number; place: number; photo?: string; ms: number }[];
   standings: StandingRow[];
   preloadImage?: string;
   /** The host can end this quiz and go back to the library. */

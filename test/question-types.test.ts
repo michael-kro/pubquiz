@@ -160,7 +160,7 @@ test('ordering: shuffled for display, points per item in place plus a speed bonu
   tick(10_000);
   game.answer(partial.id, positionsFor(['1', '2', '3', '5', '4']));
   game.answer(bad.id, positionsFor(['5', '4', '3', '2', '1']));
-  assert.equal(game.hostView().summary, '1 of 3 teams got the order exactly right');
+  assert.equal(game.hostView().summary, '1 team got the order exactly right');
   game.advance();
 
   assert.deepEqual(game.teamView(perfect.id)!.result, {

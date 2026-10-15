@@ -998,22 +998,22 @@ export class Game {
   }
 
   /** The team that gave the quickest right answer on the question just revealed, to flash up on every screen. */
-  speedster(): { name: string; photo?: string } | undefined {
+  speedster(): { name: string; photo?: string; ms: number } | undefined {
     const index = this.questionIndex;
     if (this.phase !== 'reveal' || index < 0 || this.teams.size < 2 || this.skipped.has(index)) return undefined;
     const q = this.effectiveQuestion(index);
     if (!q || q.type === 'buzzer' || q.type === 'nearest') return undefined;
     const id = this.fastestOrder(index)[0];
     const team = id ? this.teams.get(id) : undefined;
-    return team ? { name: team.name, photo: this.photoUrl(team.id) } : undefined;
+    return team ? { name: team.name, photo: this.photoUrl(team.id), ms: Math.round(team.answers.get(index)!.answerMs) } : undefined;
   }
 
   /** For the host and TV: who earned the speed bonus on the question just revealed. */
-  fastestTeams(): { name: string; points: number; place: number; photo?: string }[] {
+  fastestTeams(): { name: string; points: number; place: number; photo?: string; ms: number }[] {
     if (!this.isRevealed(this.questionIndex) || this.questionIndex < 0) return [];
     return this.fastestOrder(this.questionIndex).flatMap((id) => {
       const bonus = this.fastBonusFor(this.questionIndex, id);
-      return bonus ? [{ name: this.teams.get(id)!.name, points: bonus.points, place: bonus.place + 1, ...(this.photoUrl(id) ? { photo: this.photoUrl(id) } : {}) }] : [];
+      return bonus ? [{ name: this.teams.get(id)!.name, points: bonus.points, place: bonus.place + 1, ms: Math.round(this.teams.get(id)!.answers.get(this.questionIndex)!.answerMs), ...(this.photoUrl(id) ? { photo: this.photoUrl(id) } : {}) }] : [];
     });
   }
 
@@ -1312,6 +1312,7 @@ export class Game {
           : undefined,
       myChoice: showQuestion && question?.type === 'multiple-choice' ? (answer?.value as number | undefined) : undefined,
       myAnswerText: showQuestion && question && answer ? this.describeAnswer(question, answer) : undefined,
+      myAnswerMs: showQuestion && question && answer && question.type !== 'buzzer' ? Math.round(answer.answerMs) : undefined,
       result:
         question && this.isRevealed(this.questionIndex) && showQuestion
           ? {
@@ -1369,7 +1370,7 @@ export class Game {
         review = [...groups.values()].sort((a, b) => order[a.match] - order[b.match] || b.teams.length - a.teams.length);
       } else if (question.type === 'number') {
         const right = answered.filter(({ answer }) => this.baseMark(this.questionIndex, answer).correct).length;
-        summary = `${right} of ${answered.length} ${answered.length === 1 ? 'team' : 'teams'} got it right`;
+        summary = `${right} ${right === 1 ? 'team' : 'teams'} got it right`;
       } else if (question.type === 'nearest') {
         const { winners } = this.nearestWinners(this.questionIndex);
         const byValue = new Map<number, string[]>();
@@ -1387,7 +1388,7 @@ export class Game {
           .join('   ');
       } else {
         const perfect = answered.filter(({ answer }) => this.baseMark(this.questionIndex, answer).correct).length;
-        summary = `${perfect} of ${answered.length} ${answered.length === 1 ? 'team' : 'teams'} got the order exactly right`;
+        summary = `${perfect} ${perfect === 1 ? 'team' : 'teams'} got the order exactly right`;
       }
     }
 

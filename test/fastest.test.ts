@@ -45,9 +45,9 @@ test('the quickest three correct teams earn 100%, 60% and 30% of the bonus', () 
   assert.match(result(d!).detail!, /Third fastest correct answer: \+90/);
   assert.equal(result(c!).detail, undefined);
   assert.deepEqual(game.hostView().fastest, [
-    { name: 'B', points: 300, place: 1 },
-    { name: 'A', points: 180, place: 2 },
-    { name: 'D', points: 90, place: 3 },
+    { name: 'B', points: 300, place: 1, ms: 2000 },
+    { name: 'A', points: 180, place: 2, ms: 3000 },
+    { name: 'D', points: 90, place: 3, ms: 4000 },
   ]);
   game.dispose();
 });

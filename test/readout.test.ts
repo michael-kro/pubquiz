@@ -195,3 +195,23 @@ test('the server runs the clock down even when everyone has answered, unless clo
   for (const c of [host, ann]) await c.close();
   await server.close();
 });
+
+test('a team sees how long it took to lock in, and the fastest team is named with its time', () => {
+  let clock = 5_000_000;
+  const game = new Game(parseQuiz(QUIZ.replace('readOut: true', 'readOut: false')), { now: () => clock });
+  const [a, b] = ['A', 'B'].map((n) => {
+    const r = game.join(n);
+    assert.ok(r.ok);
+    return r.value;
+  });
+  game.advance();
+  clock += 2320;
+  game.answer(a!.id, 1);
+  clock += 1000;
+  game.answer(b!.id, 1);
+  assert.equal(game.teamView(a!.id)!.myAnswerMs, 2320);
+  assert.equal(game.teamView(b!.id)!.myAnswerMs, 3320);
+  game.advance();
+  assert.equal(game.hostView().speedster!.ms, 2320);
+  game.dispose();
+});

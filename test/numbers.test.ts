@@ -45,7 +45,7 @@ test('number: exact match, or within the tolerance, speed scored, and bad input 
   game.answer(far!.id, 103);
   game.advance(); // close
   game.advance(); // reveal
-  assert.equal(game.hostView().summary, '2 of 3 teams got it right');
+  assert.equal(game.hostView().summary, '2 teams got it right');
   const points = [exact, near, far, none].map((t) => game.teamView(t!.id)!.result!.points);
   assert.deepEqual(points, [950, 950, 0, 0]);
   assert.equal(game.teamView(far!.id)!.myAnswerText, '103');
@@ -56,7 +56,7 @@ test('number: exact match, or within the tolerance, speed scored, and bad input 
   game.answer(exact!.id, 0.1 + 0.2); // floating-point dust must not matter
   game.advance(); // close
   game.advance(); // reveal
-  assert.equal(game.hostView().summary, '1 of 1 team got it right');
+  assert.equal(game.hostView().summary, '1 team got it right');
   assert.equal(game.teamView(exact!.id)!.myAnswerText, '0.3');
   assert.equal(game.teamView(exact!.id)!.result!.correct, true);
   game.dispose();
