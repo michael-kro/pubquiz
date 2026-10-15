@@ -665,7 +665,9 @@ function topBar(s) {
   return h(
     'header',
     { class: 'host-bar' },
-    brandLogo('brand-logo small'),
+    s.canEnd
+      ? h('button', { type: 'button', class: 'logo-home', title: 'Back to your quizzes', 'aria-label': 'Back to your quizzes', onclick: () => endQuiz(s) }, brandLogo('brand-logo small'))
+      : brandLogo('brand-logo small'),
     h('span', { class: 'quiz-title' }, s.quizTitle),
     networkPill(s.network),
     soundButton(),
