@@ -2,6 +2,7 @@
 // Plays the long stress-test quiz (every question type, long text) with 30 simulated phones against a real server,
 // with random reconnects, and checks that every phone's own results add up to the final standings.
 //   node scripts/stress.ts [--rounds 12] [--teams 30]
+import { spawn } from 'node:child_process';
 import { monitorEventLoopDelay } from 'node:perf_hooks';
 import { parseArgs } from 'node:util';
 import { loadQuizFile, type Question } from '../server/quiz.ts';
@@ -34,7 +35,43 @@ export interface StressReport {
   fanOutMs: { p50: number; p95: number; max: number };
 }
 
-export async function runStress(options: { rounds?: number; teams?: number; log?: (s: string) => void } = {}): Promise<StressReport> {
+/** The server in a separate process, so its event loop is measured without the simulated phones sharing it. */
+async function startExternalServer(rounds: number): Promise<{ port: number; hostKey: string; screenKey: string; roomCode: string; stats(): Promise<{ p50: number; p99: number; max: number; rssMb: number }>; close(): Promise<void> }> {
+  const child = spawn(process.execPath, [...(process.env['STRESS_PROF'] ? ['--cpu-prof', `--cpu-prof-dir=${process.env['STRESS_PROF']}`] : []), join(here, 'stress-server.ts'), String(rounds)], { stdio: ['ignore', 'pipe', 'inherit'] });
+  const lines: string[] = [];
+  const waiters: (() => void)[] = [];
+  let buffer = '';
+  child.stdout.on('data', (chunk) => {
+    buffer += chunk.toString();
+    let at;
+    while ((at = buffer.indexOf('\n')) >= 0) {
+      lines.push(buffer.slice(0, at));
+      buffer = buffer.slice(at + 1);
+      for (const wake of waiters.splice(0)) wake();
+    }
+  });
+  const next = async (key: string): Promise<any> => {
+    for (let i = 0; i < 200; i++) {
+      const found = lines.findIndex((l) => l.includes(`"${key}"`));
+      if (found >= 0) return JSON.parse(lines.splice(found, 1)[0]!)[key];
+      await new Promise<void>((r) => { waiters.push(r); setTimeout(r, 100); });
+    }
+    throw new Error(`The server process never reported ${key}`);
+  };
+  const ready = await next('ready');
+  return {
+    ...ready,
+    stats: async () => {
+      child.kill('SIGUSR2');
+      return next('stats');
+    },
+    close: async () => {
+      child.kill('SIGTERM');
+    },
+  };
+}
+
+export async function runStress(options: { rounds?: number; teams?: number; external?: boolean; log?: (s: string) => void } = {}): Promise<StressReport> {
   const rounds = options.rounds ?? 12;
   const teams = options.teams ?? 30;
   const log = options.log ?? (() => {});
@@ -43,7 +80,8 @@ export async function runStress(options: { rounds?: number; teams?: number; log?
   const questions = quiz.questions.slice(0, count);
   quiz.questions = questions;
   quiz.rounds = quiz.rounds.slice(0, rounds);
-  const server = await createQuizServer({ quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', closeEarly: true, lockOnStart: false, tvShowTeams: true });
+  const external = options.external ? await startExternalServer(rounds) : undefined;
+  const server = external ?? (await createQuizServer({ quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', closeEarly: true, lockOnStart: false, tvShowTeams: true }));
   const loop = monitorEventLoopDelay({ resolution: 10 });
   loop.enable();
   const rssStart = process.memoryUsage().rss;
@@ -168,6 +206,7 @@ export async function runStress(options: { rounds?: number; teams?: number; log?
   const standingsOk = final.standings.length === teams && scores.every((s, i) => i === 0 || scores[i - 1]! >= s) && final.standings[0].rank === 1;
   const csv = await (await fetch(`http://127.0.0.1:${server.port}/results.csv?key=${server.hostKey}`)).text();
   loop.disable();
+  const serverStats = external ? await external.stats() : undefined;
   const sorted = [...fanOut].sort((a, b) => a - b);
   const pick = (p: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] ?? 0;
   const report: StressReport = {
@@ -180,8 +219,8 @@ export async function runStress(options: { rounds?: number; teams?: number; log?
     scoreMismatches,
     standingsOk,
     csvRows: csv.trim().split('\n').length,
-    rssMb: { start: Math.round(rssStart / 1e6), end: Math.round(process.memoryUsage().rss / 1e6) },
-    loopDelayMs: { p99: Math.round(loop.percentile(99) / 1e6), max: Math.round(loop.max / 1e6) },
+    rssMb: serverStats ? { start: 0, end: serverStats.rssMb } : { start: Math.round(rssStart / 1e6), end: Math.round(process.memoryUsage().rss / 1e6) },
+    loopDelayMs: serverStats ? { p99: serverStats.p99, max: serverStats.max } : { p99: Math.round(loop.percentile(99) / 1e6), max: Math.round(loop.max / 1e6) },
     longestQuestion: Math.max(...questions.map((q) => q.text.length)),
     fanOutMs: { p50: pick(0.5), p95: pick(0.95), max: sorted.at(-1) ?? 0 },
   };
@@ -191,8 +230,8 @@ export async function runStress(options: { rounds?: number; teams?: number; log?
 }
 
 if (import.meta.main) {
-  const { values } = parseArgs({ options: { rounds: { type: 'string', default: '12' }, teams: { type: 'string', default: '30' } } });
-  const report = await runStress({ rounds: Number(values.rounds), teams: Number(values.teams), log: (s) => console.log(' ', s) });
+  const { values } = parseArgs({ options: { rounds: { type: 'string', default: '12' }, teams: { type: 'string', default: '30' }, external: { type: 'boolean', default: false } } });
+  const report = await runStress({ rounds: Number(values.rounds), teams: Number(values.teams), external: values.external, log: (s) => console.log(' ', s) });
   console.log('\n' + JSON.stringify(report, null, 2));
   const bad = report.wrongMarks.length + report.scoreMismatches.length + (report.standingsOk ? 0 : 1);
   process.exit(bad ? 1 : 0);

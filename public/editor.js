@@ -542,12 +542,22 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
         );
       case 'picture':
       case 'music':
-        return field(
+        return [
+          q.type === 'picture'
+            ? h(
+                'label',
+                { class: 'check uncover-check' },
+                h('input', { type: 'checkbox', checked: Boolean(q.uncover), onchange: (e) => { q.uncover = e.target.checked || undefined; changed(); } }),
+                ' Reveal the picture slowly: it starts hidden behind black tiles that drop away as the time runs out (faster answers score more).',
+              )
+            : null,
+          field(
           'Accepted answers',
           listEditor(q, 'accept', { min: 1, max: 10, label: 'Answer', placeholder: (i) => (i === 0 ? 'The answer' : 'Another way to write it') }),
           'accept',
           'Teams type their answer. Small typos, capitals and "the" are forgiven, and you check every answer before the reveal.',
-        );
+        ),
+        ];
       case 'ordering':
         return field(
           'Items, in the right order',

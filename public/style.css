@@ -807,6 +807,14 @@ input {
 .prizes.big .prize-medal { font-size: 2.4rem; }
 .prizes.big .prizes-title { font-size: 1.4rem; }
 
+/* Picture revealed slowly: black tiles that drop away */
+.uncover { position: relative; display: block; width: fit-content; max-width: 100%; margin: 12px auto; line-height: 0; }
+.uncover img { display: block; max-width: 100%; margin: 0; }
+.uncover .tiles { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(var(--cols), 1fr); grid-template-rows: repeat(var(--rows), 1fr); }
+.uncover .tile { background: #000; outline: 1px solid #1b1b1b; outline-offset: -1px; transition: opacity 0.6s ease-out; }
+.uncover .tile.gone { opacity: 0; }
+.uncover-check { margin: 8px 0; align-items: flex-start; }
+
 /* Entry fee and admitting teams */
 .entry-fee { margin: 10px 0; font-size: 1.2rem; }
 .entry-fee.big { font-size: 2.2rem; }

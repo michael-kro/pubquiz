@@ -447,3 +447,62 @@ export const textSize = (text = '') => (text.length > 600 ? 'text-xxl' : text.le
 
 /** Class for a block of answer options when any of them is long, so they get smaller type and tighter boxes. */
 export const optionsSize = (options = []) => (Math.max(0, ...options.map((o) => o.length)) > 70 ? 'long-options' : '');
+
+// A picture hidden behind black tiles that drop away, in a random order, as the time runs out.
+const UNCOVER_COLS = 8;
+const UNCOVER_ROWS = 6;
+
+/** The same tile order on every screen for a given question: a small seeded shuffle. */
+function uncoverOrder(seed) {
+  let x = (seed + 1) * 2654435761 >>> 0;
+  const rand = () => {
+    x = (x + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(x ^ (x >>> 15), 1 | x);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const order = Array.from({ length: UNCOVER_COLS * UNCOVER_ROWS }, (_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+}
+
+/**
+ * The question's picture. With `q.uncover` it sits under black tiles that disappear over the countdown:
+ * all covered while the question is being read out, a tile at a time while it is open, and none once time is up.
+ */
+export function questionPicture(q, phase, className = 'question-image', alt = '') {
+  const img = h('img', { class: className, src: q.image, alt });
+  if (!q.uncover) return img;
+  const order = uncoverOrder(q.index);
+  const total = order.length;
+  const tiles = Array.from({ length: total }, () => h('i', { class: 'tile' }));
+  order.forEach((tile, k) => {
+    tiles[tile].dataset.at = String(0.04 + 0.86 * (k / (total - 1)));
+  });
+  const wrap = h(
+    'div',
+    { class: 'uncover', 'data-seconds': String(q.seconds), 'data-phase': phase, style: `--cols: ${UNCOVER_COLS}; --rows: ${UNCOVER_ROWS}` },
+    img,
+    h('div', { class: 'tiles', 'aria-hidden': 'true' }, tiles),
+  );
+  updateUncover(wrap);
+  return wrap;
+}
+
+function updateUncover(wrap) {
+  const phase = wrap.dataset.phase;
+  const seconds = Number(wrap.dataset.seconds);
+  let done;
+  if (phase === 'open') {
+    const left = frozenMs ?? (deadline == null ? seconds * 1000 : deadline - performance.now());
+    done = Math.min(1, Math.max(0, 1 - left / (seconds * 1000)));
+  } else done = phase === 'reading' || phase === 'wagering' ? 0 : 1;
+  for (const tile of wrap.querySelectorAll('.tile')) tile.classList.toggle('gone', done >= Number(tile.dataset.at));
+}
+
+setInterval(() => {
+  for (const wrap of document.querySelectorAll('.uncover')) updateUncover(wrap);
+}, 250);

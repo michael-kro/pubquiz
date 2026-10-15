@@ -1,4 +1,4 @@
-import { avatar, brandBlock, brandLogo, breakPanel, connectSocket, flashSpeedster, MEDALS, movement, optionsSize, prizeList, questionMeta, rollStandings, seconds, textSize, h, LETTERS, loadBranding, ordinal, preload, setBreak, setDeadline, tick } from './common.js';
+import { avatar, brandBlock, brandLogo, breakPanel, connectSocket, flashSpeedster, MEDALS, movement, optionsSize, prizeList, questionMeta, questionPicture, rollStandings, seconds, textSize, h, LETTERS, loadBranding, ordinal, preload, setBreak, setDeadline, tick } from './common.js';
 import { mountBranding } from './branding.js';
 import { mountEditor } from './editor.js';
 
@@ -827,7 +827,7 @@ function stage(s) {
           : null,
         h('h1', { class: `question-text ${textSize(q.text)}` }, q.text),
         q.image
-          ? h('img', { class: `question-image host-image${s.review ? ' small' : ''}`, src: q.image, alt: '' })
+          ? questionPicture(q, s.phase, `question-image host-image${s.review ? ' small' : ''}`)
           : null,
         !TV && s.phase === 'closed' ? answerReview(s, q) : null,
         questionBody(s, q, reveal),

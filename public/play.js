@@ -1,4 +1,4 @@
-import { LETTER_GROUPS, optionsSize, questionMeta, textSize, confetti, flashSpeedster, movement, prizeList, rollStandings, seconds, avatar, brandBlock, breakPanel, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setBreak, setDeadline, tick } from './common.js';
+import { LETTER_GROUPS, optionsSize, questionPicture, questionMeta, textSize, confetti, flashSpeedster, movement, prizeList, rollStandings, seconds, avatar, brandBlock, breakPanel, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setBreak, setDeadline, tick } from './common.js';
 
 const TOKEN_KEY = 'pubquiz.team-token';
 const app = document.getElementById('app');
@@ -400,8 +400,8 @@ function questionHeader(q) {
   return questionMeta(q);
 }
 
-function questionImage(q) {
-  return q.image ? h('img', { class: 'question-image', src: q.image, alt: '' }) : null;
+function questionImage(q, phase) {
+  return q.image ? questionPicture(q, phase) : null;
 }
 
 /** Joined, but the quiz master has to confirm the entry fee before the team is in. */
@@ -576,7 +576,7 @@ function questionScreen(s, q, closed) {
     s.wagerInfo?.amount ? h('p', { class: 'wager-banner' }, `🎲 ${s.wagerInfo.amount} points on the line`) : null,
     q.type === 'music' ? h('p', { class: 'music-badge' }, '🎵 Listen to the music') : null,
     h('h2', { class: `question-text ${textSize(q.text)}` }, q.text),
-    questionImage(q),
+    questionImage(q, s.phase),
     // On the keypad screens the message sits above the keys, in one short line, so nothing pushes the keys off the screen.
     answered && keypadType ? lockedLine(s, closed) : null,
     answerInput(s, q, locked),

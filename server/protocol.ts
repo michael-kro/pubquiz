@@ -99,6 +99,8 @@ export interface QuestionView {
   /** Host and TV only, once the answer is revealed: a fun clip to play, with its caption. */
   revealAudio?: string;
   revealCaption?: string;
+  /** Picture questions: the picture is hidden behind black tiles that drop away as time runs out. */
+  uncover?: boolean;
   /** Letter questions: which keypad the teams get. */
   keypad?: 'grouped' | 'single';
   /** In a wager round: the category teams see while betting. */

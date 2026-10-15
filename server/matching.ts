@@ -36,14 +36,30 @@ function allowedTypos(length: number): number {
   return 2;
 }
 
+// Marks are asked for again and again (every score and every screen is rebuilt on each change), so remember them.
+const memo = new Map<string, Match>();
+const MEMO_LIMIT = 20_000;
+
 export function matchAnswer(given: string, accepted: string[]): Match {
+  const key = `${accepted.join('\u0001')}\u0002${given}`;
+  const known = memo.get(key);
+  if (known) return known;
+  const result = matchUncached(given, accepted);
+  if (memo.size >= MEMO_LIMIT) memo.clear();
+  memo.set(key, result);
+  return result;
+}
+
+function matchUncached(given: string, accepted: string[]): Match {
   const answer = normalise(given);
   if (!answer) return 'none';
   let best: Match = 'none';
   for (const option of accepted) {
     const target = normalise(option);
     if (answer === target) return 'exact';
-    if (editDistance(answer, target) <= allowedTypos(target.length)) best = 'close';
+    const allowed = allowedTypos(target.length);
+    // Answers whose lengths differ by more than the typos allowed can't be close: skip the slow comparison.
+    if (Math.abs(answer.length - target.length) <= allowed && editDistance(answer, target) <= allowed) best = 'close';
   }
   return best;
 }

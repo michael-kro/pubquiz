@@ -1053,6 +1053,7 @@ export class Game {
 
   private changed(): void {
     this.firstCorrectMemo.clear();
+    this.standingsMemo = undefined;
     this.onChange();
   }
 
@@ -1240,6 +1241,14 @@ export class Game {
   }
 
   standings(): StandingRow[] {
+    // Every screen asks for these on every change, so work them out once per change.
+    if (this.standingsMemo) return this.standingsMemo;
+    return (this.standingsMemo = this.computeStandings());
+  }
+
+  private standingsMemo: StandingRow[] | undefined;
+
+  private computeStandings(): StandingRow[] {
     const teams = [...this.teams.values()];
     const scores = new Map(teams.map((t) => [t, this.scoreOf(t)]));
     const times = new Map(teams.map((t) => [t, this.timeOf(t)]));
@@ -1329,6 +1338,7 @@ export class Game {
       type: q.type,
       text: q.text,
       image: q.imageUrl,
+      uncover: q.type === 'picture' && q.uncover ? true : undefined,
       keypad: q.type === 'letter' ? (q.keypad ?? 'grouped') : undefined,
       audio: q.audioUrl,
       revealAudio: this.phase === 'reveal' ? q.revealAudioUrl : undefined,

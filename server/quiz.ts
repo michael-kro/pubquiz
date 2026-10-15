@@ -80,7 +80,8 @@ const QuestionSchema = z.discriminatedUnion('type', [
       message: 'must be the position of one of the options, counting from 0',
       path: ['answer'],
     }),
-  z.object({ type: z.literal('picture'), ...common, image: text, accept }).strict(),
+  // `uncover`: the picture starts hidden behind black tiles that drop away as the time runs out.
+  z.object({ type: z.literal('picture'), ...common, image: text, accept, uncover: z.boolean().optional() }).strict(),
   z.object({ type: z.literal('music'), ...common, accept }).strict(),
   // Teams type a number. Right if it matches, give or take `tolerance`.
   z.object({ type: z.literal('number'), ...common, answer: number, tolerance: z.number().min(0).max(1e12).default(0) }).strict(),
