@@ -224,7 +224,7 @@ function view() {
 
   return h(
     'div',
-    { class: 'team-layout' },
+    { class: `team-layout${state.phase === 'open' ? ' phase-open' : ''}` },
     h(
       'header',
       { class: 'team-bar' },
@@ -531,10 +531,23 @@ function wageringScreen(s, q) {
 }
 
 /** The question with its answer controls. Once a team has answered it stays here, locked in, until the reveal. */
+/** "🔒 Locked in: 42 · 2.32 s", then what happens next, in one line. */
+function lockedLine(s, closed) {
+  return h(
+    'p',
+    { class: 'locked-line', role: 'status' },
+    '🔒 Locked in',
+    s.myAnswerText ? [': ', h('strong', {}, s.myAnswerText)] : null,
+    s.myAnswerMs != null ? [' · ', h('strong', { class: 'answer-time' }, seconds(s.myAnswerMs))] : null,
+    h('span', { class: 'muted' }, closed ? ' · waiting for the reveal' : ' · waiting for others'),
+  );
+}
+
 function questionScreen(s, q, closed) {
   const answered = s.myAnswerText != null || pending != null;
   const reading = s.phase === 'reading';
   const locked = closed || answered || reading || Boolean(q.paused);
+  const keypadType = ['letter', 'number', 'nearest'].includes(q.type);
   return h(
     'section',
     { class: 'screen' },
@@ -549,8 +562,10 @@ function questionScreen(s, q, closed) {
     q.type === 'music' ? h('p', { class: 'music-badge' }, '🎵 Listen to the music') : null,
     h('h2', { class: 'question-text' }, q.text),
     questionImage(q),
+    // On the keypad screens the message sits above the keys, in one short line, so nothing pushes the keys off the screen.
+    answered && keypadType ? lockedLine(s, closed) : null,
     answerInput(s, q, locked),
-    answered
+    answered && !keypadType
       ? h(
           'p',
           { class: 'center muted' },
@@ -653,7 +668,7 @@ function answerInput(s, q, locked) {
       return h(
         'div',
         {},
-        h('p', { class: 'muted small center' }, `Tap the key with the first letter of the answer${q.keypad === 'single' ? '' : ' on it'}. Skip "The"; people go by first name (J for John Lennon).`),
+        locked ? null : h('p', { class: 'muted small center keypad-hint' }, 'Tap the first letter of the answer.', h('span', { class: 'hint-long' }, ' Skip "The"; people go by first name (J for John Lennon).')),
         h(
           'div',
           { class: q.keypad === 'single' ? 'keypad' : 'keypad grouped' },

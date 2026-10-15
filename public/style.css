@@ -244,8 +244,14 @@ input {
 }
 .key:active:not(:disabled) { background: var(--opt-1); }
 .key:disabled { opacity: 0.35; }
-.keypad.grouped { grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.keypad.grouped .key { min-height: 62px; font-size: 1.6rem; font-weight: 800; }
+.keypad.grouped { grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0; }
+.keypad.grouped .key { min-height: clamp(44px, 8.4vh, 62px); font-size: 1.5rem; font-weight: 800; }
+.keypad.grouped .key, .num-key { aspect-ratio: auto; }
+.keypad-hint { margin: 4px 0; }
+.locked-line { margin: 6px 0; text-align: center; font-weight: 600; }
+.phase-open .team-code { display: none; }
+.hint-long { display: none; }
+@media (min-height: 780px) { .hint-long { display: inline; } .keypad.grouped { gap: 8px; } }
 .key.chosen { opacity: 1; background: var(--accent); color: var(--accent-text); }
 
 /* Host screen */
@@ -798,15 +804,15 @@ input {
 .codes-code { font-size: 2rem; letter-spacing: 0.18em; font-variant-numeric: tabular-nums; font-family: ui-monospace, Menlo, monospace; }
 
 /* Number keypad */
-.numpad { display: grid; gap: 10px; margin-top: 8px; }
-.num-display { display: block; min-height: 84px; display: grid; align-items: center; justify-content: center; border-radius: 12px; background: var(--surface-2); font-size: 2.6rem; font-weight: 800; font-variant-numeric: tabular-nums; overflow: hidden; padding: 0 12px; }
+.numpad { display: grid; gap: 8px; margin-top: 6px; }
+.num-display { display: block; min-height: clamp(54px, 9vh, 84px); display: grid; align-items: center; justify-content: center; border-radius: 12px; background: var(--surface-2); font-size: 2.6rem; font-weight: 800; font-variant-numeric: tabular-nums; overflow: hidden; padding: 0 12px; }
 .num-display.empty::before { content: 'Type a number'; font-size: 1.1rem; font-weight: 500; opacity: 0.55; }
-.num-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.num-key { min-height: 66px; font-size: 1.8rem; font-weight: 800; }
+.num-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.num-key { min-height: clamp(46px, 8.4vh, 66px); font-size: 1.7rem; font-weight: 800; }
 .num-key.alt { background: var(--surface-2); color: var(--text); font-size: 1.3rem; }
 .num-key.enter { background: var(--accent); color: var(--accent-text); }
 .num-extra { display: flex; gap: 10px; justify-content: center; }
-.num-key.small { min-height: 48px; min-width: 88px; font-size: 1.5rem; }
+.num-key.small { min-height: clamp(38px, 6vh, 48px); min-width: 88px; font-size: 1.5rem; }
 .num-key:active:not(:disabled) { transform: scale(0.97); }
 .num-display.locked { background: var(--surface); color: var(--text); outline: 3px solid var(--accent); }
 /* Locked in: every key greyed out, except the one you chose. */
@@ -831,3 +837,5 @@ input {
 .logo-home { background: none !important; border: 0; padding: 0; cursor: pointer; display: inline-flex; align-items: center; border-radius: 8px; }
 .logo-home:hover { opacity: 0.8; }
 .standings li.me .gained, .standings li.me .up, .standings li.me .down { color: inherit; }
+
+@media (max-height: 760px) { .screen { padding-top: 14px; padding-bottom: 14px; } }
