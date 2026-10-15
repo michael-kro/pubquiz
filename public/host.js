@@ -1450,13 +1450,14 @@ function teamsPanel(s) {
           h('input', { type: 'checkbox', checked: s.requireAdmission, onchange: (e) => socket.send({ t: 'require-admission', on: e.target.checked }) }),
           ' Teams wait to be admitted (paid)',
         ),
-    TV
+    // On the start screen the "lock when it starts" box is enough; this one appears once the quiz is under way (or if it is already locked).
+    TV || (s.phase === 'lobby' && !s.joiningLocked)
       ? null
       : h(
           'label',
           { class: 'check photos-toggle', title: 'Stop new teams joining. Teams already in can still rejoin with their code.' },
           h('input', { type: 'checkbox', checked: s.joiningLocked, onchange: (e) => socket.send({ t: 'lock-joining', locked: e.target.checked }) }),
-          ' 🔒 Lock the quiz (no new teams)',
+          ' 🔒 Lock joining now (no new teams)',
         ),
     TV
       ? null
