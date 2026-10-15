@@ -121,6 +121,8 @@ export interface BreakView {
 export interface TeamView {
   /** Set while the host has the quiz on a break. */
   onBreak?: BreakView;
+  /** On the reveal: the team with the quickest right answer, to flash up. */
+  speedster?: { name: string; photo?: string };
   phase: Phase;
   quizTitle: string;
   teamId: string;
@@ -159,6 +161,8 @@ export interface ReviewGroup {
 
 export interface HostView {
   onBreak?: BreakView;
+  /** On the reveal: the team with the quickest right answer, to flash up. */
+  speedster?: { name: string; photo?: string };
   phase: Phase;
   quizTitle: string;
   questionCount: number;

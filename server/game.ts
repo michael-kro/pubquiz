@@ -978,6 +978,17 @@ export class Game {
     return order;
   }
 
+  /** The team that gave the quickest right answer on the question just revealed, to flash up on every screen. */
+  speedster(): { name: string; photo?: string } | undefined {
+    const index = this.questionIndex;
+    if (this.phase !== 'reveal' || index < 0 || this.teams.size < 2 || this.skipped.has(index)) return undefined;
+    const q = this.effectiveQuestion(index);
+    if (!q || q.type === 'buzzer' || q.type === 'nearest') return undefined;
+    const id = this.fastestOrder(index)[0];
+    const team = id ? this.teams.get(id) : undefined;
+    return team ? { name: team.name, photo: this.photoUrl(team.id) } : undefined;
+  }
+
   /** For the host and TV: who earned the speed bonus on the question just revealed. */
   fastestTeams(): { name: string; points: number; place: number }[] {
     if (!this.isRevealed(this.questionIndex) || this.questionIndex < 0) return [];
@@ -1264,6 +1275,7 @@ export class Game {
       teamId: team.id,
       teamName: team.name,
       onBreak: this.breakView(),
+      speedster: this.speedster(),
       teamCode: team.code,
       photo: this.photoUrl(team.id),
       photosEnabled: this.photosEnabled,
@@ -1365,6 +1377,7 @@ export class Game {
       quizTitle: this.quiz.title,
       questionCount: this.quiz.questions.length,
       onBreak: this.breakView(),
+      speedster: this.speedster(),
       maxTeams: MAX_TEAMS,
       photosEnabled: this.photosEnabled,
       tvShowTeams: this.tvShowTeams,

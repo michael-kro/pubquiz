@@ -1,4 +1,4 @@
-import { LETTER_GROUPS, confetti, avatar, brandBlock, breakPanel, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setBreak, setDeadline, tick } from './common.js';
+import { LETTER_GROUPS, confetti, flashSpeedster, avatar, brandBlock, breakPanel, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setBreak, setDeadline, tick } from './common.js';
 
 const TOKEN_KEY = 'pubquiz.team-token';
 const app = document.getElementById('app');
@@ -111,6 +111,7 @@ const socket = connectSocket({
         if (state.phase !== 'open' || state.myAnswerText != null) pending = null;
         setDeadline(state.question?.remainingMs, state.question?.paused);
         setBreak(state.onBreak);
+  flashSpeedster(state);
         trackQuestionTiming(state);
         preload(state.preloadImage);
         break;

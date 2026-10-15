@@ -134,3 +134,39 @@ rounds:
   assert.equal(game.hostView().question!.keypad, 'single');
   game.dispose();
 });
+
+test('the quickest right answer is named to every screen on the reveal', async () => {
+  let clock = 1_000_000;
+  const game = new Game(parseQuiz(`
+title: Fast
+scoring: { leaderboard: question }
+rounds:
+  - name: R
+    questions:
+      - { type: multiple-choice, text: Q, options: [a, b], answer: 0 }
+      - { type: nearest, text: N, answer: 5 }
+`), { now: () => clock });
+  const [slow, quick, wrong] = ['Slow', 'Quick', 'Wrong'].map((n) => {
+    const r = game.join(n);
+    assert.ok(r.ok);
+    return r.value;
+  });
+  game.advance();
+  assert.equal(game.teamView(slow!.id)!.speedster, undefined, 'not before the reveal');
+  clock += 4000;
+  game.answer(slow!.id, 0);
+  clock += 100;
+  game.answer(quick!.id, 0, 500);
+  game.answer(wrong!.id, 1, 100);
+  assert.equal(game.phase, 'closed', 'everyone answered');
+  game.advance();
+  assert.equal(game.phase, 'reveal');
+  assert.deepEqual([game.teamView(wrong!.id)!.speedster?.name, game.hostView().speedster?.name], [quick!.name, quick!.name]);
+  game.advance(); // leaderboard
+  game.advance(); // the nearest question: speed is irrelevant
+  for (const t of [slow, quick, wrong]) game.answer(t!.id, 5);
+  game.advance();
+  assert.equal(game.phase, 'reveal');
+  assert.equal(game.hostView().speedster, undefined);
+  game.dispose();
+});

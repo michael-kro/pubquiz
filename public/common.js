@@ -321,3 +321,22 @@ export function confetti(count = 36) {
   document.body.append(layer);
   setTimeout(() => layer.remove(), 3500);
 }
+
+let lastFlashKey = '';
+
+/** On the reveal, flashes the photo (or initials) of the team with the quickest right answer, once per question. */
+export function flashSpeedster(state, big = false) {
+  if (state.phase !== 'reveal' || !state.speedster || !state.question) return;
+  const key = `${state.quizTitle}:${state.question.index}`;
+  if (key === lastFlashKey) return;
+  lastFlashKey = key;
+  const { name, photo } = state.speedster;
+  const overlay = h(
+    'div',
+    { class: `speedster${big ? ' big' : ''}`, role: 'status', onclick: () => overlay.remove() },
+    h('div', { class: 'speedster-card' }, h('p', { class: 'speedster-kicker' }, '⚡ Fastest right answer'), avatar(name, photo, big ? 320 : 200), h('p', { class: 'speedster-name' }, name)),
+  );
+  document.body.append(overlay);
+  setTimeout(() => overlay.classList.add('out'), 3200);
+  setTimeout(() => overlay.remove(), 3700);
+}

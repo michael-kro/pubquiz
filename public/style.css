@@ -755,3 +755,16 @@ input {
 .num-extra { display: flex; gap: 10px; justify-content: center; }
 .num-key.small { min-height: 48px; min-width: 88px; font-size: 1.5rem; }
 .num-key:active { transform: scale(0.97); }
+
+/* Fastest team flash */
+.speedster { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: #000b; animation: speedster-bg 0.25s ease-out both; }
+.speedster.out { opacity: 0; transition: opacity 0.4s; }
+.speedster-card { display: grid; justify-items: center; gap: 14px; text-align: center; padding: 20px; animation: speedster-pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+.speedster-kicker { margin: 0; font-size: 1.4rem; font-weight: 900; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; }
+.speedster-name { margin: 0; font-size: 2rem; font-weight: 900; overflow-wrap: anywhere; }
+.speedster .avatar { border: 6px solid var(--accent); box-shadow: 0 0 60px var(--accent); }
+.speedster.big .speedster-kicker { font-size: 3rem; }
+.speedster.big .speedster-name { font-size: 4.5rem; }
+@keyframes speedster-bg { from { opacity: 0; } to { opacity: 1; } }
+@keyframes speedster-pop { from { opacity: 0; transform: scale(0.5) rotate(-6deg); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .speedster-card, .speedster { animation: none; } }

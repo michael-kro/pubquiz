@@ -1,4 +1,4 @@
-import { avatar, brandBlock, brandLogo, breakPanel, connectSocket, h, LETTERS, loadBranding, ordinal, preload, setBreak, setDeadline, tick } from './common.js';
+import { avatar, brandBlock, brandLogo, breakPanel, connectSocket, flashSpeedster, h, LETTERS, loadBranding, ordinal, preload, setBreak, setDeadline, tick } from './common.js';
 import { mountBranding } from './branding.js';
 import { mountEditor } from './editor.js';
 
@@ -77,6 +77,7 @@ function connect() {
         state = message.view;
         setDeadline(state.question?.remainingMs, state.question?.paused);
         setBreak(state.onBreak);
+        if (TV && !state.teamsHidden) flashSpeedster(state, true);
         preload(state.preloadImage);
         if (!TV) rememberKey();
       } else if (message.t === 'error') {
