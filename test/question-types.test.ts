@@ -6,6 +6,7 @@ import { firstLetter, parseQuiz } from '../server/quiz.ts';
 
 const quiz = parseQuiz(`
 title: Types
+scoring: { leaderboard: question }
 rounds:
   - name: Mixed
     questions:
@@ -40,7 +41,10 @@ function join(game: Game, name: string): Team {
 
 /** Moves from an open question to the next one, via closed, reveal and leaderboard. */
 function finishQuestion(game: Game): void {
-  while (game.phase !== 'leaderboard') game.advance();
+  for (let presses = 0; game.phase !== 'leaderboard'; presses++) {
+    assert.ok(presses < 10, `never reached the leaderboard (stuck in "${game.phase}")`);
+    game.advance();
+  }
 }
 
 test('normalise ignores case, accents, punctuation, "&" and a leading article', () => {

@@ -25,6 +25,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('resume') }),
   z.object({ t: z.literal('extend'), seconds: z.number().min(1).max(120).optional() }),
   z.object({ t: z.literal('skip') }),
+  z.object({ t: z.literal('leaderboard') }),
   // Buzzin' questions: a team buzzes, the host judges the team that is answering.
   z.object({ t: z.literal('buzz'), elapsedMs: z.number().min(0).max(1_000_000).optional() }),
   z.object({ t: z.literal('judge'), correct: z.boolean() }),
@@ -138,6 +139,10 @@ export interface HostView {
   /** `code` is blank on the TV screen: anyone with a team's code can take over its phone. */
   teams: { id: string; name: string; code: string; photo?: string; score: number; connected: boolean; answered: boolean }[];
   photosEnabled: boolean;
+  /** After the reveal, the next press goes straight to the next question (the full leaderboard is skipped). */
+  skipsLeaderboardNext: boolean;
+  /** The venue Wi-Fi, if the host set one up: shown on the host and TV lobby with its own QR code. */
+  wifi?: { ssid: string; password?: string };
   question?: QuestionView & { answerText: string; answer?: number; info?: string };
   answeredCount: number;
   connectedCount: number;

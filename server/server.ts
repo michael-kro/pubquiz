@@ -12,7 +12,7 @@ import type { Library } from './library.ts';
 import type { BrandingStore } from './branding.ts';
 import { clientAddress, TokenBucket, WindowCounter } from './limits.ts';
 import { MAX_PHOTO_BYTES, PhotoStore, sniffImage } from './photos.ts';
-import { lanAddress } from './net.ts';
+import { lanAddress, wifiQrText } from './net.ts';
 import { parseClientMessage, type HostIdleView, type HostView, type ServerMessage } from './protocol.ts';
 import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
 import { createSaver, hashQuiz, readSession, writeSession, type Session } from './session.ts';
@@ -70,6 +70,8 @@ export interface ServerOptions {
   hostPin?: string;
   /** Name, colours and logo for every page. */
   branding?: BrandingStore;
+  /** The Wi-Fi network teams can join, shown as a QR code beside the join code (for a travel router or hotspot). */
+  wifi?: { ssid: string; password?: string };
   /** Let teams add a photo (the host can still switch it off). Default on. */
   photos?: boolean;
   /** Turn off the team-name word filter. */
@@ -189,6 +191,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       network,
       canEnd: Boolean(options.library),
       screenKey,
+      wifi: options.wifi,
     };
   }
 
@@ -442,6 +445,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (hostOnly()) game?.advance();
         return;
 
+      case 'leaderboard': {
+        if (!hostOnly() || !game) return;
+        const result = game.showLeaderboard();
+        if (!result.ok) send(conn, { t: 'error', message: result.error });
+        return;
+      }
+
       case 'buzz': {
         if (conn.role !== 'team' || !conn.teamId || !game) return send(conn, { t: 'error', message: 'Join a team first.' });
         const result = game.buzz(conn.teamId, latencyOf(conn), msg.elapsedMs);
@@ -656,6 +666,19 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     if (pathname === '/healthz') {
       res.writeHead(200, { 'content-type': 'text/plain', 'cache-control': 'no-store' });
       res.end(instanceId);
+      return;
+    }
+
+    if (pathname === '/wifi-qr.svg') {
+      // The Wi-Fi password is in the code, so only the host and TV screens (which show it anyway) may fetch it.
+      const key = url.searchParams.get('key') ?? undefined;
+      if (!options.wifi || !(isHostKey(key) || keyIs(screenKey, key))) {
+        res.writeHead(404).end('Not found');
+        return;
+      }
+      const svg = await QRCode.toString(wifiQrText(options.wifi.ssid, options.wifi.password), { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
+      res.writeHead(200, { 'content-type': CONTENT_TYPES['.svg'], 'cache-control': 'no-store', ...PAGE_HEADERS });
+      res.end(svg);
       return;
     }
 

@@ -7,6 +7,7 @@ import { Client, type Message } from './client.ts';
 
 const quiz = parseQuiz(`
 title: Server Test
+scoring: { leaderboard: question }
 rounds:
   - name: R1
     questions:

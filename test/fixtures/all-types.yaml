@@ -1,5 +1,7 @@
 # One question of each type, used by the end-to-end test.
 title: All Types
+scoring:
+  leaderboard: question   # the end-to-end tests step through every phase
 rounds:
   - name: Mixed
     questions:

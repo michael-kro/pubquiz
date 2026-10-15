@@ -510,6 +510,19 @@ export class Game {
     this.changed();
   }
 
+  /** The host asks for the full leaderboard after a reveal that would otherwise go straight on. */
+  showLeaderboard(): Result<null> {
+    if (this.phase !== 'reveal') return fail('The leaderboard can be shown after the answer is revealed.');
+    this.phase = 'leaderboard';
+    this.changed();
+    return { ok: true, value: null };
+  }
+
+  /** Will the next press after the reveal skip the full leaderboard? */
+  get skipsLeaderboardNext(): boolean {
+    return this.quiz.leaderboard === 'round' && !this.isLastInRound(this.questionIndex);
+  }
+
   private isLastInRound(index: number): boolean {
     return this.quiz.questions[index + 1]?.roundIndex !== this.quiz.questions[index]?.roundIndex;
   }
@@ -1093,6 +1106,7 @@ export class Game {
       questionCount: this.quiz.questions.length,
       maxTeams: MAX_TEAMS,
       photosEnabled: this.photosEnabled,
+      skipsLeaderboardNext: this.questionIndex >= 0 && this.skipsLeaderboardNext,
       teams: teams.map((t) => ({
         id: t.id,
         name: t.name,

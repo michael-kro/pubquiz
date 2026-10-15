@@ -401,33 +401,13 @@ function phaseView(s) {
         photoPrompt(s),
       );
 
-    case 'open': {
+    case 'open':
       if (q.type === 'buzzer') return buzzerScreen(s, q);
-      const answered = s.myAnswerText != null || pending != null;
-      const locked = answered || Boolean(q.paused);
-      return h(
-        'section',
-        { class: 'screen' },
-        h('div', { class: 'question-top' }, questionHeader(q), h('span', { class: 'countdown', 'data-countdown': true })),
-        q.paused ? h('p', { class: 'paused-banner', role: 'status' }, '⏸ Paused by the quiz master. The clock is stopped.') : null,
-        q.type === 'music' ? h('p', { class: 'music-badge' }, '🎵 Listen to the music') : null,
-        h('h2', { class: 'question-text' }, q.text),
-        questionImage(q),
-        answerInput(s, q, locked),
-        answered
-          ? h(
-              'p',
-              { class: 'center muted' },
-              s.myAnswerText && q.type !== 'multiple-choice' && q.type !== 'letter'
-                ? ['Locked in: ', h('strong', {}, s.myAnswerText), '. ']
-                : 'Answer locked in. ',
-              'Waiting for the other teams…',
-            )
-          : null,
-      );
-    }
+      return questionScreen(s, q, false);
 
     case 'closed':
+      // A team that answered stays on its question, with the answer locked in, until the reveal.
+      if (q.type !== 'buzzer' && s.myAnswerText != null) return questionScreen(s, q, true);
       if (q.type === 'buzzer') {
         const b = q.buzz ?? {};
         return h(
@@ -481,6 +461,37 @@ function phaseView(s) {
     }
   }
   return h('section', { class: 'screen' });
+}
+
+/** The question with its answer controls. Once a team has answered it stays here, locked in, until the reveal. */
+function questionScreen(s, q, closed) {
+  const answered = s.myAnswerText != null || pending != null;
+  const locked = closed || answered || Boolean(q.paused);
+  return h(
+    'section',
+    { class: 'screen' },
+    h(
+      'div',
+      { class: 'question-top' },
+      questionHeader(q),
+      closed ? h('span', { class: 'time-up' }, "Time's up") : h('span', { class: 'countdown', 'data-countdown': true }),
+    ),
+    q.paused ? h('p', { class: 'paused-banner', role: 'status' }, '⏸ Paused by the quiz master. The clock is stopped.') : null,
+    q.type === 'music' ? h('p', { class: 'music-badge' }, '🎵 Listen to the music') : null,
+    h('h2', { class: 'question-text' }, q.text),
+    questionImage(q),
+    answerInput(s, q, locked),
+    answered
+      ? h(
+          'p',
+          { class: 'center muted' },
+          s.myAnswerText && q.type !== 'multiple-choice' && q.type !== 'letter'
+            ? ['Locked in: ', h('strong', {}, s.myAnswerText), '. ']
+            : 'Answer locked in. ',
+          closed ? 'Waiting for the reveal…' : 'Waiting for the other teams…',
+        )
+      : null,
+  );
 }
 
 /** Buzzin': one huge button. The first team to press it answers out loud. */

@@ -179,7 +179,8 @@ function nextLabel(s) {
     lobby: 'Start quiz',
     open: 'Close question',
     closed: 'Reveal answer',
-    reveal: 'Show leaderboard',
+    // Mid-round the next press goes straight on; the full board comes at the end of a round, or on request.
+    reveal: s.skipsLeaderboardNext ? 'Next question' : 'Show leaderboard',
     leaderboard: last ? 'Final results' : 'Next question',
     finished: 'Quiz finished',
   }[s.phase];
@@ -600,6 +601,9 @@ function topBar(s) {
     soundButton(),
     h('a', { class: 'button', href: `/screen?key=${encodeURIComponent(s.screenKey)}`, target: '_blank', rel: 'noopener', title: 'Open this on the TV or projector' }, 'TV screen ↗'),
     h('span', { class: 'join-hint' }, 'Join: ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)),
+    !TV && s.phase === 'reveal' && s.skipsLeaderboardNext
+      ? h('button', { onclick: () => socket.send({ t: 'leaderboard' }), title: 'Show the full leaderboard first' }, 'Leaderboard')
+      : null,
     s.canEnd ? h('button', { class: 'end', onclick: () => endQuiz(s) }, s.phase === 'finished' ? 'Back to quizzes' : 'End quiz') : null,
     h(
       'button',
@@ -616,7 +620,14 @@ function stage(s) {
       return h(
         'div',
         { class: 'lobby' },
-        h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }),
+        s.wifi
+          ? h(
+              'div',
+              { class: 'qr-pair' },
+              h('figure', { class: 'qr-step' }, h('img', { class: 'qr', src: `/wifi-qr.svg?key=${encodeURIComponent(TV ? key : s.screenKey)}`, alt: `QR code to join the ${s.wifi.ssid} Wi-Fi network` }), h('figcaption', {}, h('strong', {}, '1. Join the Wi-Fi'), h('br'), s.wifi.ssid, s.wifi.password ? h('br') : null, s.wifi.password ? `Password: ${s.wifi.password}` : null)),
+              h('figure', { class: 'qr-step' }, h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }), h('figcaption', {}, h('strong', {}, '2. Open the quiz'))),
+            )
+          : h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }),
         h(
           'div',
           {},
@@ -655,6 +666,7 @@ function stage(s) {
           : null,
         questionBody(s, q, reveal),
         reveal ? fastestBlock(s) : null,
+        reveal && s.skipsLeaderboardNext ? miniBoard(s) : null,
         reveal && q.info && q.type !== 'number' && q.type !== 'nearest' ? h('p', { class: 'muted info center' }, q.info) : null,
         s.phase === 'open' ? timerBar(q) : null,
         answerProgress(s),
@@ -702,6 +714,24 @@ function stage(s) {
     }
   }
   return h('div');
+}
+
+/** The top five, shown with the answer when the next press goes straight on to the next question. */
+function miniBoard(s) {
+  const top = s.standings.slice(0, 5);
+  if (top.length === 0) return null;
+  return h(
+    'div',
+    {},
+    h('p', { class: 'mini-board-title' }, 'Top of the table'),
+    h(
+      'ol',
+      { class: 'mini-board' },
+      top.map((row) =>
+        h('li', {}, h('span', { class: 'rank' }, ordinal(row.rank)), avatar(row.name, row.photo, 30), h('span', { class: 'name' }, row.name), movement(row), h('span', { class: 'score' }, row.score)),
+      ),
+    ),
+  );
 }
 
 /** The quickest correct teams, with what the speed bonus gave them. */

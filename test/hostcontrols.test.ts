@@ -10,6 +10,7 @@ const q = (extra = '') => `{ type: multiple-choice, text: Q, options: [a, b], an
 
 const BASIC = parseQuiz(`
 title: Controls
+scoring: { leaderboard: question }
 rounds:
   - name: R1
     questions: [${q()}, ${q()}]
@@ -205,7 +206,7 @@ test('"first" bonus goes only to a correct team, even if a wrong team was quicke
 });
 
 test('equal scores are split by the quicker total time; truly equal teams share a place', () => {
-  const quiz = parseQuiz(`title: T\nscoring: { mode: flat }\nrounds:\n  - name: R\n    questions: [${q()}, ${q()}]\n`);
+  const quiz = parseQuiz(`title: T\nscoring: { mode: flat, leaderboard: question }\nrounds:\n  - name: R\n    questions: [${q()}, ${q()}]\n`);
   const { game, tick } = setup(quiz);
   const [quick, slow, same, none] = join(game, 'Quick', 'Slow', 'Same', 'None');
   for (let i = 0; i < 2; i++) {

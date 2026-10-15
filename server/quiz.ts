@@ -127,11 +127,11 @@ export const QuizFile = z
         fastBonus: z.number().int().min(0).max(10_000).default(0),
         /** How many of the quickest correct teams earn it: 1, 2 or 3. */
         fastPlaces: z.number().int().min(1).max(3).default(1),
-        /** Show the leaderboard after every question, or only at the end of each round. */
-        leaderboard: z.enum(['question', 'round'], { error: 'must be question or round' }).default('question'),
+        /** Show the full leaderboard at the end of each round (default; mid-round the reveal shows the top five), or after every question. */
+        leaderboard: z.enum(['question', 'round'], { error: 'must be question or round' }).default('round'),
       })
       .strict()
-      .default({ speedFactor: 0.5, mode: 'speed', bonus: 500, fastBonus: 0, fastPlaces: 1, leaderboard: 'question' }),
+      .default({ speedFactor: 0.5, mode: 'speed', bonus: 500, fastBonus: 0, fastPlaces: 1, leaderboard: 'round' }),
     rounds: z
       .array(
         z.object({ name: text, mode: z.enum(SCORING_MODES, { error: `must be one of: ${SCORING_MODES.join(', ')}` }).optional(), questions: z.array(QuestionSchema, { error: 'needs a list of questions' }).min(1, 'needs at least one question') }).strict(),

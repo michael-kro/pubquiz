@@ -32,6 +32,8 @@ Options:
       --quizzes <dir>    Where the quiz library lives (default ${DEFAULT_LIBRARY})
       --branding <dir>   Folder with branding.json and a logo (name, colours, logo on every page).
                          Default: the "branding" folder inside your quiz library, editable from the host screen
+      --wifi-ssid <name>      Show a second QR code on the host and TV lobby so teams can join this Wi-Fi network
+      --wifi-password <pw>    The password for it (leave out for an open network)
       --no-photos        Don't let teams add a photo (the host can also switch photos off during a quiz)
       --no-name-filter   Allow any team name (the default blocks swearing; invisible characters are always removed)
       --host-pin <pin>   Let the host open /host by typing this PIN (6+ characters), e.g. from a phone
@@ -99,6 +101,8 @@ async function main(): Promise<void> {
       'host-pin': { type: 'string' },
       'no-name-filter': { type: 'boolean', default: false },
       'no-photos': { type: 'boolean', default: false },
+      'wifi-ssid': { type: 'string' },
+      'wifi-password': { type: 'string' },
       branding: { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
@@ -119,6 +123,7 @@ async function main(): Promise<void> {
     fail('--host-pin needs at least 6 characters. The quiz can be reached from the internet, so a short PIN could be guessed.');
   }
 
+  if (values['wifi-password'] && !values['wifi-ssid']) fail('--wifi-password needs --wifi-ssid too.');
   const quizPath = positionals[0];
   const single = quizPath ? await loadQuizArgument(quizPath, values.fresh) : undefined;
   const library = quizPath ? undefined : new Library(resolve(values.quizzes ?? DEFAULT_LIBRARY));
@@ -143,6 +148,7 @@ async function main(): Promise<void> {
       branding,
       nameFilter: !values['no-name-filter'],
       photos: !values['no-photos'],
+      wifi: values['wifi-ssid'] ? { ssid: values['wifi-ssid'], password: values['wifi-password'] || undefined } : undefined,
       port,
       publicHost: values['public-host'],
       onNetworkAction(action) {

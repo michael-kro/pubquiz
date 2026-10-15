@@ -42,7 +42,7 @@ export interface QuizDraft {
 
 const BLANK: QuizDraft = {
   title: 'New quiz',
-  scoring: { fastBonus: 250, fastPlaces: 3 },
+  scoring: { fastBonus: 250, fastPlaces: 3, leaderboard: 'round' },
   rounds: [
     {
       name: 'Round 1',

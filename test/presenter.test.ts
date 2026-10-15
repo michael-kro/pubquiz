@@ -11,6 +11,7 @@ import { Client } from './client.ts';
 
 const quiz = parseQuiz(`
 title: Presenter
+scoring: { leaderboard: question }
 rounds:
   - name: One
     questions:
@@ -30,7 +31,10 @@ function join3(game: Game, ...names: string[]): Team[] {
 }
 
 function toLeaderboard(game: Game): void {
-  while (game.phase !== 'leaderboard') game.advance();
+  for (let presses = 0; game.phase !== 'leaderboard'; presses++) {
+    assert.ok(presses < 10, `never reached the leaderboard (stuck in "${game.phase}")`);
+    game.advance();
+  }
 }
 
 test('questions know their round, and the last one in a round is a round break', () => {

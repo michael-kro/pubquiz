@@ -11,6 +11,7 @@ import { Client, type Message } from './client.ts';
 
 const quiz = parseQuiz(`
 title: Robust
+scoring: { leaderboard: question }
 rounds:
   - name: R
     questions:

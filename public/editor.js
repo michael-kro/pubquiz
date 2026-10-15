@@ -788,7 +788,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
         (model.scoring?.fastBonus ?? 0) > 0
           ? setting('Teams that earn it', [[1, 'Quickest only'], [2, 'Quickest two'], [3, 'Quickest three']], () => model.scoring?.fastPlaces ?? 1, (v) => setScoring('fastPlaces', Number(v)))
           : null,
-        setting('Leaderboard', [['question', 'After every question'], ['round', 'After each round']], () => model.scoring?.leaderboard ?? 'question', (v) => setScoring('leaderboard', v)),
+        setting('Full leaderboard', [['round', 'End of each round (top five shown between)'], ['question', 'After every question']], () => model.scoring?.leaderboard ?? 'round', (v) => setScoring('leaderboard', v)),
       ),
     );
   }

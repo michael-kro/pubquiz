@@ -547,6 +547,34 @@ input {
 .buzz-list .right { color: var(--right); font-weight: 800; }
 .buzz-list .wrong { color: var(--wrong); font-weight: 800; }
 
+.qr-pair { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
+.qr-step { margin: 0; text-align: center; }
+.qr-pair .qr { width: min(32vh, 300px); }
+.qr-step figcaption { margin-top: 10px; font-size: 1.15rem; }
+
+.time-up { font-weight: 800; color: var(--accent); }
+.mini-board { list-style: none; padding: 0; margin: 20px auto 0; max-width: 640px; display: grid; gap: 6px; }
+.mini-board li { display: flex; gap: 12px; align-items: center; padding: 8px 14px; border-radius: 10px; background: var(--surface); font-size: 1.15rem; }
+.mini-board .rank { min-width: 2.4em; font-weight: 800; }
+.mini-board .name { flex: 1; font-weight: 700; overflow-wrap: anywhere; }
+.mini-board .score { font-variant-numeric: tabular-nums; font-weight: 800; }
+.mini-board-title { text-align: center; color: var(--muted); margin: 18px 0 0; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.85rem; }
+
+/* The revealed answer pulses a few times (about 1.4 per second, well inside what is comfortable), then stays lit. */
+.host .option.correct { animation: reveal-flash 0.7s ease-in-out 4; position: relative; z-index: 1; }
+.big-letter, .answer-reveal strong { animation: reveal-text-flash 0.7s ease-in-out 4; display: inline-block; }
+@keyframes reveal-flash {
+  0%, 100% { filter: brightness(1); transform: scale(1); box-shadow: 0 0 0 0 #fff0; }
+  50% { filter: brightness(1.45); transform: scale(1.035); box-shadow: 0 0 0 10px #fff6; }
+}
+@keyframes reveal-text-flash {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.18); filter: brightness(1.4); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .host .option.correct, .big-letter, .answer-reveal strong { animation: none; }
+}
+
 /* Announcements for screen readers only */
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 

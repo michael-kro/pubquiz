@@ -131,6 +131,7 @@ test('exit test: build a 3-round quiz, export it, re-import it and run it', asyn
 
   const draft = {
     title: 'Editor Built',
+    scoring: { leaderboard: 'question' },
     rounds: [
       {
         name: 'Openers',

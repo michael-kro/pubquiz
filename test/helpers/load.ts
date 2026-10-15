@@ -109,18 +109,38 @@ class Bot {
     this.o = o;
   }
 
-  connect(): Promise<void> {
+  /** Opens the connection and joins. A connection that hasn't opened after a few seconds is abandoned, so one stuck socket can't stall everything. */
+  connect(timeoutMs = 5000): Promise<void> {
     return new Promise((resolve, reject) => {
       const ws = new WebSocket(`ws://127.0.0.1:${this.port}/ws`);
       this.ws = ws;
+      const timer = setTimeout(() => {
+        ws.terminate();
+        reject(new Error(`${this.name} could not connect within ${timeoutMs} ms`));
+      }, timeoutMs);
       ws.on('error', () => {});
       ws.once('open', () => {
+        clearTimeout(timer);
         ws.send(JSON.stringify(this.token ? { t: 'rejoin', token: this.token } : { t: 'join', room: this.room, name: this.name }));
         resolve();
       });
-      ws.once('error', reject);
+      ws.once('error', (error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
       ws.on('message', (data) => this.onMessage(JSON.parse(data.toString())));
     });
+  }
+
+  /** connect(), trying a few times: the first attempts of a busy machine can be slow. */
+  async connectWithRetry(attempts = 3): Promise<void> {
+    for (let i = 1; ; i++) {
+      try {
+        return await this.connect();
+      } catch (error) {
+        if (i >= attempts) throw error;
+      }
+    }
   }
 
   room = '';
@@ -196,7 +216,22 @@ class Bot {
   }
 }
 
+/** Runs a load test, but fails with a clear message instead of hanging if it takes far longer than a quiz of this size should. */
 export async function runLoad(options: LoadOptions): Promise<LoadReport> {
+  const seconds = options.seconds ?? 10;
+  const limitMs = (options.questions * (seconds + 8) + 60) * 1000;
+  let timer: NodeJS.Timeout | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`The load test did not finish within ${Math.round(limitMs / 1000)} s`)), limitMs);
+  });
+  try {
+    return await Promise.race([runLoadUnbounded(options), deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function runLoadUnbounded(options: LoadOptions): Promise<LoadReport> {
   const log = options.log ?? (() => {});
   const o = {
     teams: options.teams,
@@ -214,7 +249,7 @@ export async function runLoad(options: LoadOptions): Promise<LoadReport> {
   // Flat scoring makes every answer worth exactly 1000 or 0, so results can be checked exactly.
   const yaml = [
     'title: Load test',
-    'scoring: { mode: flat }',
+    'scoring: { mode: flat, leaderboard: question }',
     'rounds:',
     '  - name: Load',
     '    questions:',
@@ -262,12 +297,12 @@ export async function runLoad(options: LoadOptions): Promise<LoadReport> {
     await hostUntil((v) => v.phase === 'lobby', 5000, 'the lobby');
     const room = hostView.roomCode as string;
     for (const bot of [...bots, ...extras]) bot.room = room;
-    await Promise.all(bots.map((b) => b.connect()));
+    await Promise.all(bots.map((b) => b.connectWithRetry()));
     await hostUntil((v) => v.teams?.length === o.teams, 20_000, `${o.teams} teams to join`);
     log(`${o.teams} teams joined`);
 
     if (extras.length) {
-      await Promise.all(extras.map((b) => b.connect()));
+      await Promise.all(extras.map((b) => b.connectWithRetry()));
       await sleep(Math.max(300, o.latencyMs * 4));
       const accepted = extras.filter((b) => b.joined).length;
       if (accepted > 0) problems.push(`${accepted} extra teams were let in beyond the ${o.teams} that fit`);

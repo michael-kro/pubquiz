@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import { Game, type Team } from '../server/game.ts';
 import { parseQuiz } from '../server/quiz.ts';
 
-const yaml = (questions: string, scoring = '{}') => `title: T\nscoring: ${scoring}\nrounds:\n  - name: R\n    questions:\n${questions}\n`;
+const yaml = (questions: string, scoring = '{ leaderboard: question }') => `title: T\nscoring: ${scoring}\nrounds:\n  - name: R\n    questions:\n${questions}\n`;
 const NUMBER = '      - { type: number, text: "Year the Berlin Wall fell?", answer: 1989, tolerance: 0, info: "It came down on 9 November." }';
 const NEAREST = '      - { type: nearest, text: "Height of Everest in metres?", answer: 8849 }';
 
@@ -63,7 +63,7 @@ test('number: exact match, or within the tolerance, speed scored, and bad input 
 });
 
 test('nearest wins: the closest guess takes the points, ties share them, speed and the fast bonus do not matter', () => {
-  const { game, join, tick } = setup(NEAREST, '{ fastBonus: 500, fastPlaces: 3 }');
+  const { game, join, tick } = setup(NEAREST, '{ fastBonus: 500, fastPlaces: 3, leaderboard: question }');
   const [slowClosest, quick, tied, nobody] = join('Slow', 'Quick', 'Tied', 'Nobody');
   game.advance();
   game.answer(quick!.id, 8000);
