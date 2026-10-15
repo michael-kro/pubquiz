@@ -1,4 +1,4 @@
-import { LETTER_GROUPS, confetti, flashSpeedster, movement, prizeList, rollStandings, seconds, avatar, brandBlock, breakPanel, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setBreak, setDeadline, tick } from './common.js';
+import { LETTER_GROUPS, optionsSize, questionMeta, textSize, confetti, flashSpeedster, movement, prizeList, rollStandings, seconds, avatar, brandBlock, breakPanel, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setBreak, setDeadline, tick } from './common.js';
 
 const TOKEN_KEY = 'pubquiz.team-token';
 const app = document.getElementById('app');
@@ -397,7 +397,7 @@ function joinForm() {
 }
 
 function questionHeader(q) {
-  return h('p', { class: 'question-meta' }, `${q.round} · Question ${q.roundQuestion} of ${q.roundQuestions}`);
+  return questionMeta(q);
 }
 
 function questionImage(q) {
@@ -517,7 +517,7 @@ function wageringScreen(s, q) {
   return h(
     'section',
     { class: 'screen center wager-screen' },
-    h('p', { class: 'question-meta' }, `${q.round} · Question ${q.roundQuestion} of ${q.roundQuestions}`),
+    questionMeta(q),
     h('p', { class: 'wager-kicker' }, '🎲 Wager round'),
     h('h1', { class: 'wager-category' }, q.category || 'Place your bets'),
     placed
@@ -575,7 +575,7 @@ function questionScreen(s, q, closed) {
     q.paused ? h('p', { class: 'paused-banner', role: 'status' }, '⏸ Paused by the quiz master. The clock is stopped.') : null,
     s.wagerInfo?.amount ? h('p', { class: 'wager-banner' }, `🎲 ${s.wagerInfo.amount} points on the line`) : null,
     q.type === 'music' ? h('p', { class: 'music-badge' }, '🎵 Listen to the music') : null,
-    h('h2', { class: 'question-text' }, q.text),
+    h('h2', { class: `question-text ${textSize(q.text)}` }, q.text),
     questionImage(q),
     // On the keypad screens the message sits above the keys, in one short line, so nothing pushes the keys off the screen.
     answered && keypadType ? lockedLine(s, closed) : null,
@@ -614,7 +614,7 @@ function buzzerScreen(s, q) {
     { class: 'screen center buzzer-screen' },
     h('div', { class: 'question-top' }, questionHeader(q), h('span', { class: 'countdown', 'data-countdown': true })),
     q.paused && !b.answering ? h('p', { class: 'paused-banner', role: 'status' }, '⏸ Paused by the quiz master.') : null,
-    h('h2', { class: 'question-text' }, q.text),
+    h('h2', { class: `question-text ${textSize(q.text)}` }, q.text),
     h(
       'button',
       {
@@ -642,7 +642,7 @@ function answerInput(s, q, locked) {
       const chosen = s.myChoice ?? pending;
       return h(
         'div',
-        { class: 'options' },
+        { class: `options ${optionsSize(q.options)}` },
         q.options.map((option, i) =>
           h(
             'button',

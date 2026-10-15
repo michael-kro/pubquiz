@@ -431,3 +431,19 @@ export function rollStandings(rows, { key, className = '', columns = () => 1, ro
   }
   return list;
 }
+
+/** "Round name" with the question's place in the round, "3/10", on its own line beneath it. */
+export function questionMeta(q, extra = '') {
+  return h(
+    'p',
+    { class: `question-meta ${extra}`.trim(), 'aria-label': `${q.round}, question ${q.roundQuestion} of ${q.roundQuestions}` },
+    h('span', { class: 'round-name', 'aria-hidden': 'true' }, q.round),
+    h('strong', { class: 'q-count', 'aria-hidden': 'true' }, `${q.roundQuestion}/${q.roundQuestions}`),
+  );
+}
+
+/** A size class for long question text, so a paragraph doesn't fill several screens. */
+export const textSize = (text = '') => (text.length > 600 ? 'text-xxl' : text.length > 350 ? 'text-xl' : text.length > 180 ? 'text-lg' : '');
+
+/** Class for a block of answer options when any of them is long, so they get smaller type and tighter boxes. */
+export const optionsSize = (options = []) => (Math.max(0, ...options.map((o) => o.length)) > 70 ? 'long-options' : '');

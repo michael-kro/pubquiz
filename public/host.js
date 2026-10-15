@@ -1,4 +1,4 @@
-import { avatar, brandBlock, brandLogo, breakPanel, connectSocket, flashSpeedster, MEDALS, movement, prizeList, rollStandings, seconds, h, LETTERS, loadBranding, ordinal, preload, setBreak, setDeadline, tick } from './common.js';
+import { avatar, brandBlock, brandLogo, breakPanel, connectSocket, flashSpeedster, MEDALS, movement, optionsSize, prizeList, questionMeta, rollStandings, seconds, textSize, h, LETTERS, loadBranding, ordinal, preload, setBreak, setDeadline, tick } from './common.js';
 import { mountBranding } from './branding.js';
 import { mountEditor } from './editor.js';
 
@@ -792,7 +792,7 @@ function stage(s) {
       return h(
         'div',
         { class: 'wager-stage' },
-        h('p', { class: 'question-meta center' }, `${q.round} · Question ${q.roundQuestion} of ${q.roundQuestions}`),
+        questionMeta(q, 'center'),
         h('p', { class: 'wager-kicker' }, '🎲 Wager round'),
         h('h1', { class: 'wager-category' }, q.category || 'Place your bets'),
         h('p', { class: 'muted center big' }, 'Teams are betting before they see the question.'),
@@ -813,7 +813,7 @@ function stage(s) {
         h(
           'div',
           { class: 'question-top' },
-          h('p', { class: 'question-meta' }, `${q.round} · Question ${q.roundQuestion} of ${q.roundQuestions}`),
+          questionMeta(q),
           s.phase === 'open'
             ? h('span', { class: 'countdown big', 'data-countdown': true })
             : h('span', { class: 'phase-label' }, s.phase === 'reading' ? 'Listen to the answers' : s.phase === 'closed' ? "Time's up" : 'Answer'),
@@ -825,7 +825,7 @@ function stage(s) {
         !TV && s.phase === 'reading'
           ? h('p', { class: 'host-only' }, s.reading ? `Read each answer out loud, then press the button to show the next one (${s.reading.shown} of ${s.reading.total} showing).${s.startOnLastAnswer ? ' The timer starts when the last answer shows. ' : ' '}` : 'Ask the question out loud, then start the timer. ', h('button', { type: 'button', onclick: () => socket.send({ t: 'start-timer' }) }, 'Start timer now (S)'))
           : null,
-        h('h1', { class: 'question-text' }, q.text),
+        h('h1', { class: `question-text ${textSize(q.text)}` }, q.text),
         q.image
           ? h('img', { class: `question-image host-image${s.review ? ' small' : ''}`, src: q.image, alt: '' })
           : null,
@@ -1092,7 +1092,7 @@ function questionBody(s, q, reveal) {
     case 'multiple-choice':
       return h(
         'div',
-        { class: 'options' },
+        { class: `options ${optionsSize(q.options)}` },
         q.options.map((option, i) =>
           h(
             'div',

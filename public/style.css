@@ -105,8 +105,21 @@ input {
 .team-score { color: var(--accent); white-space: nowrap; }
 
 .question-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
-.question-meta { color: var(--muted); margin: 0; }
+.question-meta { color: var(--muted); margin: 0; display: grid; gap: 2px; min-width: 0; }
+.question-meta .round-name { overflow-wrap: anywhere; }
+.question-meta .q-count { color: var(--text); font-size: 1.25rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.host .question-meta .q-count { font-size: 1.6rem; }
+.question-meta.center { text-align: center; justify-items: center; }
 .question-text { font-size: 1.5rem; }
+.question-text.text-lg { font-size: 1.25rem; line-height: 1.35; }
+.question-text.text-xl { font-size: 1.1rem; line-height: 1.4; font-weight: 600; }
+.question-text.text-xxl { font-size: 1rem; line-height: 1.4; font-weight: 600; }
+/* Very long questions scroll inside their own box on a phone, so the answers stay in reach. */
+.team-layout .question-text.text-xl, .team-layout .question-text.text-xxl { max-height: 34vh; overflow-y: auto; padding-right: 6px; overscroll-behavior: contain; border-bottom: 1px solid var(--surface-2); }
+.options.long-options { gap: 8px; }
+.options.long-options .option { font-size: 0.95rem; min-height: 52px; padding: 10px 12px; gap: 10px; line-height: 1.3; }
+.host .options.long-options { gap: 10px; margin: 10px 0; }
+.host .options.long-options .option { font-size: clamp(1rem, 1.25vw, 1.3rem); min-height: 60px; padding: 8px 14px; }
 
 .countdown {
   font-variant-numeric: tabular-nums;
@@ -299,6 +312,9 @@ input {
 
 .stage { grid-area: stage; padding: 32px 40px; overflow: auto; }
 .host .question-text { font-size: clamp(1.8rem, 3.5vw, 3.2rem); margin: 0.4em 0 0.8em; }
+.host .question-text.text-lg { font-size: clamp(1.5rem, 2.8vw, 2.5rem); }
+.host .question-text.text-xl { font-size: clamp(1.15rem, 1.7vw, 1.8rem); }
+.host .question-text.text-xxl { font-size: clamp(1rem, 1.25vw, 1.35rem); line-height: 1.35; }
 .host .options { grid-template-columns: 1fr 1fr; gap: 18px; }
 .host .option { font-size: clamp(1.2rem, 2vw, 1.9rem); min-height: 110px; }
 .host .option.dimmed { opacity: 0.3; }
