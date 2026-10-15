@@ -182,6 +182,110 @@
     "Mad Max",
     "Die Hard"
    ]
+  },
+  {
+   "path": "/movies1/anchorman/murder.mp3",
+   "file": "anchorman-murder.mp3",
+   "film": "Anchorman (2004)",
+   "quote": "“Boy, that escalated quickly… I mean, that really got out of hand fast.”",
+   "question": "Which character says “Boy, that escalated quickly”?",
+   "answer": "Ron Burgundy",
+   "wrong": [
+    "Brick Tamland",
+    "Champ Kind",
+    "Brian Fantana"
+   ]
+  },
+  {
+   "path": "/movies1/anchorman/cheese.mp3",
+   "file": "anchorman-cheese.mp3",
+   "film": "Anchorman (2004)",
+   "quote": "“You pooped in the refrigerator? And you ate a whole wheel of cheese? … I’m not even mad. That’s amazing.”",
+   "question": "Ron Burgundy is “not even mad” about what happened to which food?",
+   "answer": "A whole wheel of cheese",
+   "wrong": [
+    "A roast chicken",
+    "A tub of ice cream",
+    "A salmon"
+   ]
+  },
+  {
+   "path": "/movies1/anchorman/raven.mp3",
+   "file": "anchorman-raven.mp3",
+   "film": "Anchorman (2004)",
+   "quote": "“Great Odin’s raven!”",
+   "question": "Which anchorman exclaims “Great Odin’s raven!”?",
+   "answer": "Ron Burgundy",
+   "wrong": [
+    "Wes Mantooth",
+    "Champ Kind",
+    "Garth Holden"
+   ]
+  },
+  {
+   "path": "/movies1/anchorman/suits.mp3",
+   "file": "anchorman-suits.mp3",
+   "film": "Anchorman (2004)",
+   "quote": "“Son of a bee sting!”",
+   "question": "What does Ron Burgundy say instead of a swear word: “Son of a …”?",
+   "answer": "Bee sting",
+   "wrong": [
+    "Biscuit",
+    "Gun",
+    "Mother"
+   ]
+  },
+  {
+   "path": "/movies1/anchorman/lamp.mp3",
+   "file": "anchorman-lamp.mp3",
+   "film": "Anchorman (2004)",
+   "quote": "“I love carpet. I love desk.”",
+   "question": "Which weatherman declares “I love carpet. I love desk”?",
+   "answer": "Brick Tamland",
+   "wrong": [
+    "Brian Fantana",
+    "Champ Kind",
+    "Ron Burgundy"
+   ]
+  },
+  {
+   "path": "/movies1/anchorman/musk.mp3",
+   "file": "anchorman-musk.mp3",
+   "film": "Anchorman (2004)",
+   "quote": "“Time to musk up.”",
+   "question": "Which anchorman applies Sex Panther cologne with “Time to musk up”?",
+   "answer": "Brian Fantana",
+   "wrong": [
+    "Ron Burgundy",
+    "Champ Kind",
+    "Brick Tamland"
+   ]
+  },
+  {
+   "path": "/movies1/anchorman/buddha.mp3",
+   "file": "anchorman-buddha.mp3",
+   "film": "Anchorman (2004)",
+   "quote": "“You’re like a miniature Buddha, covered with hair.”",
+   "question": "Ron calls his dog Baxter a miniature what, covered with hair?",
+   "answer": "Buddha",
+   "wrong": [
+    "Wizard",
+    "Professor",
+    "Bear"
+   ]
+  },
+  {
+   "path": "/movies1/anchorman/diversity.mp3",
+   "file": "anchorman-diversity.mp3",
+   "film": "Anchorman (2004)",
+   "quote": "“What in the hell is diversity?”",
+   "question": "Which sports reporter asks “What in the hell is diversity?”",
+   "answer": "Champ Kind",
+   "wrong": [
+    "Brick Tamland",
+    "Brian Fantana",
+    "Ron Burgundy"
+   ]
   }
  ]
 }
