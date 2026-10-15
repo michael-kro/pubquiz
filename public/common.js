@@ -86,6 +86,61 @@ export function connectSocket({ onOpen, onMessage, onStatus }) {
   };
 }
 
+// The break screen: a countdown and fun facts that rotate, kept in step on every screen by the server's elapsed time.
+
+const FACT_SECONDS = 14;
+let breakInfo = null;
+let shownFact = -1;
+
+export function setBreak(info) {
+  if (!info) {
+    breakInfo = null;
+    return;
+  }
+  const changedBreak = !breakInfo || breakInfo.facts !== info.facts;
+  breakInfo = { ...info, at: performance.now() };
+  if (changedBreak) shownFact = -1;
+}
+
+export function breakPanel(big = false) {
+  return h(
+    'div',
+    { class: `break-panel${big ? ' big' : ''}` },
+    h('p', { class: 'break-title' }, '☕ Break time'),
+    h('p', { class: 'break-countdown', 'data-break-countdown': true }),
+    breakInfo?.facts?.length
+      ? h('div', { class: 'break-fact-card' }, h('p', { class: 'break-kicker' }, 'Did you know?'), h('p', { class: 'break-fact', 'data-break-fact': true }))
+      : null,
+  );
+}
+
+/** Updates the break countdown and the fact on show. Called with the other countdowns, several times a second. */
+function tickBreak() {
+  if (!breakInfo) return;
+  const elapsed = breakInfo.elapsedMs + (performance.now() - breakInfo.at);
+  for (const el of document.querySelectorAll('[data-break-countdown]')) {
+    if (breakInfo.remainingMs === undefined) {
+      el.textContent = '';
+      continue;
+    }
+    const left = Math.max(0, breakInfo.remainingMs - (performance.now() - breakInfo.at));
+    const seconds = Math.ceil(left / 1000);
+    el.textContent = left <= 0 ? 'Back any moment…' : `Back in ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  }
+  const facts = breakInfo.facts;
+  if (!facts?.length) return;
+  const index = Math.floor(elapsed / (FACT_SECONDS * 1000)) % facts.length;
+  for (const el of document.querySelectorAll('[data-break-fact]')) {
+    if (el.dataset.index === String(index)) continue;
+    el.dataset.index = String(index);
+    el.textContent = facts[index];
+    // Restart the fade-in each time the fact changes.
+    el.classList.remove('fact-in');
+    void el.offsetWidth;
+    el.classList.add('fact-in');
+  }
+}
+
 const preloaded = new Set();
 
 /** Fetches an image ahead of time so it appears instantly when its question opens. */
@@ -107,6 +162,7 @@ export function setDeadline(remainingMs, paused = false) {
 
 /** Call after rendering so new countdown elements show the time straight away. */
 export function tick() {
+  tickBreak();
   const left = frozenMs ?? (deadline == null ? 0 : deadline - performance.now());
   const seconds = Math.max(0, Math.ceil(left / 1000));
   for (const el of document.querySelectorAll('[data-countdown]')) {
@@ -247,4 +303,20 @@ export function brandBlock() {
     name && branding.showName !== false ? h('p', { class: 'brand-name' }, name) : null,
     tagline ? h('p', { class: 'brand-tagline' }, tagline) : null,
   );
+}
+
+/** A short burst of confetti, skipped for people who prefer less motion. */
+export function confetti(count = 36) {
+  try {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  } catch {
+    return;
+  }
+  const colours = ['#ffd23f', '#3bceac', '#ee6352', '#59a5d8', '#f78fb3'];
+  const layer = h('div', { class: 'confetti', 'aria-hidden': 'true' });
+  for (let i = 0; i < count; i++) {
+    layer.append(h('i', { style: `left:${Math.random() * 100}%;background:${colours[i % colours.length]};animation-duration:${1.6 + Math.random() * 1.4}s;animation-delay:${Math.random() * 0.4}s` }));
+  }
+  document.body.append(layer);
+  setTimeout(() => layer.remove(), 3500);
 }

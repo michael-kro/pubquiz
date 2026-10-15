@@ -1,6 +1,7 @@
 // HTTP API for the host's quiz library and editor. Every route needs the host key.
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { bundledBankFiles, sampleQuizFiles } from './assets.ts';
+import { loadBundledFacts, pickFacts } from './facts.ts';
 import { buildEntries, filterEntries, sample, summarise, type BankEntry } from './bank.ts';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -62,6 +63,11 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
     if (parts[0] === 'quizzes' && parts.length === 1) {
       if (method === 'GET') return void sendJson(res, 200, await library.list()), true;
       if (method === 'POST') return void sendJson(res, 201, { id: await library.create() }), true;
+    }
+
+    if (parts[0] === 'facts' && method === 'GET') {
+      const count = Math.min(Math.max(Number(url.searchParams.get('count') ?? 10) || 10, 1), 60);
+      return void sendJson(res, 200, { facts: pickFacts(await loadBundledFacts(), count) }), true;
     }
 
     if (parts[0] === 'bank' && method === 'GET') {

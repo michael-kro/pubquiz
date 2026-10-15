@@ -1,4 +1,4 @@
-import { avatar, brandBlock, brandLogo, connectSocket, h, LETTERS, loadBranding, ordinal, preload, setDeadline, tick } from './common.js';
+import { avatar, brandBlock, brandLogo, breakPanel, connectSocket, h, LETTERS, loadBranding, ordinal, preload, setBreak, setDeadline, tick } from './common.js';
 import { mountBranding } from './branding.js';
 import { mountEditor } from './editor.js';
 
@@ -76,6 +76,7 @@ function connect() {
         playSoundsFor(state, message.view);
         state = message.view;
         setDeadline(state.question?.remainingMs, state.question?.paused);
+        setBreak(state.onBreak);
         preload(state.preloadImage);
         if (!TV) rememberKey();
       } else if (message.t === 'error') {
@@ -174,6 +175,7 @@ document.addEventListener('keydown', (event) => {
 });
 
 function nextLabel(s) {
+  if (s.onBreak) return 'End break';
   const last = s.question && s.question.index + 1 === s.questionCount;
   return {
     lobby: 'Start quiz',
@@ -602,6 +604,7 @@ function topBar(s) {
     soundButton(),
     h('a', { class: 'button', href: `/screen?key=${encodeURIComponent(s.screenKey)}`, target: '_blank', rel: 'noopener', title: 'Open this on the TV or projector' }, 'TV screen ↗'),
     h('span', { class: 'join-hint' }, 'Join: ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)),
+    breakControl(s),
     !TV && s.phase === 'reveal' && s.skipsLeaderboardNext
       ? h('button', { onclick: () => socket.send({ t: 'leaderboard' }), title: 'Show the full leaderboard first' }, 'Leaderboard')
       : null,
@@ -616,6 +619,7 @@ function topBar(s) {
 
 function stage(s) {
   const q = s.question;
+  if (s.onBreak) return breakStage(s);
   switch (s.phase) {
     case 'lobby':
       return h(
@@ -763,6 +767,43 @@ function answerReview(s, q) {
     q.answerEdited ? h('span', { class: 'chip plain' }, 'changed') : null,
     edit,
     h('span', { class: 'muted small' }, 'Only you can see this until you press Reveal answer.'),
+  );
+}
+
+// The break screen: big fun facts for the TV, and the same (with a way back) for the host.
+
+function breakStage(s) {
+  return h('div', { class: 'break-stage' }, brandBlock(), breakPanel(true), TV ? null : h('p', { class: 'muted center' }, 'Press End break (or Space) when you are ready to carry on.'));
+}
+
+let breakMenuOpen = false;
+document.addEventListener('click', (event) => {
+  if (breakMenuOpen && !event.target.closest?.('.break-menu-wrap')) {
+    breakMenuOpen = false;
+    render();
+  }
+});
+
+/** The Break button and its choice of lengths, shown between questions. */
+function breakControl(s) {
+  if (TV || s.onBreak || !['lobby', 'reveal', 'leaderboard'].includes(s.phase)) return null;
+  const start = (minutes) => {
+    breakMenuOpen = false;
+    socket.send({ t: 'break', minutes });
+  };
+  return h(
+    'span',
+    { class: 'break-menu-wrap' },
+    h('button', { 'aria-haspopup': 'true', 'aria-expanded': String(breakMenuOpen), onclick: () => { breakMenuOpen = !breakMenuOpen; render(); }, title: 'Show a break screen with fun facts' }, '☕ Break'),
+    breakMenuOpen
+      ? h(
+          'div',
+          { class: 'break-menu', role: 'menu' },
+          [[5, '5 minutes'], [10, '10 minutes'], [15, '15 minutes'], [undefined, 'No timer']].map(([minutes, label]) =>
+            h('button', { role: 'menuitem', onclick: () => start(minutes) }, label),
+          ),
+        )
+      : null,
   );
 }
 

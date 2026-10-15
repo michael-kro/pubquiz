@@ -1,7 +1,7 @@
 import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { checkTeamName, MAX_NAME_LENGTH } from './limits.ts';
 import { matchAnswer, normalise } from './matching.ts';
-import type { AnswerValue, HostView, Phase, QuestionView, ReviewGroup, StandingRow, TeamView } from './protocol.ts';
+import type { AnswerValue, BreakView, HostView, Phase, QuestionView, ReviewGroup, StandingRow, TeamView } from './protocol.ts';
 import { isTextAnswer, ORDERING_ITEMS, type Question, type Quiz } from './quiz.ts';
 import { scoreAnswer } from './scoring.ts';
 
@@ -76,6 +76,7 @@ export interface GameSnapshot {
   photos?: [string, number][];
   photosEnabled?: boolean;
   answerEdits?: [number, number | string][];
+  break?: { startedAt: number; durationMs?: number; facts: string[] };
   wagers?: [number, [string, number][]][];
   tvShowTeams?: boolean;
   buzz?: [number, BuzzState][];
@@ -159,6 +160,8 @@ export class Game {
   tvShowTeams = true;
   /** teamId → photo version, for teams that have uploaded one. The pictures themselves are in the PhotoStore. */
   private readonly photoVersions = new Map<string, number>();
+  /** Set while the host has the quiz on a break: when it started, how long it is meant to last, and its facts. */
+  private breakState: { startedAt: number; durationMs?: number; facts: string[] } | undefined;
   /** Wager rounds: what each team bet, by question index. */
   private readonly wagers = new Map<number, Map<string, number>>();
   /** Buzzin' questions, by question index. */
@@ -578,6 +581,11 @@ export class Game {
 
   /** The host's "next" button: moves to whatever comes after the current phase. */
   advance(): void {
+    // The host's main button ends a break first, without moving the quiz on.
+    if (this.breakState) {
+      this.endBreak();
+      return;
+    }
     switch (this.phase) {
       case 'lobby':
         if (this.quiz.questions.length > 0) this.openQuestion(0);
@@ -610,6 +618,37 @@ export class Game {
         return;
     }
     this.changed();
+  }
+
+  get onBreak(): boolean {
+    return this.breakState !== undefined;
+  }
+
+  /** The host puts the quiz on a break (between questions), with fun facts to show and an optional length. */
+  startBreak(minutes: number | undefined, facts: string[]): Result<null> {
+    if (!['lobby', 'reveal', 'leaderboard'].includes(this.phase)) return fail('A break can be taken between questions, not during one.');
+    if (this.breakState) return fail('The quiz is already on a break.');
+    if (minutes !== undefined && !(minutes >= 1 && minutes <= 60)) return fail('A break can be from 1 to 60 minutes.');
+    this.breakState = { startedAt: this.now(), durationMs: minutes === undefined ? undefined : Math.round(minutes * 60_000), facts: facts.slice(0, 60) };
+    this.changed();
+    return { ok: true, value: null };
+  }
+
+  endBreak(): Result<null> {
+    if (!this.breakState) return fail('The quiz is not on a break.');
+    this.breakState = undefined;
+    this.changed();
+    return { ok: true, value: null };
+  }
+
+  private breakView(): BreakView | undefined {
+    if (!this.breakState) return undefined;
+    const elapsedMs = Math.max(0, this.now() - this.breakState.startedAt);
+    return {
+      facts: this.breakState.facts,
+      elapsedMs,
+      remainingMs: this.breakState.durationMs === undefined ? undefined : Math.max(0, this.breakState.durationMs - elapsedMs),
+    };
   }
 
   /** The host asks for the full leaderboard after a reveal that would otherwise go straight on. */
@@ -716,6 +755,7 @@ export class Game {
       photos: [...this.photoVersions],
       photosEnabled: this.photosEnabled,
       answerEdits: [...this.answerEdits],
+      break: this.breakState,
       wagers: [...this.wagers].map(([index, bets]) => [index, [...bets]] as [number, [string, number][]]),
       tvShowTeams: this.tvShowTeams,
       buzz: [...this.buzzStates].map(([index, state]) => [index, structuredClone(state)] as [number, BuzzState]),
@@ -739,6 +779,7 @@ export class Game {
     for (const [id, version] of snapshot.photos ?? []) game.photoVersions.set(id, version);
     game.photosEnabled = snapshot.photosEnabled ?? true;
     for (const [index, value] of snapshot.answerEdits ?? []) game.answerEdits.set(index, value);
+    game.breakState = snapshot.break;
     for (const [index, bets] of snapshot.wagers ?? []) game.wagers.set(index, new Map(bets));
     game.tvShowTeams = snapshot.tvShowTeams ?? true;
     for (const [index, state] of snapshot.buzz ?? []) game.buzzStates.set(index, structuredClone(state));
@@ -1169,6 +1210,7 @@ export class Game {
       quizTitle: this.quiz.title,
       teamId: team.id,
       teamName: team.name,
+      onBreak: this.breakView(),
       teamCode: team.code,
       photo: this.photoUrl(team.id),
       photosEnabled: this.photosEnabled,
@@ -1269,6 +1311,7 @@ export class Game {
       phase: this.phase,
       quizTitle: this.quiz.title,
       questionCount: this.quiz.questions.length,
+      onBreak: this.breakView(),
       maxTeams: MAX_TEAMS,
       photosEnabled: this.photosEnabled,
       tvShowTeams: this.tvShowTeams,

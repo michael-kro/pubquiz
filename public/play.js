@@ -1,4 +1,4 @@
-import { avatar, brandBlock, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setDeadline, tick } from './common.js';
+import { confetti, avatar, brandBlock, breakPanel, connectSocket, getBranding, h, LETTERS, loadBranding, ordinal, preload, prepareTeamPhoto, setBreak, setDeadline, tick } from './common.js';
 
 const TOKEN_KEY = 'pubquiz.team-token';
 const app = document.getElementById('app');
@@ -13,8 +13,10 @@ function announce() {
   else if (state) {
     const q = state.question;
     const r = state.result;
-    text = {
+    if (state.onBreak) text = 'The quiz is on a break.';
+    else text = {
       lobby: "You're in. Waiting for the quiz master to start.",
+      wagering: q && `Wager round. The category is ${q.category || 'a secret'}. Place your bet.`,
       open: q && `${q.paused ? 'Paused. ' : ''}Question ${q.index + 1} of ${q.total}. ${q.text}`,
       closed: "Time's up.",
       reveal: r && `${r.correct ? 'Correct' : 'Not correct'}. ${r.points} points. The answer was ${r.answerText}.`,
@@ -107,6 +109,7 @@ const socket = connectSocket({
         }
         if (state.phase !== 'open' || state.myAnswerText != null) pending = null;
         setDeadline(state.question?.remainingMs, state.question?.paused);
+        setBreak(state.onBreak);
         trackQuestionTiming(state);
         preload(state.preloadImage);
         break;
@@ -185,6 +188,16 @@ function sendAnswer(value) {
  * Re-renders only when something visible changed. Other teams' activity sends us updates too,
  * and rebuilding the page would drop focus from the answer box and close the phone keyboard.
  */
+// Screens slide in when the phase or question changes, not on every re-render of the same screen.
+let lastScreenKey = '';
+function enterClass(state) {
+  const key = `${state.onBreak ? 'break' : state.phase}:${state.question?.index ?? ''}`;
+  if (key === lastScreenKey) return 'screen-wrap';
+  lastScreenKey = key;
+  if (state.phase === 'reveal' && state.result?.correct && !state.onBreak) confetti();
+  return 'screen-wrap screen-enter';
+}
+
 function render() {
   const { remainingMs, ...question } = state?.question ?? {};
   const key = JSON.stringify([state && { ...state, question, preloadImage: 0 }, ended, joinError, notice, pending, draftOrder, !!token, pendingJoin, connected, getBranding(), photoBusy, draftWager]);
@@ -223,7 +236,7 @@ function view() {
       ),
       h('span', { class: 'team-score' }, `${state.score} pts`),
     ),
-    phaseView(state),
+    h('div', { class: enterClass(state) }, state.onBreak ? h('section', { class: 'screen center' }, brandBlock(), breakPanel()) : phaseView(state)),
     h(
       'p',
       { class: 'team-code' },

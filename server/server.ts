@@ -12,6 +12,7 @@ import type { Library } from './library.ts';
 import type { BrandingStore } from './branding.ts';
 import { clientAddress, TokenBucket, WindowCounter } from './limits.ts';
 import { MAX_PHOTO_BYTES, PhotoStore, sniffImage } from './photos.ts';
+import { loadBundledFacts, pickFacts } from './facts.ts';
 import { lanAddress, wifiQrText } from './net.ts';
 import { parseClientMessage, type HostIdleView, type HostView, type ServerMessage } from './protocol.ts';
 import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
@@ -363,7 +364,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   }
   const isHostKey = (key: string | undefined) => keyIs(hostKey, key);
 
-  function handleMessage(conn: Connection, raw: string): void {
+  const builtInFacts = () => loadBundledFacts();
+
+  async function handleMessage(conn: Connection, raw: string): Promise<void> {
     if (!conn.messages.take()) {
       // Too many messages too fast: ignore them, and hang up on a connection that keeps flooding.
       if (conn.dropped++ === 0) send(conn, { t: 'error', message: 'Slow down.' });
@@ -450,6 +453,22 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       case 'leaderboard': {
         if (!hostOnly() || !game) return;
         const result = game.showLeaderboard();
+        if (!result.ok) send(conn, { t: 'error', message: result.error });
+        return;
+      }
+
+      case 'break': {
+        if (!hostOnly() || !active) return;
+        const own = active.quiz.facts;
+        const facts = pickFacts(own.length ? own : await builtInFacts(), 40);
+        const result = active.game.startBreak(msg.minutes, facts);
+        if (!result.ok) send(conn, { t: 'error', message: result.error });
+        return;
+      }
+
+      case 'end-break': {
+        if (!hostOnly() || !game) return;
+        const result = game.endBreak();
         if (!result.ok) send(conn, { t: 'error', message: result.error });
         return;
       }
@@ -810,7 +829,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       conn.missedPings = 0;
     });
     ping(conn);
-    ws.on('message', (data) => handleMessage(conn, data.toString()));
+    ws.on('message', (data) => {
+      handleMessage(conn, data.toString()).catch((error: Error) => console.error(`Couldn't handle a message: ${error.message}`));
+    });
     ws.on('close', () => {
       const left = (perAddress.get(address) ?? 1) - 1;
       if (left > 0) perAddress.set(address, left);

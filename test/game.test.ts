@@ -6,6 +6,7 @@ import { scoreAnswer } from '../server/scoring.ts';
 
 const quiz: Quiz = {
   title: 'Test',
+  facts: [],
   speedFactor: 0.5,
   bonus: 500,
   fastBonus: 0,

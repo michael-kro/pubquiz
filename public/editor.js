@@ -828,6 +828,41 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           : null,
         setting('Full leaderboard', [['round', 'End of each round (top five shown between)'], ['question', 'After every question']], () => model.scoring?.leaderboard ?? 'round', (v) => setScoring('leaderboard', v)),
       ),
+      factsEditor(),
+    );
+  }
+
+  /** Fun facts for the break screen, one per line. Blank means the built-in ones are used. */
+  function factsEditor() {
+    const box = h('textarea', {
+      rows: 5,
+      placeholder: 'One fact per line. Leave empty to use the built-in facts.',
+      'aria-label': 'Fun facts for the break screen',
+      oninput: (event) => {
+        const lines = event.target.value.split('\n').map((l) => l.trim()).filter(Boolean);
+        model.facts = lines.length ? lines : undefined;
+        changed();
+      },
+    });
+    box.value = (model.facts ?? []).join('\n');
+    return h(
+      'div',
+      { class: 'settings facts-editor' },
+      h('label', {}, 'Break screen fun facts', h('small', { class: 'muted' }, ` (${(model.facts ?? []).length}, max 200 characters each)`)),
+      box,
+      h('button', {
+        type: 'button',
+        onclick: async () => {
+          try {
+            const { facts } = await api('GET', '/facts?count=10');
+            model.facts = [...(model.facts ?? []), ...facts];
+            changed();
+            render();
+          } catch {
+            /* offline: leave the box as it is */
+          }
+        },
+      }, 'Add 10 random built-in facts'),
     );
   }
 

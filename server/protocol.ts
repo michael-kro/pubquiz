@@ -26,6 +26,8 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('extend'), seconds: z.number().min(1).max(120).optional() }),
   z.object({ t: z.literal('skip') }),
   z.object({ t: z.literal('leaderboard') }),
+  z.object({ t: z.literal('break'), minutes: z.number().min(1).max(60).optional() }),
+  z.object({ t: z.literal('end-break') }),
   z.object({ t: z.literal('set-answer'), value: z.union([z.number(), z.string().max(4)]) }),
   z.object({ t: z.literal('tv-teams'), visible: z.boolean() }),
   // Buzzin' questions: a team buzzes, the host judges the team that is answering.
@@ -96,7 +98,19 @@ export interface QuestionView {
   paused?: boolean;
 }
 
+/** The interval screen: shown everywhere while the host has the quiz on a break. */
+export interface BreakView {
+  /** Fun facts to rotate through, already shuffled. */
+  facts: string[];
+  /** How long the break has been going, so every screen rotates facts in step. */
+  elapsedMs: number;
+  /** Time left, if the host set a length. */
+  remainingMs?: number;
+}
+
 export interface TeamView {
+  /** Set while the host has the quiz on a break. */
+  onBreak?: BreakView;
   phase: Phase;
   quizTitle: string;
   teamId: string;
@@ -134,6 +148,7 @@ export interface ReviewGroup {
 }
 
 export interface HostView {
+  onBreak?: BreakView;
   phase: Phase;
   quizTitle: string;
   questionCount: number;

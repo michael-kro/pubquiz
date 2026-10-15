@@ -117,6 +117,8 @@ const QuestionSchema = z.discriminatedUnion('type', [
 export const QuizFile = z
   .object({
     title: text,
+    /** Fun facts for the break screen. Without any, the built-in facts are used. */
+    facts: z.array(z.string().trim().min(1).max(200)).max(300).optional(),
     scoring: z
       .object({
         // Share of a correct answer's points lost by answering at the very last moment.
@@ -167,6 +169,8 @@ export interface Media {
 
 export interface Quiz {
   title: string;
+  /** The quiz's own fun facts for the break screen (empty: use the built-in ones). */
+  facts: string[];
   speedFactor: number;
   /** Extra points for the first correct team, in "first" mode. */
   bonus: number;
@@ -249,6 +253,7 @@ function checkedOrThrow(raw: unknown): QuizFileData {
 function quizFromData(file: QuizFileData): Quiz {
   return {
     title: file.title,
+    facts: file.facts ?? [],
     speedFactor: file.scoring.speedFactor,
     bonus: file.scoring.bonus,
     fastBonus: file.scoring.fastBonus,
