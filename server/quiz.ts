@@ -40,6 +40,8 @@ const common = {
   audio: text.optional(),
   /** Faster correct answers earn more. Defaults to on, except for music. */
   speedBonus: z.boolean().optional(),
+  /** In a wager round: the category teams see while they bet, before the question appears. */
+  category: text.max(60).optional(),
   /** Shown with the answer once it's revealed: a fun fact, or where it comes from. */
   info: z.string().trim().min(1).max(300).optional(),
 };
@@ -134,7 +136,7 @@ export const QuizFile = z
       .default({ speedFactor: 0.5, mode: 'speed', bonus: 500, fastBonus: 0, fastPlaces: 1, leaderboard: 'round' }),
     rounds: z
       .array(
-        z.object({ name: text, mode: z.enum(SCORING_MODES, { error: `must be one of: ${SCORING_MODES.join(', ')}` }).optional(), questions: z.array(QuestionSchema, { error: 'needs a list of questions' }).min(1, 'needs at least one question') }).strict(),
+        z.object({ name: text, wager: z.boolean().optional(), wagerCap: z.number().int().min(1).max(100_000).optional(), mode: z.enum(SCORING_MODES, { error: `must be one of: ${SCORING_MODES.join(', ')}` }).optional(), questions: z.array(QuestionSchema, { error: 'needs a list of questions' }).min(1, 'needs at least one question') }).strict(),
         { error: 'needs a list of rounds' },
       )
       .min(1, 'needs at least one round'),
@@ -147,6 +149,10 @@ export type Question = z.infer<typeof QuestionSchema> & {
   roundIndex: number;
   /** How this question is scored: its round's mode, or the quiz's. */
   mode: ScoringMode;
+  /** The question is in a wager round: teams bet points before seeing it. */
+  wager: boolean;
+  /** The most a team may bet, if the round sets one (otherwise its score, with a small minimum). */
+  wagerCap?: number;
   /** Where browsers load the image from, once resolved. */
   imageUrl?: string;
   /** Where the host and TV screens load the audio clip from, once resolved. */
@@ -256,6 +262,8 @@ function quizFromData(file: QuizFileData): Quiz {
         round: round.name,
         roundIndex,
         mode: round.mode ?? file.scoring.mode,
+        wager: round.wager === true,
+        wagerCap: round.wagerCap,
         imageUrl: q.image && isUrl(q.image) ? q.image : undefined,
         audioUrl: q.audio && isUrl(q.audio) ? q.audio : undefined,
       })),

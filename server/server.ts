@@ -202,7 +202,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     const revealed = ['reveal', 'leaderboard', 'finished'].includes(view.phase);
     return {
       ...view,
-      question: view.question && !revealed ? { ...view.question, answerText: '', answer: undefined, info: undefined } : view.question,
+      question: view.question && !revealed ? { ...view.question, answerText: '', answer: undefined, info: undefined, hostText: undefined } : view.question,
       review: revealed ? view.review : undefined,
       // A list of guesses with how far off each was gives the answer away.
       guesses: revealed ? view.guesses : undefined,
@@ -464,6 +464,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       case 'tv-teams':
         if (hostOnly()) game?.setTvShowTeams(msg.visible);
         return;
+
+      case 'wager': {
+        if (conn.role !== 'team' || !conn.teamId || !game) return send(conn, { t: 'error', message: 'Join a team first.' });
+        const result = game.placeWager(conn.teamId, msg.amount);
+        if (!result.ok) send(conn, { t: 'error', message: result.error });
+        return;
+      }
 
       case 'buzz': {
         if (conn.role !== 'team' || !conn.teamId || !game) return send(conn, { t: 'error', message: 'Join a team first.' });

@@ -17,6 +17,8 @@ export const MAX_LATENCY_MS = 1500;
 /** How far a phone's own answer time may stray below the server's bound before it's not trusted. */
 export const CLIENT_TIME_TOLERANCE_MS = 150;
 export const MAX_EXTEND_SECONDS = 120;
+/** In a wager round a team may always bet at least this much, so a team on zero can still play. */
+export const WAGER_FLOOR = 200;
 /** Buzzes that arrive within this long of the first are ordered by their latency-adjusted time, not arrival. */
 export const BUZZ_WINDOW_MS = 120;
 /** Share of the fastest-team bonus for 1st, 2nd and 3rd quickest. */
@@ -74,6 +76,7 @@ export interface GameSnapshot {
   photos?: [string, number][];
   photosEnabled?: boolean;
   answerEdits?: [number, number | string][];
+  wagers?: [number, [string, number][]][];
   tvShowTeams?: boolean;
   buzz?: [number, BuzzState][];
   displayOrders: [number, number[]][];
@@ -156,6 +159,8 @@ export class Game {
   tvShowTeams = true;
   /** teamId → photo version, for teams that have uploaded one. The pictures themselves are in the PhotoStore. */
   private readonly photoVersions = new Map<string, number>();
+  /** Wager rounds: what each team bet, by question index. */
+  private readonly wagers = new Map<number, Map<string, number>>();
   /** Buzzin' questions, by question index. */
   private readonly buzzStates = new Map<number, BuzzState>();
   private buzzTimer: NodeJS.Timeout | undefined;
@@ -380,6 +385,43 @@ export class Game {
     return state;
   }
 
+  /** The most a team may bet on the current question. */
+  wagerCapFor(teamId: string): number {
+    const team = this.teams.get(teamId);
+    const q = this.quiz.questions[this.questionIndex];
+    const own = team ? Math.max(this.scoreOf(team), WAGER_FLOOR) : WAGER_FLOOR;
+    return Math.min(q?.wagerCap ?? Infinity, own);
+  }
+
+  /** A team bets points on the question it is about to see. A bet can't be changed once placed. */
+  placeWager(teamId: string, amount: number): Result<null> {
+    const team = this.teams.get(teamId);
+    const question = this.quiz.questions[this.questionIndex];
+    if (!team) return fail('Your team is not in this quiz.');
+    if (this.phase !== 'wagering' || !question?.wager) return fail('There is nothing to bet on right now.');
+    if (!Number.isInteger(amount) || amount < 0) return fail('Bet a whole number of points.');
+    const cap = this.wagerCapFor(teamId);
+    if (amount > cap) return fail(`You can bet at most ${cap}.`);
+    let bets = this.wagers.get(this.questionIndex);
+    if (!bets) this.wagers.set(this.questionIndex, (bets = new Map()));
+    if (bets.has(teamId)) return fail('Your bet is already locked in.');
+    bets.set(teamId, amount);
+    this.changed();
+    return { ok: true, value: null };
+  }
+
+  private wagerOf(index: number, teamId: string): number {
+    return this.wagers.get(index)?.get(teamId) ?? 0;
+  }
+
+  /** A team that bet but never answered loses its bet. */
+  private unansweredWagerLoss(team: Team, index: number): number {
+    const q = this.quiz.questions[index];
+    if (!q?.wager || this.skipped.has(index) || team.answers.has(index)) return 0;
+    const bet = this.wagerOf(index, team.id);
+    return bet ? -bet : 0;
+  }
+
   /** A team presses the buzzer. */
   buzz(teamId: string, latencyMs = 0, clientElapsedMs?: number): Result<null> {
     const team = this.teams.get(teamId);
@@ -540,6 +582,9 @@ export class Game {
       case 'lobby':
         if (this.quiz.questions.length > 0) this.openQuestion(0);
         return;
+      case 'wagering':
+        this.beginPlay();
+        return;
       case 'open':
         this.closeQuestion();
         return;
@@ -635,7 +680,7 @@ export class Game {
 
   /** Throws the current question away (it scores nothing for anyone) and moves straight on. */
   skip(): Result<null> {
-    if (this.phase !== 'open' && this.phase !== 'closed') return fail('Only a question that has not been revealed can be skipped.');
+    if (this.phase !== 'open' && this.phase !== 'closed' && this.phase !== 'wagering') return fail('Only a question that has not been revealed can be skipped.');
     this.skipped.add(this.questionIndex);
     clearTimeout(this.buzzTimer);
     this.buzzTimer = undefined;
@@ -671,6 +716,7 @@ export class Game {
       photos: [...this.photoVersions],
       photosEnabled: this.photosEnabled,
       answerEdits: [...this.answerEdits],
+      wagers: [...this.wagers].map(([index, bets]) => [index, [...bets]] as [number, [string, number][]]),
       tvShowTeams: this.tvShowTeams,
       buzz: [...this.buzzStates].map(([index, state]) => [index, structuredClone(state)] as [number, BuzzState]),
       displayOrders: [...this.displayOrders],
@@ -693,6 +739,7 @@ export class Game {
     for (const [id, version] of snapshot.photos ?? []) game.photoVersions.set(id, version);
     game.photosEnabled = snapshot.photosEnabled ?? true;
     for (const [index, value] of snapshot.answerEdits ?? []) game.answerEdits.set(index, value);
+    for (const [index, bets] of snapshot.wagers ?? []) game.wagers.set(index, new Map(bets));
     game.tvShowTeams = snapshot.tvShowTeams ?? true;
     for (const [index, state] of snapshot.buzz ?? []) game.buzzStates.set(index, structuredClone(state));
     for (const index of snapshot.skipped ?? []) game.skipped.add(index);
@@ -711,14 +758,29 @@ export class Game {
     clearTimeout(this.buzzTimer);
     this.buzzTimer = undefined;
     this.questionIndex = index;
-    this.phase = 'open';
     this.pausedAt = undefined;
+    this.sentAt = new Map();
+    clearTimeout(this.timer);
+    this.timer = undefined;
+    if (question.wager) {
+      // Teams see only the category and place their bets; the host then shows the question.
+      this.phase = 'wagering';
+      this.changed();
+      return;
+    }
+    this.beginPlay();
+  }
+
+  /** Starts the clock on the current question. */
+  private beginPlay(): void {
+    const index = this.questionIndex;
+    const question = this.quiz.questions[index]!;
+    this.phase = 'open';
     this.openedAt = this.now();
     this.endsAt = this.openedAt + question.seconds * 1000;
     if (question.type === 'ordering' && !this.displayOrders.has(index)) {
       this.displayOrders.set(index, shuffledOrder(question.items.length));
     }
-    this.sentAt = new Map();
     for (const team of this.teams.values()) this.markSent(team);
     this.startTimer();
     this.changed();
@@ -776,6 +838,12 @@ export class Game {
   /** Points for an answer, including the bonus for being among the quickest correct teams. */
   private markAnswer(questionIndex: number, answer: Answer, team: Team): Marked {
     const marked = this.baseMark(questionIndex, answer);
+    if (this.quiz.questions[questionIndex]?.wager && !this.skipped.has(questionIndex)) {
+      // A wager question is all or nothing: win the bet for a right answer, lose it otherwise.
+      const bet = this.wagerOf(questionIndex, team.id);
+      const points = marked.correct ? bet : bet ? -bet : 0;
+      return { correct: marked.correct, points, detail: bet === 0 ? 'No wager' : `Wagered ${bet}: ${marked.correct ? '+' : '-'}${bet}` };
+    }
     if (!marked.correct) return marked;
     const bonus = this.fastBonusFor(questionIndex, team.id);
     if (!bonus) return marked;
@@ -904,6 +972,9 @@ export class Game {
     for (const [index, answer] of team.answers) {
       if (index < beforeQuestion && this.isRevealed(index)) score += this.markAnswer(index, answer, team).points;
     }
+    for (const index of this.wagers.keys()) {
+      if (index < beforeQuestion && this.isRevealed(index)) score += this.unansweredWagerLoss(team, index);
+    }
     return score;
   }
 
@@ -967,7 +1038,7 @@ export class Game {
         String(row.score),
         ...questions.map((_, i) => {
           const answer = team.answers.get(i);
-          return answer ? String(this.markAnswer(i, answer, team).points) : '0';
+          return answer ? String(this.markAnswer(i, answer, team).points) : String(this.unansweredWagerLoss(team, i));
         }),
       ];
     });
@@ -979,7 +1050,25 @@ export class Game {
   private questionView(): QuestionView | undefined {
     const q = this.currentQuestion;
     if (!q || this.phase === 'lobby' || this.phase === 'finished') return undefined;
+    if (this.phase === 'wagering') {
+      // While teams bet they see the category, never the question.
+      return {
+        index: this.questionIndex,
+        total: this.quiz.questions.length,
+        round: q.round,
+        roundNumber: q.roundIndex + 1,
+        roundTotal: this.quiz.rounds.length,
+        lastInRound: this.quiz.questions[this.questionIndex + 1]?.roundIndex !== q.roundIndex,
+        type: q.type,
+        text: '',
+        category: q.category,
+        wager: true,
+        seconds: q.seconds,
+      };
+    }
     return {
+      wager: q.wager || undefined,
+      category: q.wager ? q.category : undefined,
       index: this.questionIndex,
       total: this.quiz.questions.length,
       round: q.round,
@@ -996,6 +1085,17 @@ export class Game {
       remainingMs: this.phase === 'open' ? Math.max(0, this.endsAt - (this.pausedAt ?? this.now())) : undefined,
       paused: this.phase === 'open' && this.pausedAt !== undefined ? true : undefined,
     };
+  }
+
+  /** What every team bet on the revealed question, and whether it won. */
+  private wagerList(): { name: string; amount: number; won: boolean | undefined }[] {
+    const rows = [...this.teams.values()].flatMap((team) => {
+      const amount = this.wagerOf(this.questionIndex, team.id);
+      const answer = team.answers.get(this.questionIndex);
+      if (this.skipped.has(this.questionIndex)) return [];
+      return [{ name: team.name, amount, won: answer ? this.baseMark(this.questionIndex, answer).correct : false }];
+    });
+    return rows.sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name));
   }
 
   private describeAnswer(q: Question, answer: Answer): string {
@@ -1080,15 +1180,19 @@ export class Game {
         const view = this.questionView();
         return view ? { ...view, audio: undefined, buzz: this.teamBuzzView(teamId) } : undefined;
       })(),
+      wagerInfo:
+        question?.wager && ['wagering', 'open', 'closed', 'reveal'].includes(this.phase)
+          ? { cap: this.wagerCapFor(teamId), amount: this.wagers.get(this.questionIndex)?.get(teamId) }
+          : undefined,
       myChoice: showQuestion && question?.type === 'multiple-choice' ? (answer?.value as number | undefined) : undefined,
       myAnswerText: showQuestion && question && answer ? this.describeAnswer(question, answer) : undefined,
       result:
         question && this.isRevealed(this.questionIndex) && showQuestion
           ? {
               correct: marked?.correct ?? false,
-              points: marked?.points ?? 0,
+              points: marked?.points ?? this.unansweredWagerLoss(team, this.questionIndex),
               answerText: answerText(question),
-              detail: marked?.detail,
+              detail: marked?.detail ?? (this.unansweredWagerLoss(team, this.questionIndex) ? `No answer: you lose your ${this.wagerOf(this.questionIndex, team.id)} wager` : undefined),
               correctIndex: question.type === 'multiple-choice' ? question.answer : undefined,
               info: question.info,
             }
@@ -1178,10 +1282,16 @@ export class Game {
         connected: t.connected,
         answered: t.answers.has(this.questionIndex),
       })),
+      wagering:
+        this.phase === 'wagering'
+          ? { done: this.wagers.get(this.questionIndex)?.size ?? 0, total: teams.filter((t) => t.connected).length }
+          : undefined,
+      wagers: question?.wager && this.isRevealed(this.questionIndex) ? this.wagerList() : undefined,
       question:
         questionView && question
           ? {
               ...questionView,
+              hostText: this.phase === 'wagering' ? question.text : undefined,
               answerText: answerText(question),
               answer: question.type === 'multiple-choice' ? question.answer : undefined,
               info: question.info,

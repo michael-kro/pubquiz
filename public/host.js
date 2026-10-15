@@ -177,6 +177,7 @@ function nextLabel(s) {
   const last = s.question && s.question.index + 1 === s.questionCount;
   return {
     lobby: 'Start quiz',
+    wagering: 'Show question',
     open: 'Close question',
     closed: 'Reveal answer',
     // Mid-round the next press goes straight on; the full board comes at the end of a round, or on request.
@@ -642,6 +643,20 @@ function stage(s) {
         ),
       );
 
+    case 'wagering':
+      return h(
+        'div',
+        { class: 'wager-stage' },
+        h('p', { class: 'question-meta center' }, `${q.round} · Question ${q.index + 1} of ${q.total}`),
+        h('p', { class: 'wager-kicker' }, '🎲 Wager round'),
+        h('h1', { class: 'wager-category' }, q.category || 'Place your bets'),
+        h('p', { class: 'muted center big' }, 'Teams are betting before they see the question.'),
+        s.wagering
+          ? h('div', { class: 'progress-wrap' }, h('div', { class: 'progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(Math.max(s.wagering.total, 1)), 'aria-valuenow': String(s.wagering.done) }, h('div', { class: 'progress-fill', style: `width: ${Math.min(100, (s.wagering.done / Math.max(s.wagering.total, 1)) * 100)}%` })), h('p', { class: 'muted center' }, `${s.wagering.done} of ${s.wagering.total} teams have bet`))
+          : null,
+        !TV && q.hostText ? h('p', { class: 'host-only' }, h('strong', {}, 'Question (teams cannot see it yet): '), q.hostText) : null,
+      );
+
     case 'open':
     case 'closed':
     case 'reveal': {
@@ -667,6 +682,7 @@ function stage(s) {
         !TV && s.phase === 'closed' ? answerReview(s, q) : null,
         questionBody(s, q, reveal),
         reveal ? fastestBlock(s) : null,
+        reveal ? wagerBlock(s) : null,
         reveal && s.skipsLeaderboardNext ? miniBoard(s) : null,
         reveal && q.info && q.type !== 'number' && q.type !== 'nearest' ? h('p', { class: 'muted info center' }, q.info) : null,
         s.phase === 'open' ? timerBar(q) : null,
@@ -747,6 +763,25 @@ function answerReview(s, q) {
     q.answerEdited ? h('span', { class: 'chip plain' }, 'changed') : null,
     edit,
     h('span', { class: 'muted small' }, 'Only you can see this until you press Reveal answer.'),
+  );
+}
+
+/** Wager rounds: what each team bet and whether it paid off. */
+function wagerBlock(s) {
+  if (!s.wagers?.length) return null;
+  return h(
+    'ul',
+    { class: 'wager-list' },
+    s.wagers.map((w) =>
+      h(
+        'li',
+        {},
+        h('span', {}, '🎲'),
+        h('span', { class: 'name' }, w.name),
+        h('span', { class: 'muted' }, w.amount === 0 ? 'bet nothing' : `bet ${w.amount}`),
+        w.amount === 0 ? null : h('span', { class: w.won ? 'won' : 'lost' }, `${w.won ? '+' : '−'}${w.amount}`),
+      ),
+    ),
   );
 }
 

@@ -47,6 +47,7 @@ const form = { room: (params.get('room') ?? '').toUpperCase(), name: '', code: '
 let draftFor = -1;
 let pending = null; // An answer sent but not yet confirmed by the server.
 let draftText = '';
+let draftWager = '';
 let draftOrder = []; // Ordering: displayed item indices in the order tapped.
 
 function readToken() {
@@ -101,6 +102,7 @@ const socket = connectSocket({
           draftFor = state.question.index;
           pending = null;
           draftText = '';
+          draftWager = '';
           draftOrder = [];
         }
         if (state.phase !== 'open' || state.myAnswerText != null) pending = null;
@@ -185,7 +187,7 @@ function sendAnswer(value) {
  */
 function render() {
   const { remainingMs, ...question } = state?.question ?? {};
-  const key = JSON.stringify([state && { ...state, question, preloadImage: 0 }, ended, joinError, notice, pending, draftOrder, !!token, pendingJoin, connected, getBranding(), photoBusy]);
+  const key = JSON.stringify([state && { ...state, question, preloadImage: 0 }, ended, joinError, notice, pending, draftOrder, !!token, pendingJoin, connected, getBranding(), photoBusy, draftWager]);
   if (key === lastRenderKey) return;
   lastRenderKey = key;
   // If someone is typing, keep the keyboard open across the rebuild.
@@ -401,6 +403,9 @@ function phaseView(s) {
         photoPrompt(s),
       );
 
+    case 'wagering':
+      return wageringScreen(s, q);
+
     case 'open':
       if (q.type === 'buzzer') return buzzerScreen(s, q);
       return questionScreen(s, q, false);
@@ -463,6 +468,49 @@ function phaseView(s) {
   return h('section', { class: 'screen' });
 }
 
+/** Jeopardy-style: teams see only the category and bet points before the question appears. */
+function wageringScreen(s, q) {
+  const info = s.wagerInfo ?? { cap: 0 };
+  const placed = info.amount != null;
+  const parsed = /^\d+$/.test(draftWager.trim()) ? Number(draftWager.trim()) : NaN;
+  const submit = (event) => {
+    event.preventDefault();
+    if (!Number.isInteger(parsed) || parsed > info.cap) return showNotice(`Bet a whole number from 0 to ${info.cap}.`);
+    socket.send({ t: 'wager', amount: parsed });
+  };
+  const preset = (label, amount) =>
+    h('button', { type: 'button', class: 'preset', onclick: () => { draftWager = String(amount); render(); } }, label);
+  return h(
+    'section',
+    { class: 'screen center wager-screen' },
+    h('p', { class: 'question-meta' }, `${q.round} · Question ${q.index + 1} of ${q.total}`),
+    h('p', { class: 'wager-kicker' }, '🎲 Wager round'),
+    h('h1', { class: 'wager-category' }, q.category || 'Place your bets'),
+    placed
+      ? [
+          h('p', { class: 'points' }, `Bet locked: ${info.amount}`),
+          h('p', { class: 'muted' }, 'Waiting for the quiz master to show the question…'),
+        ]
+      : h(
+          'form',
+          { class: 'wager-form', onsubmit: submit },
+          h('p', {}, `You have ${s.score} points. Bet up to ${info.cap} before you see the question. Right wins it, wrong loses it.`),
+          h('input', {
+            name: 'wager',
+            'aria-label': 'Points to bet',
+            inputmode: 'numeric',
+            placeholder: `0 to ${info.cap}`,
+            value: draftWager,
+            maxlength: '7',
+            autocomplete: 'off',
+            oninput: (e) => (draftWager = e.target.value),
+          }),
+          h('div', { class: 'presets' }, preset('Nothing', 0), preset('Quarter', Math.floor(info.cap / 4)), preset('Half', Math.floor(info.cap / 2)), preset('All in', info.cap)),
+          h('button', { class: 'primary', type: 'submit' }, 'Lock in my bet'),
+        ),
+  );
+}
+
 /** The question with its answer controls. Once a team has answered it stays here, locked in, until the reveal. */
 function questionScreen(s, q, closed) {
   const answered = s.myAnswerText != null || pending != null;
@@ -477,6 +525,7 @@ function questionScreen(s, q, closed) {
       closed ? h('span', { class: 'time-up' }, "Time's up") : h('span', { class: 'countdown', 'data-countdown': true }),
     ),
     q.paused ? h('p', { class: 'paused-banner', role: 'status' }, '⏸ Paused by the quiz master. The clock is stopped.') : null,
+    s.wagerInfo?.amount ? h('p', { class: 'wager-banner' }, `🎲 ${s.wagerInfo.amount} points on the line`) : null,
     q.type === 'music' ? h('p', { class: 'music-badge' }, '🎵 Listen to the music') : null,
     h('h2', { class: 'question-text' }, q.text),
     questionImage(q),

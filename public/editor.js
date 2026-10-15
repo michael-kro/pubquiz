@@ -649,6 +649,12 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
       typeFields(q),
       imageField(q),
       audioField(q),
+      find(q.key)?.round.wager
+        ? field('Category (teams see this while they bet)', textInput(q.category, (v) => {
+            q.category = v.trim() ? v : undefined;
+            changed();
+          }, { maxlength: '60', placeholder: 'e.g. Rivers of the world' }), 'category')
+        : null,
       field('Fun fact or source (optional, shown with the answer)', textInput(q.info, (v) => {
         q.info = v.trim() ? v : undefined;
         changed();
@@ -724,6 +730,38 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
             h('button', { type: 'button', class: 'icon', title: 'Move round down', disabled: r === model.rounds.length - 1, onclick: () => moveRound(r, 1) }, '↓'),
             h('button', { type: 'button', class: 'icon', title: 'Delete round', onclick: () => removeRound(r) }, '×'),
           ),
+          h(
+            'label',
+            { class: 'check round-wager', title: 'Teams bet points on each question before seeing it, Jeopardy style' },
+            h('input', {
+              type: 'checkbox',
+              checked: round.wager === true,
+              onchange: (e) => {
+                if (e.target.checked) round.wager = true;
+                else {
+                  delete round.wager;
+                  delete round.wagerCap;
+                }
+                changed({ structure: true });
+              },
+            }),
+            ' Wager round (teams bet before each question)',
+          ),
+          round.wager
+            ? h('input', {
+                class: 'round-cap',
+                type: 'number',
+                inputmode: 'numeric',
+                'aria-label': `Largest bet in round ${r + 1}`,
+                placeholder: 'Largest bet: their score',
+                value: round.wagerCap ?? '',
+                oninput: (e) => {
+                  if (e.target.value === '') delete round.wagerCap;
+                  else round.wagerCap = Number(e.target.value);
+                  changed();
+                },
+              })
+            : null,
           h(
             'select',
             {

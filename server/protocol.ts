@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { QuestionType } from './quiz.ts';
 import type { NetworkStatus } from './tunnel.ts';
 
-export type Phase = 'lobby' | 'open' | 'closed' | 'reveal' | 'leaderboard' | 'finished';
+export type Phase = 'lobby' | 'wagering' | 'open' | 'closed' | 'reveal' | 'leaderboard' | 'finished';
 
 /** Multiple choice: option index. Picture/music: typed text. Letter: one letter. Ordering: item indices as displayed, first to last. */
 export type AnswerValue = number | string | number[];
@@ -29,6 +29,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('set-answer'), value: z.union([z.number(), z.string().max(4)]) }),
   z.object({ t: z.literal('tv-teams'), visible: z.boolean() }),
   // Buzzin' questions: a team buzzes, the host judges the team that is answering.
+  z.object({ t: z.literal('wager'), amount: z.number().int().min(0).max(1_000_000) }),
   z.object({ t: z.literal('buzz'), elapsedMs: z.number().min(0).max(1_000_000).optional() }),
   z.object({ t: z.literal('judge'), correct: z.boolean() }),
   z.object({ t: z.literal('kick'), teamId: z.string().max(200) }),
@@ -78,6 +79,10 @@ export interface QuestionView {
   image?: string;
   /** A sound clip for the host and TV screens to play (never sent to phones). */
   audio?: string;
+  /** In a wager round: the category teams see while betting. */
+  category?: string;
+  /** A wager-round question. */
+  wager?: boolean;
   /** Buzzin' questions, from this team's side. */
   buzz?: { state: 'ready' | 'queued' | 'answering' | 'locked' | 'won' | 'over'; answering?: string; position?: number };
   /** Multiple choice. */
@@ -109,6 +114,8 @@ export interface TeamView {
   myChoice?: number;
   /** The team's answer as readable text. */
   myAnswerText?: string;
+  /** In a wager round: the most this team may bet, and what it bet (once it has). */
+  wagerInfo?: { cap: number; amount?: number };
   /** From the reveal onwards. */
   result?: { correct: boolean; points: number; answerText: string; detail?: string; correctIndex?: number; info?: string };
   /** On the leaderboard and at the end. */
@@ -145,7 +152,7 @@ export interface HostView {
   skipsLeaderboardNext: boolean;
   /** The venue Wi-Fi, if the host set one up: shown on the host and TV lobby with its own QR code. */
   wifi?: { ssid: string; password?: string };
-  question?: QuestionView & { answerText: string; answer?: number; info?: string; answerEdited?: boolean; editable?: boolean; editValue?: number | string };
+  question?: QuestionView & { answerText: string; answer?: number; info?: string; answerEdited?: boolean; editable?: boolean; editValue?: number | string; hostText?: string };
   /** Show the team list on the TV. The host can hide it. */
   tvShowTeams: boolean;
   /** On the TV screen only: the host has hidden the team list, so `teams` is empty. */
@@ -158,6 +165,10 @@ export interface HostView {
   review?: ReviewGroup[];
   /** Ordering: e.g. "3 of 8 teams got the order exactly right". Letter: how many teams tapped each letter. */
   summary?: string;
+  /** Wager rounds: how many teams have bet so far. */
+  wagering?: { done: number; total: number };
+  /** Wager rounds, from the reveal: what each team bet and how it went. */
+  wagers?: { name: string; amount: number; won: boolean | undefined }[];
   /** Nearest wins: every guess, closest first, once the question has closed. */
   guesses?: { value: string; off: string; teams: string[]; winner: boolean }[];
   /** Buzzin' questions: who has buzzed, in order, and how it went. */
