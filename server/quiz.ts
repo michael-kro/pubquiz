@@ -98,7 +98,7 @@ const QuestionSchema = z.discriminatedUnion('type', [
       answer: text,
       /** Only needed when the first letter can't be worked out, e.g. the answer starts with a number. */
       letter: z.string().regex(/^[A-Za-z]$/, 'must be a single letter A–Z').optional(),
-      /** 'grouped' (default): a keypad of AB, CD, EF, … so a tap covers two letters. 'single': all 26 letters. */
+      /** 'grouped' (default): a 4×6 keypad like the usual, with the rare letters paired (QV, XZ) with Q/V and X/Z sharing a key. 'single': all 26 letters. */
       keypad: z.enum(['grouped', 'single']).optional(),
     })
     .strict()
@@ -120,8 +120,8 @@ const QuestionSchema = z.discriminatedUnion('type', [
     }),
 ], { error: 'type must be one of: multiple-choice, picture, music, ordering, letter' });
 
-/** The keys of the grouped letter keypad: two letters each. */
-export const LETTER_GROUPS = ['AB', 'CD', 'EF', 'GH', 'IJ', 'KL', 'MN', 'OP', 'QR', 'ST', 'UV', 'WX', 'YZ'];
+/** The keys of the grouped letter keypad: single letters, except the rare ones: QV and XZ. */
+export const LETTER_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'T', 'U', 'QV', 'W', 'Y', 'XZ'];
 
 export const QuizFile = z
   .object({

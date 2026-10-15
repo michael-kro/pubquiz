@@ -244,8 +244,8 @@ input {
 }
 .key:active:not(:disabled) { background: var(--opt-1); }
 .key:disabled { opacity: 0.35; }
-.keypad.grouped { grid-template-columns: repeat(5, 1fr); gap: 8px; }
-.keypad.grouped .key { min-height: 64px; font-size: 1.3rem; letter-spacing: 0.08em; font-weight: 800; }
+.keypad.grouped { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.keypad.grouped .key { min-height: 62px; font-size: 1.6rem; font-weight: 800; }
 .key.chosen { opacity: 1; background: var(--accent); color: var(--accent-text); }
 
 /* Host screen */
