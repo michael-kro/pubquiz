@@ -80,6 +80,7 @@ export interface GameSnapshot {
   wagers?: [number, [string, number][]][];
   tvShowTeams?: boolean;
   readOut?: boolean;
+  startOnLastAnswer?: boolean;
   closeEarly?: boolean;
   readShown?: number;
   buzz?: [number, BuzzState][];
@@ -168,6 +169,8 @@ export class Game {
   /** Close a question once every team has answered, rather than always counting down. */
   closeEarly = true;
   private readShown = 0;
+  /** In read-out mode, showing the last multiple-choice answer starts the timer. */
+  startOnLastAnswer = true;
   /** teamId → photo version, for teams that have uploaded one. The pictures themselves are in the PhotoStore. */
   private readonly photoVersions = new Map<string, number>();
   /** Set while the host has the quiz on a break: when it started, how long it is meant to last, and its facts. */
@@ -192,6 +195,7 @@ export class Game {
     this.onChange = options.onChange ?? (() => {});
     this.nameFilter = options.nameFilter ?? true;
     this.readOut = quiz.readOut ?? false;
+    this.startOnLastAnswer = quiz.startOnLastAnswer ?? true;
     this.closeEarly = quiz.closeEarly ?? options.closeEarly ?? true;
   }
 
@@ -322,6 +326,11 @@ export class Game {
     this.changed();
   }
 
+  setStartOnLastAnswer(on: boolean): void {
+    this.startOnLastAnswer = on;
+    this.changed();
+  }
+
   setReadOut(on: boolean): void {
     this.readOut = on;
     this.changed();
@@ -332,7 +341,9 @@ export class Game {
     const q = this.currentQuestion;
     if (q?.type === 'multiple-choice' && this.readShown < q.options.length) {
       this.readShown++;
-      this.changed();
+      // With the option on, the last answer showing is the starting gun.
+      if (this.startOnLastAnswer && this.readShown === q.options.length) this.beginPlay();
+      else this.changed();
     } else this.beginPlay();
   }
 
@@ -801,6 +812,7 @@ export class Game {
       wagers: [...this.wagers].map(([index, bets]) => [index, [...bets]] as [number, [string, number][]]),
       tvShowTeams: this.tvShowTeams,
       readOut: this.readOut,
+      startOnLastAnswer: this.startOnLastAnswer,
       closeEarly: this.closeEarly,
       readShown: this.readShown,
       buzz: [...this.buzzStates].map(([index, state]) => [index, structuredClone(state)] as [number, BuzzState]),
@@ -829,6 +841,7 @@ export class Game {
     game.tvShowTeams = snapshot.tvShowTeams ?? true;
     game.readOut = snapshot.readOut ?? quiz.readOut ?? false;
     game.readShown = snapshot.readShown ?? 0;
+    game.startOnLastAnswer = snapshot.startOnLastAnswer ?? game.startOnLastAnswer;
     game.closeEarly = snapshot.closeEarly ?? game.closeEarly;
     for (const [index, state] of snapshot.buzz ?? []) game.buzzStates.set(index, structuredClone(state));
     for (const index of snapshot.skipped ?? []) game.skipped.add(index);
@@ -1402,6 +1415,7 @@ export class Game {
       photosEnabled: this.photosEnabled,
       tvShowTeams: this.tvShowTeams,
       readOut: this.readOut,
+      startOnLastAnswer: this.startOnLastAnswer,
       closeEarly: this.closeEarly,
       reading: this.phase === 'reading' && question?.type === 'multiple-choice' ? { shown: this.readShown, total: question.options.length } : undefined,
       skipsLeaderboardNext: this.questionIndex >= 0 && this.skipsLeaderboardNext,

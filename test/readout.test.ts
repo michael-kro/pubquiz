@@ -15,7 +15,7 @@ rounds:
       - { type: letter, text: Who?, answer: Abba }
 `;
 
-test('answers appear one at a time and the timer only starts when the host says', () => {
+test('answers appear one at a time and the last one starts the timer', () => {
   const game = new Game(parseQuiz(QUIZ));
   const t = game.join('A');
   assert.ok(t.ok);
@@ -30,9 +30,7 @@ test('answers appear one at a time and the timer only starts when the host says'
   assert.deepEqual(options(), ['a', 'b']);
   assert.deepEqual(game.hostView().reading, { shown: 2, total: 3 });
   game.advance();
-  assert.equal(game.phase, 'reading', 'all three showing, timer not started');
-  game.advance();
-  assert.equal(game.phase, 'open');
+  assert.equal(game.phase, 'open', 'showing the last answer starts the timer');
   assert.deepEqual(options(), ['a', 'b', 'c']);
   assert.ok(game.answer(t.value.id, 1).ok);
   game.dispose();
@@ -213,5 +211,19 @@ test('a team sees how long it took to lock in, and the fastest team is named wit
   assert.equal(game.teamView(b!.id)!.myAnswerMs, 3320);
   game.advance();
   assert.equal(game.hostView().speedster!.ms, 2320);
+  game.dispose();
+});
+
+test('with start-on-last switched off, the host starts the timer separately', () => {
+  const game = new Game(parseQuiz(QUIZ));
+  game.setStartOnLastAnswer(false);
+  game.join('A');
+  game.advance();
+  for (let i = 0; i < 3; i++) game.advance();
+  assert.equal(game.phase, 'reading', 'all three showing, timer waiting');
+  assert.deepEqual(game.hostView().reading, { shown: 3, total: 3 });
+  assert.equal(game.hostView().startOnLastAnswer, false);
+  game.advance();
+  assert.equal(game.phase, 'open');
   game.dispose();
 });

@@ -138,6 +138,8 @@ export const QuizFile = z
     facts: z.array(z.string().trim().min(1).max(200)).max(300).optional(),
     /** The host asks each question (and reads out multiple-choice answers one at a time) before starting the timer. */
     readOut: z.boolean().optional(),
+    /** In read-out mode, start the timer as soon as the last multiple-choice answer is shown (default on). */
+    startOnLastAnswer: z.boolean().optional(),
     /** End a question as soon as every team has answered, instead of always running the clock down. */
     closeEarly: z.boolean().optional(),
     scoring: z
@@ -194,6 +196,7 @@ export interface Quiz {
   title: string;
   /** Start multiple-choice questions in read-out mode (the host can switch it either way). */
   readOut?: boolean;
+  startOnLastAnswer?: boolean;
   closeEarly?: boolean;
   /** The quiz's own fun facts for the break screen (empty: use the built-in ones). */
   facts: string[];
@@ -281,6 +284,7 @@ function quizFromData(file: QuizFileData): Quiz {
     title: file.title,
     facts: file.facts ?? [],
     readOut: file.readOut,
+    startOnLastAnswer: file.startOnLastAnswer,
     closeEarly: file.closeEarly,
     speedFactor: file.scoring.speedFactor,
     bonus: file.scoring.bonus,

@@ -32,6 +32,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('tv-teams'), visible: z.boolean() }),
   z.object({ t: z.literal('read-out'), on: z.boolean() }),
   z.object({ t: z.literal('rotate-key') }),
+  z.object({ t: z.literal('start-on-last'), on: z.boolean() }),
   z.object({ t: z.literal('close-early'), on: z.boolean() }),
   z.object({ t: z.literal('start-timer') }),
   // Buzzin' questions: a team buzzes, the host judges the team that is answering.
@@ -190,6 +191,8 @@ export interface HostView {
   tvShowTeams: boolean;
   /** Read-out mode: the host announces multiple-choice answers before starting the timer. */
   readOut: boolean;
+  /** Read-out mode: the timer starts as soon as the last multiple-choice answer is shown. */
+  startOnLastAnswer: boolean;
   /** Questions end as soon as every team has answered (otherwise the clock always runs down). */
   closeEarly: boolean;
   /** On the TV screen only: the host has hidden the team list, so `teams` is empty. */

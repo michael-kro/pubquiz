@@ -511,6 +511,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         return;
       }
 
+      case 'start-on-last':
+        if (hostOnly()) game?.setStartOnLastAnswer(msg.on);
+        return;
+
       case 'rotate-key':
         if (hostOnly()) rotateHostKey(conn);
         return;

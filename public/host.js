@@ -187,7 +187,7 @@ function nextLabel(s) {
   return {
     lobby: 'Start quiz',
     wagering: 'Show question',
-    reading: s.reading && s.reading.shown < s.reading.total ? 'Read next answer' : 'Start timer',
+    reading: s.reading && s.reading.shown < s.reading.total ? (s.startOnLastAnswer && s.reading.shown === s.reading.total - 1 ? 'Show last answer & start timer' : 'Read next answer') : 'Start timer',
     open: 'Close question',
     closed: 'Reveal answer',
     // Mid-round the next press goes straight on; the full board comes at the end of a round, or on request.
@@ -753,7 +753,7 @@ function stage(s) {
         clipBar(q),
         revealClipBar(q),
         !TV && s.phase === 'reading'
-          ? h('p', { class: 'host-only' }, s.reading ? `Read each answer out loud, then press the button to show the next one (${s.reading.shown} of ${s.reading.total} showing). ` : 'Ask the question out loud, then start the timer. ', h('button', { type: 'button', onclick: () => socket.send({ t: 'start-timer' }) }, 'Start timer now (S)'))
+          ? h('p', { class: 'host-only' }, s.reading ? `Read each answer out loud, then press the button to show the next one (${s.reading.shown} of ${s.reading.total} showing).${s.startOnLastAnswer ? ' The timer starts when the last answer shows. ' : ' '}` : 'Ask the question out loud, then start the timer. ', h('button', { type: 'button', onclick: () => socket.send({ t: 'start-timer' }) }, 'Start timer now (S)'))
           : null,
         h('h1', { class: 'question-text' }, q.text),
         q.image
@@ -1221,6 +1221,14 @@ function teamsPanel(s) {
           { class: 'check photos-toggle', title: 'Every question waits while you ask it (multiple choice: reveal the answers one by one), then you start the timer' },
           h('input', { type: 'checkbox', checked: s.readOut, onchange: (e) => socket.send({ t: 'read-out', on: e.target.checked }) }),
           ' Ask the question before the timer starts',
+        ),
+    TV || !s.readOut
+      ? null
+      : h(
+          'label',
+          { class: 'check photos-toggle', title: 'Multiple choice: the timer starts by itself when you show the last answer' },
+          h('input', { type: 'checkbox', checked: s.startOnLastAnswer, onchange: (e) => socket.send({ t: 'start-on-last', on: e.target.checked }) }),
+          ' Start the timer on the last answer',
         ),
     TV
       ? null
