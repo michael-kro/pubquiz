@@ -69,3 +69,10 @@ test('a new host key cuts off the old host link and the TV link', async () => {
   for (const c of [host, second, tv, stale, fresh]) await c.close();
   await server.close();
 });
+
+test('out of the box a question is worth 100 points; the tests run with a unit of 1000', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const env = { ...process.env, PUBQUIZ_POINTS_UNIT: '' };
+  const out = execFileSync(process.execPath, ['--input-type=module', '-e', "import('./server/quiz.ts').then(m=>console.log(m.POINTS_UNIT, m.DEFAULT_POINTS))"], { env, encoding: 'utf8' });
+  assert.equal(out.trim(), '100 100');
+});

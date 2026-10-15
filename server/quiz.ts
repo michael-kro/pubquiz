@@ -7,6 +7,14 @@ import { normalise } from './matching.ts';
 export const ORDERING_ITEMS = 5;
 export const SCORING_MODES = ['speed', 'flat', 'first'] as const;
 export type ScoringMode = (typeof SCORING_MODES)[number];
+/**
+ * The size of one question's points: 100, so scores stay small and readable. (The tests set
+ * PUBQUIZ_POINTS_UNIT=1000 so their long-standing numbers still apply.)
+ */
+export const POINTS_UNIT = Number(process.env['PUBQUIZ_POINTS_UNIT']) || 100;
+/** What a question is worth when it doesn't say. */
+export const DEFAULT_POINTS = POINTS_UNIT;
+
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
 /** Clips are played by the host or TV screen, so any format a browser can play will do. */
@@ -33,7 +41,7 @@ const text = z.string({ error: 'needs some text' }).trim().min(1, 'is empty');
 const common = {
   text,
   seconds: z.number({ error: 'must be a number' }).int('must be a whole number').min(5, 'must be at least 5 seconds').max(300, 'can be at most 300 seconds').default(20),
-  points: z.number({ error: 'must be a number' }).int('must be a whole number').min(0, "can't be negative").max(10_000, 'can be at most 10,000').default(1000),
+  points: z.number({ error: 'must be a number' }).int('must be a whole number').min(0, "can't be negative").max(10_000, 'can be at most 10,000').default(DEFAULT_POINTS),
   /** A file path relative to the quiz file, or an http(s) URL. */
   image: text.optional(),
   /** A sound clip, played on the host or TV screen (never on phones): a file path or an http(s) URL. */
@@ -139,7 +147,7 @@ export const QuizFile = z
         /** speed: faster scores more. flat: every correct answer scores the same. first: flat, plus a bonus for the first correct team. */
         mode: z.enum(SCORING_MODES, { error: `must be one of: ${SCORING_MODES.join(', ')}` }).default('speed'),
         /** Extra points for the first correct team in "first" mode. */
-        bonus: z.number().int().min(0).max(10_000).default(500),
+        bonus: z.number().int().min(0).max(10_000).default(POINTS_UNIT / 2),
         /** Extra points for the quickest correct teams on every question (0 = off). First place gets all of it, second 60%, third 30%. */
         fastBonus: z.number().int().min(0).max(10_000).default(0),
         /** How many of the quickest correct teams earn it: 1, 2 or 3. */
@@ -148,7 +156,7 @@ export const QuizFile = z
         leaderboard: z.enum(['question', 'round'], { error: 'must be question or round' }).default('round'),
       })
       .strict()
-      .default({ speedFactor: 0.5, mode: 'speed', bonus: 500, fastBonus: 0, fastPlaces: 1, leaderboard: 'round' }),
+      .default({ speedFactor: 0.5, mode: 'speed', bonus: POINTS_UNIT / 2, fastBonus: 0, fastPlaces: 1, leaderboard: 'round' }),
     rounds: z
       .array(
         z.object({ name: text, wager: z.boolean().optional(), wagerCap: z.number().int().min(1).max(100_000).optional(), mode: z.enum(SCORING_MODES, { error: `must be one of: ${SCORING_MODES.join(', ')}` }).optional(), questions: z.array(QuestionSchema, { error: 'needs a list of questions' }).min(1, 'needs at least one question') }).strict(),

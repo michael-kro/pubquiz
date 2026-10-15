@@ -2,7 +2,7 @@ import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { checkTeamName, MAX_NAME_LENGTH } from './limits.ts';
 import { matchAnswer, normalise } from './matching.ts';
 import type { AnswerValue, BreakView, HostView, Phase, QuestionView, ReviewGroup, StandingRow, TeamView } from './protocol.ts';
-import { isTextAnswer, LETTER_GROUPS, ORDERING_ITEMS, type Question, type Quiz } from './quiz.ts';
+import { isTextAnswer, LETTER_GROUPS, ORDERING_ITEMS, POINTS_UNIT, type Question, type Quiz } from './quiz.ts';
 import { scoreAnswer } from './scoring.ts';
 
 export const MAX_TEAMS = 30;
@@ -18,7 +18,7 @@ export const MAX_LATENCY_MS = 1500;
 export const CLIENT_TIME_TOLERANCE_MS = 150;
 export const MAX_EXTEND_SECONDS = 120;
 /** In a wager round a team may always bet at least this much, so a team on zero can still play. */
-export const WAGER_FLOOR = 200;
+export const WAGER_FLOOR = POINTS_UNIT / 5;
 /** Buzzes that arrive within this long of the first are ordered by their latency-adjusted time, not arrival. */
 export const BUZZ_WINDOW_MS = 120;
 /** Share of the fastest-team bonus for 1st, 2nd and 3rd quickest. */
@@ -1013,7 +1013,7 @@ export class Game {
     if (!this.isRevealed(this.questionIndex) || this.questionIndex < 0) return [];
     return this.fastestOrder(this.questionIndex).flatMap((id) => {
       const bonus = this.fastBonusFor(this.questionIndex, id);
-      return bonus ? [{ name: this.teams.get(id)!.name, points: bonus.points, place: bonus.place + 1, photo: this.photoUrl(id) }] : [];
+      return bonus ? [{ name: this.teams.get(id)!.name, points: bonus.points, place: bonus.place + 1, ...(this.photoUrl(id) ? { photo: this.photoUrl(id) } : {}) }] : [];
     });
   }
 

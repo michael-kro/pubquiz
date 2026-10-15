@@ -684,7 +684,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           q.seconds = v;
           changed();
         }), 'seconds'),
-        field('Points', numberInput(q.points, '1000', (v) => {
+        field('Points', numberInput(q.points, '100', (v) => {
           q.points = v;
           changed();
         }), 'points'),
@@ -878,9 +878,9 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           ? setting('Speed bonus', [[0.5, 'Half points at the buzzer'], [0.25, 'Small'], [0, 'Off']], () => model.scoring?.speedFactor ?? 0.5, (v) => setScoring('speedFactor', Number(v)))
           : null,
         (model.scoring?.mode ?? 'speed') === 'first'
-          ? field('First-correct bonus', numberInput(model.scoring?.bonus, '500', (v) => setScoring('bonus', v)), 'bonus')
+          ? field('First-correct bonus', numberInput(model.scoring?.bonus, '50', (v) => setScoring('bonus', v)), 'bonus')
           : null,
-        setting('Fastest teams bonus', [[0, 'Off'], [100, 'Small: 100'], [250, 'Medium: 250'], [500, 'Big: 500']], () => model.scoring?.fastBonus ?? 0, (v) => setScoring('fastBonus', Number(v) || undefined)),
+        setting('Fastest teams bonus', [[0, 'Off'], [10, 'Small: 10'], [25, 'Medium: 25'], [50, 'Big: 50']], () => model.scoring?.fastBonus ?? 0, (v) => setScoring('fastBonus', Number(v) || undefined)),
         (model.scoring?.fastBonus ?? 0) > 0
           ? setting('Teams that earn it', [[1, 'Quickest only'], [2, 'Quickest two'], [3, 'Quickest three']], () => model.scoring?.fastPlaces ?? 1, (v) => setScoring('fastPlaces', Number(v)))
           : null,
