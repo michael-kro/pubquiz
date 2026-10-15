@@ -480,6 +480,17 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         return;
       }
 
+      case 'read-out':
+        if (hostOnly()) game?.setReadOut(msg.on);
+        return;
+
+      case 'start-timer':
+        if (hostOnly()) {
+          const result = game?.startTimerNow();
+          if (result && !result.ok) send(conn, { t: 'error', message: result.error });
+        }
+        return;
+
       case 'tv-teams':
         if (hostOnly()) game?.setTvShowTeams(msg.visible);
         return;

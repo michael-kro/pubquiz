@@ -167,6 +167,8 @@ document.addEventListener('keydown', (event) => {
   if ([' ', 'ArrowRight', 'PageDown', 'Enter'].includes(event.key)) {
     event.preventDefault();
     advance();
+  } else if ((event.key === 's' || event.key === 'S') && state.phase === 'reading') {
+    socket?.send({ t: 'start-timer' });
   } else if ((event.key === 'y' || event.key === 'Y' || event.key === 'n' || event.key === 'N') && state.phase === 'open' && state.buzzers?.some((b) => b.status === 'answering')) {
     socket?.send({ t: 'judge', correct: event.key.toLowerCase() === 'y' });
   } else if ((event.key === 'p' || event.key === 'P') && state.phase === 'open' && !state.buzzers?.some((b) => b.status === 'answering')) {
@@ -180,6 +182,7 @@ function nextLabel(s) {
   return {
     lobby: 'Start quiz',
     wagering: 'Show question',
+    reading: s.reading && s.reading.shown < s.reading.total ? 'Read next answer' : 'Start timer',
     open: 'Close question',
     closed: 'Reveal answer',
     // Mid-round the next press goes straight on; the full board comes at the end of a round, or on request.
@@ -692,6 +695,7 @@ function stage(s) {
         !TV && q.hostText ? h('p', { class: 'host-only' }, h('strong', {}, 'Question (teams cannot see it yet): '), q.hostText) : null,
       );
 
+    case 'reading':
     case 'open':
     case 'closed':
     case 'reveal': {
@@ -705,12 +709,15 @@ function stage(s) {
           h('p', { class: 'question-meta' }, `${q.round} · Question ${q.index + 1} of ${q.total}`),
           s.phase === 'open'
             ? h('span', { class: 'countdown big', 'data-countdown': true })
-            : h('span', { class: 'phase-label' }, s.phase === 'closed' ? "Time's up" : 'Answer'),
+            : h('span', { class: 'phase-label' }, s.phase === 'reading' ? 'Listen to the answers' : s.phase === 'closed' ? "Time's up" : 'Answer'),
         ),
         q.paused ? h('p', { class: 'paused-banner', role: 'status' }, s.buzzers?.some((b) => b.status === 'answering') ? '⏱ The clock is held while a team answers' : '⏸ Paused') : null,
         q.type === 'music' && !q.audio ? h('p', { class: 'music-badge' }, '🎵 Music round: play the track now') : null,
         clipBar(q),
         revealClipBar(q),
+        !TV && s.phase === 'reading'
+          ? h('p', { class: 'host-only' }, `Read each answer out loud, then press the button to show the next one (${s.reading?.shown ?? 0} of ${s.reading?.total ?? 0} showing). `, h('button', { type: 'button', onclick: () => socket.send({ t: 'start-timer' }) }, 'Start timer now (S)'))
+          : null,
         h('h1', { class: 'question-text' }, q.text),
         q.image
           ? h('img', { class: `question-image host-image${s.review ? ' small' : ''}`, src: q.image, alt: '' })
@@ -1161,6 +1168,14 @@ function teamsPanel(s) {
           { class: 'check photos-toggle', title: 'Show the list of teams on the TV screen' },
           h('input', { type: 'checkbox', checked: s.tvShowTeams, onchange: (e) => socket.send({ t: 'tv-teams', visible: e.target.checked }) }),
           ' Show teams on the TV',
+        ),
+    TV
+      ? null
+      : h(
+          'label',
+          { class: 'check photos-toggle', title: 'Multiple choice: reveal the answers one at a time while you read them out, then start the timer yourself' },
+          h('input', { type: 'checkbox', checked: s.readOut, onchange: (e) => socket.send({ t: 'read-out', on: e.target.checked }) }),
+          ' Read answers out first',
         ),
     TV
       ? null

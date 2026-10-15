@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { QuestionType } from './quiz.ts';
 import type { NetworkStatus } from './tunnel.ts';
 
-export type Phase = 'lobby' | 'wagering' | 'open' | 'closed' | 'reveal' | 'leaderboard' | 'finished';
+export type Phase = 'lobby' | 'wagering' | 'reading' | 'open' | 'closed' | 'reveal' | 'leaderboard' | 'finished';
 
 /** Multiple choice: option index. Picture/music: typed text. Letter: one letter. Ordering: item indices as displayed, first to last. */
 export type AnswerValue = number | string | number[];
@@ -30,6 +30,8 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('end-break') }),
   z.object({ t: z.literal('set-answer'), value: z.union([z.number(), z.string().max(4)]) }),
   z.object({ t: z.literal('tv-teams'), visible: z.boolean() }),
+  z.object({ t: z.literal('read-out'), on: z.boolean() }),
+  z.object({ t: z.literal('start-timer') }),
   // Buzzin' questions: a team buzzes, the host judges the team that is answering.
   z.object({ t: z.literal('wager'), amount: z.number().int().min(0).max(1_000_000) }),
   z.object({ t: z.literal('buzz'), elapsedMs: z.number().min(0).max(1_000_000).optional() }),
@@ -173,6 +175,8 @@ export interface HostView {
   question?: QuestionView & { answerText: string; answer?: number; info?: string; answerEdited?: boolean; editable?: boolean; editValue?: number | string; hostText?: string };
   /** Show the team list on the TV. The host can hide it. */
   tvShowTeams: boolean;
+  /** Read-out mode: the host announces multiple-choice answers before starting the timer. */
+  readOut: boolean;
   /** On the TV screen only: the host has hidden the team list, so `teams` is empty. */
   teamsHidden?: boolean;
   answeredCount: number;
@@ -185,6 +189,8 @@ export interface HostView {
   summary?: string;
   /** Wager rounds: how many teams have bet so far. */
   wagering?: { done: number; total: number };
+  /** While the host reads the answers out: how many are showing. */
+  reading?: { shown: number; total: number };
   /** Wager rounds, from the reveal: what each team bet and how it went. */
   wagers?: { name: string; amount: number; won: boolean | undefined }[];
   /** Nearest wins: every guess, closest first, once the question has closed. */

@@ -16,6 +16,7 @@ function announce() {
     if (state.onBreak) text = 'The quiz is on a break.';
     else text = {
       lobby: "You're in. Waiting for the quiz master to start.",
+      reading: 'The quiz master is reading out the answers. The timer has not started.',
       wagering: q && `Wager round. The category is ${q.category || 'a secret'}. Place your bet.`,
       open: q && `${q.paused ? 'Paused. ' : ''}Question ${q.index + 1} of ${q.total}. ${q.text}`,
       closed: "Time's up.",
@@ -419,6 +420,9 @@ function phaseView(s) {
     case 'wagering':
       return wageringScreen(s, q);
 
+    case 'reading':
+      return questionScreen(s, q, false);
+
     case 'open':
       if (q.type === 'buzzer') return buzzerScreen(s, q);
       return questionScreen(s, q, false);
@@ -527,7 +531,8 @@ function wageringScreen(s, q) {
 /** The question with its answer controls. Once a team has answered it stays here, locked in, until the reveal. */
 function questionScreen(s, q, closed) {
   const answered = s.myAnswerText != null || pending != null;
-  const locked = closed || answered || Boolean(q.paused);
+  const reading = s.phase === 'reading';
+  const locked = closed || answered || reading || Boolean(q.paused);
   return h(
     'section',
     { class: 'screen' },
@@ -535,7 +540,7 @@ function questionScreen(s, q, closed) {
       'div',
       { class: 'question-top' },
       questionHeader(q),
-      closed ? h('span', { class: 'time-up' }, "Time's up") : h('span', { class: 'countdown', 'data-countdown': true }),
+      closed ? h('span', { class: 'time-up' }, "Time's up") : reading ? h('span', { class: 'time-up' }, 'Listen…') : h('span', { class: 'countdown', 'data-countdown': true }),
     ),
     q.paused ? h('p', { class: 'paused-banner', role: 'status' }, '⏸ Paused by the quiz master. The clock is stopped.') : null,
     s.wagerInfo?.amount ? h('p', { class: 'wager-banner' }, `🎲 ${s.wagerInfo.amount} points on the line`) : null,

@@ -79,6 +79,8 @@ export interface GameSnapshot {
   break?: { startedAt: number; durationMs?: number; facts: string[] };
   wagers?: [number, [string, number][]][];
   tvShowTeams?: boolean;
+  readOut?: boolean;
+  readShown?: number;
   buzz?: [number, BuzzState][];
   displayOrders: [number, number[]][];
   overrides: [number, [string, boolean][]][];
@@ -158,6 +160,9 @@ export class Game {
   private readonly answerEdits = new Map<number, number | string>();
   /** Show the team list on the TV screen. The host can hide it. */
   tvShowTeams = true;
+  /** Multiple choice: announce the answers one by one before the timer starts. */
+  readOut = false;
+  private readShown = 0;
   /** teamId → photo version, for teams that have uploaded one. The pictures themselves are in the PhotoStore. */
   private readonly photoVersions = new Map<string, number>();
   /** Set while the host has the quiz on a break: when it started, how long it is meant to last, and its facts. */
@@ -181,6 +186,7 @@ export class Game {
     this.now = options.now ?? Date.now;
     this.onChange = options.onChange ?? (() => {});
     this.nameFilter = options.nameFilter ?? true;
+    this.readOut = quiz.readOut ?? false;
   }
 
   /** The question as it stands now: the host may have changed its correct answer after time ran out. */
@@ -303,6 +309,27 @@ export class Game {
     if (version === undefined) this.photoVersions.delete(teamId);
     else this.photoVersions.set(teamId, version);
     this.changed();
+  }
+
+  setReadOut(on: boolean): void {
+    this.readOut = on;
+    this.changed();
+  }
+
+  /** Read-out mode: shows the next answer, or starts the timer once they are all showing. */
+  private advanceReading(): void {
+    const q = this.currentQuestion;
+    if (q?.type === 'multiple-choice' && this.readShown < q.options.length) {
+      this.readShown++;
+      this.changed();
+    } else this.beginPlay();
+  }
+
+  /** Starts the timer now, whatever is still hidden. */
+  startTimerNow(): Result<null> {
+    if (this.phase !== 'reading') return fail('The timer is not waiting to start.');
+    this.beginPlay();
+    return { ok: true, value: null };
   }
 
   setTvShowTeams(visible: boolean): void {
@@ -593,6 +620,9 @@ export class Game {
       case 'wagering':
         this.beginPlay();
         return;
+      case 'reading':
+        this.advanceReading();
+        return;
       case 'open':
         this.closeQuestion();
         return;
@@ -719,7 +749,7 @@ export class Game {
 
   /** Throws the current question away (it scores nothing for anyone) and moves straight on. */
   skip(): Result<null> {
-    if (this.phase !== 'open' && this.phase !== 'closed' && this.phase !== 'wagering') return fail('Only a question that has not been revealed can be skipped.');
+    if (this.phase !== 'open' && this.phase !== 'closed' && this.phase !== 'wagering' && this.phase !== 'reading') return fail('Only a question that has not been revealed can be skipped.');
     this.skipped.add(this.questionIndex);
     clearTimeout(this.buzzTimer);
     this.buzzTimer = undefined;
@@ -758,6 +788,8 @@ export class Game {
       break: this.breakState,
       wagers: [...this.wagers].map(([index, bets]) => [index, [...bets]] as [number, [string, number][]]),
       tvShowTeams: this.tvShowTeams,
+      readOut: this.readOut,
+      readShown: this.readShown,
       buzz: [...this.buzzStates].map(([index, state]) => [index, structuredClone(state)] as [number, BuzzState]),
       displayOrders: [...this.displayOrders],
       overrides: [...this.overrides].map(([index, marks]) => [index, [...marks]]),
@@ -782,6 +814,8 @@ export class Game {
     game.breakState = snapshot.break;
     for (const [index, bets] of snapshot.wagers ?? []) game.wagers.set(index, new Map(bets));
     game.tvShowTeams = snapshot.tvShowTeams ?? true;
+    game.readOut = snapshot.readOut ?? quiz.readOut ?? false;
+    game.readShown = snapshot.readShown ?? 0;
     for (const [index, state] of snapshot.buzz ?? []) game.buzzStates.set(index, structuredClone(state));
     for (const index of snapshot.skipped ?? []) game.skipped.add(index);
     for (const [index, order] of snapshot.displayOrders) game.displayOrders.set(index, order);
@@ -806,6 +840,12 @@ export class Game {
     if (question.wager) {
       // Teams see only the category and place their bets; the host then shows the question.
       this.phase = 'wagering';
+      this.changed();
+      return;
+    }
+    if (this.readOut && question.type === 'multiple-choice') {
+      this.phase = 'reading';
+      this.readShown = 0;
       this.changed();
       return;
     }
@@ -1122,7 +1162,7 @@ export class Game {
       audio: q.audioUrl,
       revealAudio: this.phase === 'reveal' ? q.revealAudioUrl : undefined,
       revealCaption: this.phase === 'reveal' && q.revealAudioUrl ? q.revealCaption : undefined,
-      options: q.type === 'multiple-choice' ? q.options : undefined,
+      options: q.type === 'multiple-choice' ? (this.phase === 'reading' ? q.options.slice(0, this.readShown) : q.options) : undefined,
       items: q.type === 'ordering' ? this.displayOrders.get(this.questionIndex)!.map((i) => q.items[i]!) : undefined,
       seconds: q.seconds,
       remainingMs: this.phase === 'open' ? Math.max(0, this.endsAt - (this.pausedAt ?? this.now())) : undefined,
@@ -1317,6 +1357,8 @@ export class Game {
       maxTeams: MAX_TEAMS,
       photosEnabled: this.photosEnabled,
       tvShowTeams: this.tvShowTeams,
+      readOut: this.readOut,
+      reading: this.phase === 'reading' && question?.type === 'multiple-choice' ? { shown: this.readShown, total: question.options.length } : undefined,
       skipsLeaderboardNext: this.questionIndex >= 0 && this.skipsLeaderboardNext,
       teams: teams.map((t) => ({
         id: t.id,

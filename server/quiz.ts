@@ -123,6 +123,8 @@ export const QuizFile = z
     title: text,
     /** Fun facts for the break screen. Without any, the built-in facts are used. */
     facts: z.array(z.string().trim().min(1).max(200)).max(300).optional(),
+    /** Multiple choice: the host announces the answers one at a time and starts the timer. */
+    readOut: z.boolean().optional(),
     scoring: z
       .object({
         // Share of a correct answer's points lost by answering at the very last moment.
@@ -175,6 +177,8 @@ export interface Media {
 
 export interface Quiz {
   title: string;
+  /** Start multiple-choice questions in read-out mode (the host can switch it either way). */
+  readOut?: boolean;
   /** The quiz's own fun facts for the break screen (empty: use the built-in ones). */
   facts: string[];
   speedFactor: number;
@@ -260,6 +264,7 @@ function quizFromData(file: QuizFileData): Quiz {
   return {
     title: file.title,
     facts: file.facts ?? [],
+    readOut: file.readOut,
     speedFactor: file.scoring.speedFactor,
     bonus: file.scoring.bonus,
     fastBonus: file.scoring.fastBonus,
