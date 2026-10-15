@@ -38,7 +38,7 @@ Every question has `type` and `text` (required). Optional on any question: `seco
 | type | what to write | notes |
 |---|---|---|
 | `multiple-choice` | `options:` 2 to 6 choices, `answer:` the right one's position **counting from 0** | The most reliable type. Vary which position is right. |
-| `letter` | `answer:` the full answer, for example `John Lennon` | Teams tap the **first letter** on a keypad. Skip "The" (`The Beatles` is a B but write the answer so its first letter is the one you want, or set `letter: B`). Use for names. |
+| `letter` | `answer:` the full answer, for example `John Lennon` | Teams tap the **first letter** of the answer on a keypad. A leading "The", "A" or "An" is ignored (`The Beatles` is a B). For people, write the first name first (`John Lennon` is a J). If the answer starts with a number or symbol, add `letter: B` to say which letter to tap. |
 | `number` | `answer:` a number, optional `tolerance:` (give or take) | Exact numbers: years, counts. |
 | `nearest` | `answer:` a number | The closest guess wins. Good for "how many/how tall" bonus questions. |
 | `ordering` | `items:` exactly **5** items **in the correct order** | The app shuffles them for teams. Items must all be different. |
