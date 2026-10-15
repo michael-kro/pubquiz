@@ -515,6 +515,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (hostOnly()) game?.setStartOnLastAnswer(msg.on);
         return;
 
+      case 'lock-joining':
+        if (hostOnly()) game?.setJoiningLocked(msg.locked);
+        return;
+
       case 'rotate-key':
         if (hostOnly()) rotateHostKey(conn);
         return;

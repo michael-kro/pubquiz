@@ -670,7 +670,7 @@ function topBar(s) {
     networkPill(s.network),
     soundButton(),
     h('a', { class: 'button', href: `/screen?key=${encodeURIComponent(s.screenKey)}`, target: '_blank', rel: 'noopener', title: 'Open this on the TV or projector' }, 'TV screen ↗'),
-    h('span', { class: 'join-hint' }, 'Join: ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)),
+    h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Join: ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)]),
     breakControl(s),
     TV
       ? null
@@ -1275,6 +1275,14 @@ function teamsPanel(s) {
       ),
     ),
     TV ? null : h('h3', { class: 'panel-heading' }, 'Options'),
+    TV
+      ? null
+      : h(
+          'label',
+          { class: 'check photos-toggle', title: 'Stop new teams joining. Teams already in can still rejoin with their code.' },
+          h('input', { type: 'checkbox', checked: s.joiningLocked, onchange: (e) => socket.send({ t: 'lock-joining', locked: e.target.checked }) }),
+          ' 🔒 Lock the quiz (no new teams)',
+        ),
     TV
       ? null
       : h(

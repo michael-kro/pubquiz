@@ -81,6 +81,7 @@ export interface GameSnapshot {
   tvShowTeams?: boolean;
   readOut?: boolean;
   startOnLastAnswer?: boolean;
+  joiningLocked?: boolean;
   closeEarly?: boolean;
   readShown?: number;
   buzz?: [number, BuzzState][];
@@ -171,6 +172,8 @@ export class Game {
   private readShown = 0;
   /** In read-out mode, showing the last multiple-choice answer starts the timer. */
   startOnLastAnswer = true;
+  /** The host has closed the door: no new teams can join (teams already in can still rejoin). */
+  joiningLocked = false;
   /** teamId → photo version, for teams that have uploaded one. The pictures themselves are in the PhotoStore. */
   private readonly photoVersions = new Map<string, number>();
   /** Set while the host has the quiz on a break: when it started, how long it is meant to last, and its facts. */
@@ -256,6 +259,7 @@ export class Game {
     if (!checked.ok) return fail(checked.error);
     const name = checked.name;
     if (this.phase === 'finished') return fail('This quiz has finished.');
+    if (this.joiningLocked) return fail('The quiz master has closed the quiz to new teams. If your team is already in, use "Rejoin with your team code".');
     if (this.teams.size >= MAX_TEAMS) return fail(`This quiz is full (${MAX_TEAMS} teams).`);
     const lower = name.toLowerCase();
     if ([...this.teams.values()].some((t) => t.name.toLowerCase() === lower)) {
@@ -323,6 +327,11 @@ export class Game {
 
   setCloseEarly(on: boolean): void {
     this.closeEarly = on;
+    this.changed();
+  }
+
+  setJoiningLocked(locked: boolean): void {
+    this.joiningLocked = locked;
     this.changed();
   }
 
@@ -813,6 +822,7 @@ export class Game {
       tvShowTeams: this.tvShowTeams,
       readOut: this.readOut,
       startOnLastAnswer: this.startOnLastAnswer,
+      joiningLocked: this.joiningLocked,
       closeEarly: this.closeEarly,
       readShown: this.readShown,
       buzz: [...this.buzzStates].map(([index, state]) => [index, structuredClone(state)] as [number, BuzzState]),
@@ -841,6 +851,7 @@ export class Game {
     game.tvShowTeams = snapshot.tvShowTeams ?? true;
     game.readOut = snapshot.readOut ?? quiz.readOut ?? false;
     game.readShown = snapshot.readShown ?? 0;
+    game.joiningLocked = snapshot.joiningLocked ?? false;
     game.startOnLastAnswer = snapshot.startOnLastAnswer ?? game.startOnLastAnswer;
     game.closeEarly = snapshot.closeEarly ?? game.closeEarly;
     for (const [index, state] of snapshot.buzz ?? []) game.buzzStates.set(index, structuredClone(state));
@@ -1416,6 +1427,7 @@ export class Game {
       tvShowTeams: this.tvShowTeams,
       readOut: this.readOut,
       startOnLastAnswer: this.startOnLastAnswer,
+      joiningLocked: this.joiningLocked,
       closeEarly: this.closeEarly,
       reading: this.phase === 'reading' && question?.type === 'multiple-choice' ? { shown: this.readShown, total: question.options.length } : undefined,
       skipsLeaderboardNext: this.questionIndex >= 0 && this.skipsLeaderboardNext,

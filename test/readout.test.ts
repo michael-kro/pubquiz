@@ -227,3 +227,22 @@ test('with start-on-last switched off, the host starts the timer separately', ()
   assert.equal(game.phase, 'open');
   game.dispose();
 });
+
+test('locking the quiz stops new teams joining, but teams already in can rejoin', () => {
+  const game = new Game(parseQuiz(QUIZ));
+  const a = game.join('A');
+  assert.ok(a.ok);
+  game.setJoiningLocked(true);
+  assert.equal(game.hostView().joiningLocked, true);
+  const late = game.join('Late');
+  assert.equal(late.ok, false);
+  assert.match(late.ok ? '' : late.error, /closed the quiz to new teams/);
+  assert.ok(game.rejoin({ token: a.value.token }), 'an existing team gets back in');
+  assert.ok(game.rejoin({ code: a.value.code }), 'and with its code');
+  const restored = Game.restore(game.quiz, JSON.parse(JSON.stringify(game.snapshot())));
+  assert.equal(restored.join('Later').ok, false, 'the lock survives a restart');
+  restored.dispose();
+  game.setJoiningLocked(false);
+  assert.ok(game.join('Late').ok);
+  game.dispose();
+});
