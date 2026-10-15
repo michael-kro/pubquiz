@@ -15,7 +15,7 @@ test('the Wi-Fi QR text follows the format phones read, escaping the special cha
 const quiz = parseQuiz('title: T\nrounds:\n  - name: R\n    questions:\n      - { type: letter, text: Q, answer: Abba }\n');
 
 test('the host and TV get the Wi-Fi details and its QR code; teams and strangers do not', async () => {
-  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', wifi: { ssid: 'QuizNight', password: 'beer1234' } });
+  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', wifi: { ssid: 'QuizNight', password: 'beer1234' } });
   const base = `http://127.0.0.1:${server.port}`;
   const host = await Client.connect(server.port);
   host.send({ t: 'host', key: server.hostKey });
@@ -41,7 +41,7 @@ test('the host and TV get the Wi-Fi details and its QR code; teams and strangers
   for (const c of [host, tv, team]) await c.close();
   await server.close();
 
-  const none = await createQuizServer({ closeEarly: true, lockOnStart: false, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const none = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   const plainHost = await Client.connect(none.port);
   plainHost.send({ t: 'host', key: none.hostKey });
   assert.equal((await plainHost.state('lobby')).wifi, undefined);

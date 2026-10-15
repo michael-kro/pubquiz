@@ -76,3 +76,21 @@ test('out of the box a question is worth 100 points; the tests run with a unit o
   const out = execFileSync(process.execPath, ['--input-type=module', '-e', "import('./server/quiz.ts').then(m=>console.log(m.POINTS_UNIT, m.DEFAULT_POINTS))"], { env, encoding: 'utf8' });
   assert.equal(out.trim(), '100 100');
 });
+
+test('the TV hides the team list unless the host ticks "Show teams on the TV"', async () => {
+  const server = await createQuizServer({ quiz: quiz(), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const host = await Client.connect(server.port);
+  host.send({ t: 'host', key: server.hostKey });
+  const tv = await Client.connect(server.port);
+  tv.send({ t: 'screen', key: server.screenKey });
+  const ann = await Client.connect(server.port);
+  ann.send({ t: 'join', room: server.roomCode, name: 'Ann' });
+  await ann.waitFor((m) => m.t === 'joined');
+  const hidden = await tv.state('lobby', (v) => v.teamsHidden === true);
+  assert.deepEqual(hidden.teams, []);
+  assert.equal((await host.state('lobby', (v) => v.teams.length === 1)).tvShowTeams, false);
+  host.send({ t: 'tv-teams', visible: true });
+  assert.equal((await tv.state('lobby', (v) => v.teamsHidden === false)).teams.length, 1);
+  for (const c of [host, tv, ann]) await c.close();
+  await server.close();
+});

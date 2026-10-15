@@ -144,7 +144,7 @@ test('stopping the manager cancels pending retries', async () => {
 test('the server switches its join link and QR code with the network, and the host can switch modes', async () => {
   const quiz = parseQuiz('title: T\nrounds:\n  - name: R\n    questions:\n      - { type: letter, text: Q, answer: Abba }\n');
   const actions: string[] = [];
-  const server = await createQuizServer({ closeEarly: true, lockOnStart: false,
+  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true,
     quiz,
     port: 0,
     bindHost: '127.0.0.1',
@@ -185,7 +185,7 @@ test('the server switches its join link and QR code with the network, and the ho
 
 test('a team can carry on from another phone (or a new link) with its team code', async () => {
   const quiz = parseQuiz('title: T\nrounds:\n  - name: R\n    questions:\n      - { type: letter, text: Q, answer: Abba }\n');
-  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   const phone = await Client.connect(server.port);
   phone.send({ t: 'join', room: server.roomCode, name: 'Quizzy' });
   await phone.waitFor((m) => m.t === 'joined');

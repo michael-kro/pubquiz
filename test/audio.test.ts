@@ -60,7 +60,7 @@ test('problems with audio files are reported clearly', async () => {
 test('clips are served with byte ranges (Safari needs them), and only the host and TV are told where they are', async () => {
   const dir = await folder({ 'quiz.yaml': QUIZ('{ type: music, text: "Name the band", audio: clip.wav, accept: [Queen] }'), 'clip.wav': wav() });
   const quiz = await loadQuizFile(join(dir, 'quiz.yaml'));
-  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   const url = `http://127.0.0.1:${server.port}/media/q1-audio.wav`;
   const size = wav().length;
 
@@ -98,7 +98,7 @@ test('clips are served with byte ranges (Safari needs them), and only the host a
 
 test('library: upload a clip, hear it back, export it, import it, duplicate it', async () => {
   const library = new Library(await mkdtemp(join(tmpdir(), 'pubquiz-audio-lib-')));
-  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, library, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, library, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   const api = `http://127.0.0.1:${server.port}/api`;
   const headers = { 'x-host-key': server.hostKey };
   const call = (path: string, init: RequestInit = {}) => fetch(api + path, { ...init, headers: { ...headers, ...(init.headers ?? {}) } });

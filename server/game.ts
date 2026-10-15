@@ -100,6 +100,8 @@ export interface GameOptions {
   nameFilter?: boolean;
   /** End a question as soon as every team has answered (default on here; the server turns it off so the clock always runs down). */
   closeEarly?: boolean;
+  /** Show the team list on the TV screen (default on here; the server turns it off). */
+  tvShowTeams?: boolean;
   /** Pressing Start quiz stops new teams joining (default off here; the server turns it on). */
   lockOnStart?: boolean;
 }
@@ -206,6 +208,7 @@ export class Game {
     this.startOnLastAnswer = quiz.startOnLastAnswer ?? true;
     this.closeEarly = quiz.closeEarly ?? options.closeEarly ?? true;
     this.lockOnStart = options.lockOnStart ?? false;
+    this.tvShowTeams = options.tvShowTeams ?? true;
   }
 
   /** The question as it stands now: the host may have changed its correct answer after time ran out. */
@@ -863,7 +866,7 @@ export class Game {
     for (const [index, value] of snapshot.answerEdits ?? []) game.answerEdits.set(index, value);
     game.breakState = snapshot.break;
     for (const [index, bets] of snapshot.wagers ?? []) game.wagers.set(index, new Map(bets));
-    game.tvShowTeams = snapshot.tvShowTeams ?? true;
+    game.tvShowTeams = snapshot.tvShowTeams ?? game.tvShowTeams;
     game.readOut = snapshot.readOut ?? quiz.readOut ?? false;
     game.readShown = snapshot.readShown ?? 0;
     game.joiningLocked = snapshot.joiningLocked ?? false;

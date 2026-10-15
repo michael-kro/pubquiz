@@ -119,7 +119,7 @@ test('CSV: quoted where needed, and formulas in team names are made harmless', (
 });
 
 test('the TV screen sees the quiz but never the answer before the reveal, and has no controls', async () => {
-  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   const host = await Client.connect(server.port);
   host.send({ t: 'host', key: server.hostKey });
   const tv = await Client.connect(server.port);
@@ -167,7 +167,7 @@ test('the TV screen sees the quiz but never the answer before the reveal, and ha
 });
 
 test('the screen link survives a restart, and /results.csv needs the host key', async () => {
-  const first = await createQuizServer({ closeEarly: true, lockOnStart: false, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', hostKey: 'fixed-host-key-for-testing' });
+  const first = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', hostKey: 'fixed-host-key-for-testing' });
   const key = first.screenKey;
   const base = `http://127.0.0.1:${first.port}`;
   assert.equal((await fetch(`${base}/results.csv`)).status, 404);
@@ -176,14 +176,14 @@ test('the screen link survives a restart, and /results.csv needs the host key', 
   assert.equal(ok.status, 200);
   assert.match(ok.headers.get('content-type') ?? '', /text\/csv/);
   await first.close();
-  const second = await createQuizServer({ closeEarly: true, lockOnStart: false, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', hostKey: 'fixed-host-key-for-testing' });
+  const second = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', hostKey: 'fixed-host-key-for-testing' });
   assert.equal(second.screenKey, key);
   await second.close();
 });
 
 test('a results file is written next to the quiz when the game finishes', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'pubquiz-results-'));
-  const server = await createQuizServer({ closeEarly: true, lockOnStart: false,
+  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true,
     quiz,
     port: 0,
     bindHost: '127.0.0.1',

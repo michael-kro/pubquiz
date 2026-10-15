@@ -11,7 +11,7 @@ import { Client } from './client.ts';
 
 const quiz = parseQuiz('title: T\nrounds:\n  - name: R\n    questions:\n      - { type: letter, text: Q, answer: Abba }\n');
 const start = (extra: Parameters<typeof createQuizServer>[0] = {}) =>
-  createQuizServer({ closeEarly: true, lockOnStart: false, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', ...extra });
+  createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', ...extra });
 
 test('token bucket: a burst is allowed, then actions are paced', () => {
   let now = 0;

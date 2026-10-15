@@ -85,6 +85,8 @@ export interface ServerOptions {
   closeEarly?: boolean;
   /** Pressing Start quiz stops new teams joining. On by default; the host can untick it in the lobby. */
   lockOnStart?: boolean;
+  /** Show the team list on the TV screen. Off by default; the host can tick it. */
+  tvShowTeams?: boolean;
   /** Keeps the host link the same across restarts. Defaults to the resumed session's key, or a new one. */
   hostKey?: string;
   port?: number;
@@ -298,6 +300,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       nameFilter: options.nameFilter,
       closeEarly: options.closeEarly ?? false,
       lockOnStart: options.lockOnStart ?? true,
+      tvShowTeams: options.tvShowTeams ?? false,
       onChange() {
         current.saver?.schedule();
         if (game.phase === 'finished' && session && !current.resultsWritten) {
