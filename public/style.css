@@ -754,7 +754,11 @@ input {
 .num-key.enter { background: var(--accent); color: var(--accent-text); }
 .num-extra { display: flex; gap: 10px; justify-content: center; }
 .num-key.small { min-height: 48px; min-width: 88px; font-size: 1.5rem; }
-.num-key:active { transform: scale(0.97); }
+.num-key:active:not(:disabled) { transform: scale(0.97); }
+.num-display.locked { background: var(--surface); color: var(--text); outline: 3px solid var(--accent); }
+/* Locked in: every key greyed out, except the one you chose. */
+.key:disabled:not(.chosen) { background: var(--surface-2); color: var(--muted); opacity: 0.55; }
+.num-key:disabled { background: var(--surface-2) !important; color: var(--muted) !important; opacity: 0.55; }
 
 /* Fastest team flash */
 .speedster { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: #000b; animation: speedster-bg 0.25s ease-out both; }

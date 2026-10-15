@@ -668,14 +668,16 @@ function answerInput(s, q, locked) {
 
     case 'number':
     case 'nearest': {
-      if (locked) return null;
       const valid = (text) => /^-?\d+([.,]\d+)?$/.test(text.trim());
-      const display = h('output', { class: 'num-display', 'aria-label': 'Your answer', 'aria-live': 'polite' }, draftText);
+      // Once locked in (or time is up) the keypad stays, greyed out, showing what was sent.
+      if (locked && s.myAnswerText != null) draftText = s.myAnswerText;
+      const display = h('output', { class: `num-display${locked ? ' locked' : ''}`, 'aria-label': 'Your answer', 'aria-live': 'polite' }, draftText);
       const show = () => {
         display.textContent = draftText;
         display.classList.toggle('empty', !draftText);
       };
       const press = (key) => {
+        if (locked) return;
         if (key === 'C') draftText = '';
         else if (draftText.length < 20) {
           if (key === '-' && draftText !== '') return;
@@ -685,10 +687,11 @@ function answerInput(s, q, locked) {
         show();
       };
       const enter = () => {
+        if (locked) return;
         if (valid(draftText)) sendAnswer(Number(draftText.trim().replace(',', '.')));
         else showNotice('Enter a number first.');
       };
-      const key = (label, extra = '', onclick = () => press(label)) => h('button', { type: 'button', class: `key num-key${extra}`, onclick }, label);
+      const key = (label, extra = '', onclick = () => press(label)) => h('button', { type: 'button', class: `key num-key${extra}`, disabled: locked, onclick }, label);
       show();
       return h(
         'div',
