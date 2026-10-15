@@ -255,10 +255,10 @@ function render() {
   app.replaceChildren(
     h(
       'div',
-      { class: 'host-layout' },
+      { class: `host-layout${TV && state.teamsHidden ? ' no-side' : ''}` },
       topBar(state),
       h('section', { class: 'stage' }, TV ? null : networkBanner(state), stage(state)),
-      teamsPanel(state),
+      TV && state.teamsHidden ? null : teamsPanel(state),
     ),
     notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '',
   );

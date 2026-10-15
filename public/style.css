@@ -255,6 +255,8 @@ input {
   grid-template-areas: "bar bar" "stage teams";
   min-height: 100vh;
 }
+.host-layout.no-side { grid-template-columns: 1fr; grid-template-areas: "bar" "stage"; }
+.host-layout.no-side .stage { max-width: 1200px; width: 100%; margin: 0 auto; }
 .host-bar {
   grid-area: bar;
   display: flex;
