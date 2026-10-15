@@ -168,6 +168,11 @@ function advance() {
 
 // Space, → and PageDown (what presentation clickers send) all move on.
 document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && codesOpen) {
+    codesOpen = false;
+    render();
+    return;
+  }
   if (TV || !state || state.phase === 'idle' || editingId() || event.target !== document.body) return;
   if ([' ', 'ArrowRight', 'PageDown', 'Enter'].includes(event.key)) {
     event.preventDefault();
@@ -265,6 +270,7 @@ function render() {
       h('section', { class: 'stage' }, TV ? null : networkBanner(state), stage(state)),
       TV && state.teamsHidden ? null : teamsPanel(state),
     ),
+    codesOverlay(state),
     notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '',
   );
   tick();
@@ -1201,6 +1207,35 @@ function reviewPanel(s, q) {
   );
 }
 
+let codesOpen = false;
+
+/** A big, easy-to-read list of every team and its rejoin code, for when a phone dies or someone changes device. */
+function codesOverlay(s) {
+  if (TV || !codesOpen) return null;
+  const close = () => {
+    codesOpen = false;
+    render();
+  };
+  const teams = [...s.teams].sort((a, b) => Number(a.connected) - Number(b.connected) || a.name.localeCompare(b.name));
+  return h(
+    'div',
+    { class: 'codes-overlay', role: 'dialog', 'aria-label': 'Team codes', onclick: (e) => e.target === e.currentTarget && close() },
+    h(
+      'div',
+      { class: 'codes-card' },
+      h('div', { class: 'codes-head' }, h('h2', {}, 'Team codes'), h('button', { type: 'button', onclick: close }, 'Close')),
+      h('p', { class: 'muted' }, 'A team that lost its phone joins on a new one: tap "Already joined? Rejoin with your team code" and type its code. Disconnected teams are at the top.'),
+      teams.length === 0 ? h('p', { class: 'muted' }, 'No teams yet.') : null,
+      h(
+        'ul',
+        { class: 'codes-list' },
+        teams.map((t) => h('li', { class: t.connected ? '' : 'offline' }, h('span', { class: 'dot' }), avatar(t.name, t.photo, 36), h('span', { class: 'codes-name' }, t.name), h('strong', { class: 'codes-code' }, t.code)),
+        ),
+      ),
+    ),
+  );
+}
+
 function teamsPanel(s) {
   return h(
     'aside',
@@ -1246,6 +1281,7 @@ function teamsPanel(s) {
           h('input', { type: 'checkbox', checked: s.photosEnabled, onchange: (e) => socket.send({ t: 'photos', enabled: e.target.checked }) }),
           ' Team photos',
         ),
+    TV ? null : h('button', { type: 'button', class: 'codes-button', onclick: () => { codesOpen = true; render(); } }, '🔑 Team codes'),
     TV && s.teamsHidden ? h('p', { class: 'muted' }, `${s.standings.length} ${s.standings.length === 1 ? 'team is' : 'teams are'} playing`) : null,
     s.teams.length === 0 && !s.teamsHidden ? h('p', { class: 'muted small' }, 'No teams yet.') : null,
     h(
