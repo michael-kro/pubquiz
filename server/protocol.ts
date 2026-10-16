@@ -35,6 +35,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('rotate-key') }),
   z.object({ t: z.literal('lock-joining'), locked: z.boolean() }),
   z.object({ t: z.literal('allow-empty-start'), on: z.boolean() }),
+  z.object({ t: z.literal('set-max-teams'), max: z.number().int().min(1).max(100) }),
   z.object({ t: z.literal('play-clip'), name: z.string().max(100) }),
   z.object({ t: z.literal('stop-clips') }),
   z.object({ t: z.literal('admit'), teamId: z.string().max(64) }),

@@ -5,7 +5,9 @@ import type { AnswerValue, BreakView, HostView, Phase, QuestionView, ReviewGroup
 import { isTextAnswer, LETTER_GROUPS, ORDERING_ITEMS, POINTS_UNIT, type Question, type Quiz } from './quiz.ts';
 import { scoreAnswer } from './scoring.ts';
 
+/** The usual limit on teams, and what the quiz is tested with. The host can change it (up to ABSOLUTE_MAX_TEAMS). */
 export const MAX_TEAMS = 30;
+export const ABSOLUTE_MAX_TEAMS = 100;
 export { MAX_NAME_LENGTH };
 export const MAX_TEXT_ANSWER = 100;
 /**
@@ -88,6 +90,7 @@ export interface GameSnapshot {
   joiningLocked?: boolean;
   lockOnStart?: boolean;
   allowEmptyStart?: boolean;
+  maxTeams?: number;
   prizes?: string[];
   entryFee?: string;
   requireAdmission?: boolean;
@@ -198,6 +201,8 @@ export class Game {
   readonly pending = new Map<string, Team>();
   /** Optional prizes for 1st, 2nd and 3rd ('' when not set). */
   prizes: string[] = ['', '', ''];
+  /** The most teams that may join (the host can change it). */
+  maxTeams = MAX_TEAMS;
   /** The quiz can be started with no teams in it. */
   allowEmptyStart = true;
   /** Pressing Start quiz locks joining (the host can untick this in the lobby). */
@@ -293,7 +298,7 @@ export class Game {
     const name = checked.name;
     if (this.phase === 'finished') return fail('This quiz has finished.');
     if (this.joiningLocked) return fail('The quiz master has closed the quiz to new teams. If your team is already in, use "Rejoin with your team code".');
-    if (this.teams.size + this.pending.size >= MAX_TEAMS) return fail(`This quiz is full (${MAX_TEAMS} teams).`);
+    if (this.teams.size + this.pending.size >= this.maxTeams) return fail(`This quiz is full (${this.maxTeams} teams).`);
     const lower = name.toLowerCase();
     if ([...this.teams.values(), ...this.pending.values()].some((t) => t.name.toLowerCase() === lower)) {
       return fail('That team name is taken. Pick another.');
@@ -422,6 +427,13 @@ export class Game {
   /** The Start button works once a team has joined (or the host has said an empty start is fine). */
   canStart(): boolean {
     return this.teams.size > 0 || this.allowEmptyStart;
+  }
+
+  /** Sets how many teams may join. A whole number from 1 to ABSOLUTE_MAX_TEAMS; teams already in stay in. */
+  setMaxTeams(max: number): void {
+    if (!Number.isFinite(max)) return;
+    this.maxTeams = Math.min(ABSOLUTE_MAX_TEAMS, Math.max(1, Math.round(max)));
+    this.changed();
   }
 
   setAllowEmptyStart(on: boolean): void {
@@ -934,6 +946,7 @@ export class Game {
       joiningLocked: this.joiningLocked,
       lockOnStart: this.lockOnStart,
       allowEmptyStart: this.allowEmptyStart,
+      maxTeams: this.maxTeams,
       prizes: this.prizes,
       entryFee: this.entryFee,
       requireAdmission: this.requireAdmission,
@@ -969,6 +982,7 @@ export class Game {
     game.joiningLocked = snapshot.joiningLocked ?? false;
     game.lockOnStart = snapshot.lockOnStart ?? game.lockOnStart;
     game.allowEmptyStart = snapshot.allowEmptyStart ?? game.allowEmptyStart;
+    game.maxTeams = snapshot.maxTeams ?? game.maxTeams;
     game.prizes = snapshot.prizes ?? game.prizes;
     game.entryFee = snapshot.entryFee ?? game.entryFee;
     game.requireAdmission = snapshot.requireAdmission ?? false;
@@ -1577,7 +1591,7 @@ export class Game {
       onBreak: this.breakView(),
       speedster: this.speedster(),
       prizes: this.prizesView(),
-      maxTeams: MAX_TEAMS,
+      maxTeams: this.maxTeams,
       photosEnabled: this.photosEnabled,
       tvShowTeams: this.tvShowTeams,
       entryFee: this.entryFee,

@@ -148,3 +148,42 @@ test('the quiz cannot start until a team has joined, unless the host allows it',
   for (const c of [host, ann]) await c.close();
   await server.close();
 });
+
+test('the most teams that can join is a host setting that defaults to 30', async () => {
+  const game = new Game(parseQuiz(QUIZ));
+  assert.equal(game.hostView().maxTeams, 30);
+  game.setMaxTeams(2);
+  assert.ok(game.join('A').ok && game.join('B').ok);
+  const full = game.join('C');
+  assert.equal(full.ok, false);
+  assert.match(full.ok ? '' : full.error, /full \(2 teams\)/);
+  game.setMaxTeams(1);
+  assert.equal(game.hostView().teams.length, 2, 'lowering it never removes teams already in');
+  game.setMaxTeams(500);
+  assert.equal(game.hostView().maxTeams, 100, 'there is a ceiling');
+  game.setMaxTeams(0);
+  assert.equal(game.hostView().maxTeams, 1, 'and at least one');
+  game.setMaxTeams(Number.NaN);
+  assert.equal(game.hostView().maxTeams, 1, 'nonsense is ignored');
+  game.setMaxTeams(12);
+  const restored = Game.restore(game.quiz, JSON.parse(JSON.stringify(game.snapshot())));
+  assert.equal(restored.hostView().maxTeams, 12, 'saved with the game');
+  restored.dispose();
+  game.dispose();
+
+  const server = await createQuizServer({ quiz: parseQuiz(QUIZ), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const host = await Client.connect(server.port);
+  host.send({ t: 'host', key: server.hostKey });
+  const ann = await Client.connect(server.port);
+  ann.send({ t: 'join', name: 'Ann' });
+  await ann.waitFor((m) => m.t === 'joined');
+  ann.send({ t: 'set-max-teams', max: 1 });
+  assert.match((await ann.waitFor((m) => m.t === 'error')).message, /Only the host/);
+  host.send({ t: 'set-max-teams', max: 1 });
+  assert.equal((await host.state('lobby', (v) => v.maxTeams === 1)).maxTeams, 1);
+  const bob = await Client.connect(server.port);
+  bob.send({ t: 'join', name: 'Bob' });
+  assert.match((await bob.waitFor((m) => m.t === 'error')).message, /full \(1 teams\)/);
+  for (const c of [host, ann, bob]) await c.close();
+  await server.close();
+});

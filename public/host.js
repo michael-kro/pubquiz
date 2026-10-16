@@ -792,7 +792,7 @@ function stage(s) {
           h('h1', {}, 'Scan to join'),
           h('p', { class: 'big' }, s.joinUrl.replace(/^https?:\/\//, '')),
           h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
-          h('p', { class: 'muted' }, `One phone per team. ${s.teams.length} of ${s.maxTeams} teams joined.`),
+          h('p', { class: 'muted' }, 'One phone per team.'),
           TV ? [entryFeeBanner(s), prizeList(s.prizes, true)] : h('div', { class: 'lobby-extras' }, entryFeeEditor(s), prizesEditor(s)),
           TV
             ? null
@@ -1696,7 +1696,7 @@ function teamsPanel(s) {
     'aside',
     { class: 'teams' },
     pendingPanel(s),
-    h('h2', {}, `Teams ${s.teams.length}/${s.maxTeams}`),
+    h('h2', {}, `Teams ${s.teams.length}`),
     s.teams.length === 0 ? h('p', { class: 'muted small' }, 'No teams yet.') : null,
     h(
       'ul',
@@ -1730,6 +1730,32 @@ function teamsPanel(s) {
       ),
     ),
     TV ? null : h('h3', { class: 'panel-heading' }, 'Options'),
+    TV
+      ? null
+      : h(
+          'label',
+          { class: 'check max-teams', title: 'The most teams that can join. Changing it never removes a team that is already in. The quiz has been tested with 30.' },
+          'Max teams',
+          h('input', {
+            class: 'max-teams-input',
+            'data-keep': 'max-teams',
+            type: 'text',
+            inputmode: 'numeric',
+            pattern: '[0-9]*',
+            maxlength: '3',
+            'aria-label': 'Most teams that can join',
+            value: String(s.maxTeams),
+            oninput: (e) => {
+              const clean = e.target.value.replace(/\D/g, '').slice(0, 3);
+              if (clean !== e.target.value) e.target.value = clean;
+            },
+            onchange: (e) => {
+              const max = Number(e.target.value);
+              if (Number.isInteger(max) && max >= 1) socket.send({ t: 'set-max-teams', max: Math.min(100, max) });
+              else e.target.value = String(state?.maxTeams ?? 30);
+            },
+          }),
+        ),
     TV
       ? null
       : h(

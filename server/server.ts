@@ -577,6 +577,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (hostOnly()) for (const other of connections) if (other.role === 'screen') send(other, { t: 'stop-clips' });
         return;
 
+      case 'set-max-teams':
+        if (hostOnly()) game?.setMaxTeams(msg.max);
+        return;
+
       case 'allow-empty-start':
         if (hostOnly()) game?.setAllowEmptyStart(msg.on);
         return;

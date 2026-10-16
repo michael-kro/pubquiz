@@ -942,3 +942,6 @@ body:not(.tv) .lobby .qr-pair { flex-wrap: nowrap; }
 .fee-currency { font-size: 1.6rem; font-weight: 800; color: var(--accent); }
 .fee-amount { width: 5.5em; flex: none; font-size: 1.3rem; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
 .fee-unit { flex: 1; min-width: 0; font-size: 1.05rem; }
+
+.max-teams { display: flex !important; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0; font-weight: 600; }
+.max-teams-input { width: 4.2em; text-align: right; font-variant-numeric: tabular-nums; }
