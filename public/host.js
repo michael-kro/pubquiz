@@ -275,7 +275,7 @@ function render() {
     return;
   }
   if (state.phase === 'idle') {
-    keepFocus(() => app.replaceChildren(libraryView(state), clipsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : ''));
+    keepFocus(() => app.replaceChildren(libraryView(state), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : ''));
     return;
   }
   keepFocus(() => app.replaceChildren(
@@ -288,6 +288,7 @@ function render() {
     ),
     codesOverlay(state),
     clipsOverlay(),
+    settingsOverlay(),
     notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '',
   ));
   tick();
@@ -458,6 +459,7 @@ function libraryView(s) {
       h('span', { class: 'spacer' }),
       h('button', { type: 'button', onclick: openClips, title: 'Play sound clips whenever you like' }, '🎵 Clips'),
       h('a', { class: 'button', href: '#branding' }, 'Branding'),
+      h('button', { type: 'button', onclick: openSettings, title: 'Where your quizzes are kept' }, '⚙ Settings'),
       h(
         'label',
         { class: 'button' },
@@ -1413,6 +1415,83 @@ function keepFocus(draw) {
   next.value = value;
   next.focus();
   if (at != null) next.setSelectionRange(at, at);
+}
+
+// Settings: where the quizzes, clips and branding are kept.
+let settingsOpen = false;
+let settingsInfo = null;
+let settingsDraft = '';
+let settingsCopy = true;
+let settingsNote = '';
+let settingsError = '';
+
+async function openSettings() {
+  settingsOpen = true;
+  settingsNote = '';
+  settingsError = '';
+  render();
+  try {
+    settingsInfo = await api('GET', '/settings');
+    settingsDraft = settingsInfo.libraryDir;
+  } catch (error) {
+    settingsError = error.message;
+  }
+  render();
+}
+
+async function saveSettings() {
+  settingsNote = '';
+  settingsError = '';
+  try {
+    const result = await api('POST', '/settings', { libraryDir: settingsDraft, copy: settingsCopy });
+    settingsNote = `Saved. ${result.copied ? `${result.copied} items copied to ${result.dir}. ` : ''}Close this program and start it again to use ${result.dir}.`;
+  } catch (error) {
+    settingsError = error.message;
+  }
+  render();
+}
+
+const SOURCE_TEXT = {
+  option: 'set when the program was started (--quizzes)',
+  environment: 'set by the PUBQUIZ_HOME setting',
+  saved: 'chosen in this Settings panel',
+  default: 'the default',
+};
+
+function settingsOverlay() {
+  if (TV || !settingsOpen) return null;
+  const close = () => {
+    settingsOpen = false;
+    render();
+  };
+  const fixed = settingsInfo && (settingsInfo.source === 'option' || settingsInfo.source === 'environment');
+  return h(
+    'div',
+    { class: 'codes-overlay', role: 'dialog', 'aria-label': 'Settings', onclick: (e) => e.target === e.currentTarget && close() },
+    h(
+      'div',
+      { class: 'codes-card settings-card' },
+      h('div', { class: 'codes-head' }, h('h2', {}, '⚙ Settings'), h('button', { type: 'button', onclick: close }, 'Close')),
+      settingsInfo === null && !settingsError ? h('p', { class: 'muted' }, 'Loading…') : null,
+      settingsInfo
+        ? [
+            h('h3', {}, 'Where your quizzes are kept'),
+            h('p', { class: 'muted' }, 'Quizzes, pictures, sound clips, branding and saved games all live in one folder, so it is the one thing to back up or copy to another computer.'),
+            h('p', {}, h('strong', { class: 'folder-path' }, settingsInfo.libraryDir), h('span', { class: 'muted' }, ` (${SOURCE_TEXT[settingsInfo.source]})`)),
+            ...(fixed
+              ? [h('p', { class: 'muted' }, 'This one cannot be changed here. Start the program without that setting to choose a folder in the app.')]
+              : [
+                  h('label', {}, 'Use this folder instead', h('input', { class: 'folder-input', 'data-keep': 'settings-folder', value: settingsDraft, spellcheck: 'false', placeholder: settingsInfo.defaultDir, oninput: (e) => { settingsDraft = e.target.value; } })),
+                  h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: settingsCopy, onchange: (e) => { settingsCopy = e.target.checked; } }), ' Copy my current quizzes, clips and branding there first (recommended)'),
+                  h('div', { class: 'settings-actions' }, h('button', { type: 'button', class: 'primary', onclick: saveSettings }, 'Save folder')),
+                  h('p', { class: 'muted small' }, 'The change applies the next time you start the program. Your current folder is left as it is.'),
+                ]),
+          ]
+        : null,
+      settingsNote ? h('p', { class: 'settings-note', role: 'status' }, settingsNote) : null,
+      settingsError ? h('p', { class: 'error', role: 'alert' }, settingsError) : null,
+    ),
+  );
 }
 
 // The soundboard: clips the host can play whenever they like, here or on the TV.

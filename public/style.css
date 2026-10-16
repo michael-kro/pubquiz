@@ -852,6 +852,16 @@ body:not(.tv) .lobby .qr-pair { flex-wrap: nowrap; }
 .waiting-card { text-align: center; }
 .waiting-fee { font-size: 2rem; font-weight: 900; color: var(--accent); margin: 8px 0; }
 
+/* Settings */
+.settings-card { width: min(640px, 100%); }
+.settings-card h3 { margin: 14px 0 4px; }
+.settings-card label { display: grid; gap: 6px; margin: 10px 0; font-weight: 600; }
+.settings-card label.check { display: flex; align-items: flex-start; gap: 8px; font-weight: 500; }
+.folder-input { font-family: ui-monospace, Menlo, monospace; }
+.folder-path { font-family: ui-monospace, Menlo, monospace; overflow-wrap: anywhere; }
+.settings-actions { margin: 12px 0; }
+.settings-note { background: var(--surface-2); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 8px; }
+
 /* Clips (soundboard) */
 .clips-card { width: min(760px, 100%); }
 .clips-tools { display: flex; gap: 10px; align-items: center; margin: 12px 0; flex-wrap: wrap; }

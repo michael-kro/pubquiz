@@ -7,6 +7,7 @@ import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { BrandingStore } from './branding.ts';
 import { Library } from './library.ts';
+import { chooseLibraryDir } from './settings.ts';
 import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
 import { createQuizServer, type QuizServer, type SessionOptions } from './server.ts';
 import { hashQuiz, readSession } from './session.ts';
@@ -29,7 +30,8 @@ Options:
       --tunnel <name>    Internet link to use: cloudflare (default) or ngrok
       --public-url <url> Use your own public address instead (e.g. a VPS or Tailscale Funnel)
       --public-host <h>  Address to put in the local join link (default: this laptop's Wi-Fi address)
-      --quizzes <dir>    Where the quiz library lives (default ${DEFAULT_LIBRARY})
+      --quizzes <dir>    Where the quiz library lives (default ${DEFAULT_LIBRARY}; or set PUBQUIZ_HOME,
+                         or change it in the app under Settings)
       --branding <dir>   Folder with branding.json and a logo (name, colours, logo on every page).
                          Default: the "branding" folder inside your quiz library, editable from the host screen
       --wifi-ssid <name>      Show a second QR code on the host and TV lobby so teams can join this Wi-Fi network
@@ -130,7 +132,8 @@ async function main(): Promise<void> {
   if (values['wifi-password'] && !values['wifi-ssid']) fail('--wifi-password needs --wifi-ssid too.');
   const quizPath = positionals[0];
   const single = quizPath ? await loadQuizArgument(quizPath, values.fresh) : undefined;
-  const library = quizPath ? undefined : new Library(resolve(values.quizzes ?? DEFAULT_LIBRARY));
+  const folder = await chooseLibraryDir(values.quizzes);
+  const library = quizPath ? undefined : new Library(folder.dir);
 
   // A library keeps its branding inside itself, where the host screen can edit it. A folder given on the
   // command line is used as it is, which is the way to brand a single quiz file.
@@ -148,7 +151,8 @@ async function main(): Promise<void> {
       session: single?.session,
       library,
       // The host's soundboard lives with the library (or in the default library folder when a single quiz file is run).
-      clipsDir: join(library?.dir ?? resolve(DEFAULT_LIBRARY), 'clips'),
+      clipsDir: join(library?.dir ?? folder.dir, 'clips'),
+      libraryFolder: folder,
       hostKey: library ? await libraryHostKey(library.dir, values['new-key']) : values['new-key'] ? randomBytes(18).toString('base64url') : undefined,
       hostPin: hostPin?.trim(),
       hostLocalOnly: values['host-local-only'],

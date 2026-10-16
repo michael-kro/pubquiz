@@ -11,6 +11,7 @@ import { Game, type Team } from './game.ts';
 import type { Library } from './library.ts';
 import type { BrandingStore } from './branding.ts';
 import { ClipError, ClipStore, MAX_CLIP_BYTES } from './clips.ts';
+import { changeLibraryDir, defaultLibraryDir, SettingsError, type FolderChoice } from './settings.ts';
 import { clientAddress, isLocalRequest, TokenBucket, WindowCounter } from './limits.ts';
 import { MAX_PHOTO_BYTES, PhotoStore, sniffImage } from './photos.ts';
 import { loadBundledFacts, pickFacts } from './facts.ts';
@@ -72,6 +73,8 @@ export interface ServerOptions {
   hostPin?: string;
   /** A folder of audio clips for the host's soundboard. */
   clipsDir?: string;
+  /** Where the library lives and why (shown, and changeable, in the app's Settings). */
+  libraryFolder?: FolderChoice;
   /** Only let the host controls be used from the machine running the quiz (not the network or the tunnel). */
   hostLocalOnly?: boolean;
   /** Called when the host key is changed from the host screen, so it can be saved. */
@@ -826,6 +829,36 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     const { pathname } = url;
 
     if (await handleClips(req, res, url)) return;
+
+    // Settings: where the quizzes, clips and branding are kept. Changing it takes effect the next time the program starts.
+    if (url.pathname === '/api/settings') {
+      const json = (status: number, body: unknown) => {
+        res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+        res.end(JSON.stringify(body));
+      };
+      const key = (req.headers['x-host-key'] as string | undefined) ?? url.searchParams.get('key') ?? undefined;
+      if (!(isHostKey(key) && hostAllowed(req))) return json(401, { error: 'Use the host link printed when the quiz program started.' });
+      const folder = options.libraryFolder;
+      if (!folder) return json(404, { error: 'Settings are not available here.' });
+      if (req.method === 'GET') return json(200, { libraryDir: folder.dir, source: folder.source, defaultDir: defaultLibraryDir() });
+      if (req.method === 'POST') {
+        if (folder.source === 'option' || folder.source === 'environment') {
+          return json(409, { error: folder.source === 'option' ? 'The folder was set when the program was started (--quizzes), so it cannot be changed here.' : 'The folder is set by PUBQUIZ_HOME, so it cannot be changed here.' });
+        }
+        try {
+          const chunks: Buffer[] = [];
+          for await (const chunk of req) chunks.push(chunk as Buffer);
+          const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}') as { libraryDir?: unknown; copy?: unknown };
+          if (typeof body.libraryDir !== 'string') return json(400, { error: 'Type the folder to use.' });
+          const result = await changeLibraryDir(folder.dir, body.libraryDir, body.copy !== false);
+          return json(200, { ok: true, ...result, restart: true });
+        } catch (error) {
+          if (error instanceof SettingsError) return json(error.status, { error: error.message });
+          return json(400, { error: 'That did not work. Check the folder and try again.' });
+        }
+      }
+      return json(405, { error: 'Not allowed.' });
+    }
 
     if (pathname === '/branding.json' || pathname === '/branding/logo') {
       const branding = options.branding;
