@@ -2,7 +2,7 @@
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { chmod, mkdir, mkdtemp, rename, rm, stat, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
+import { appHome } from './settings.ts';
 import { join } from 'node:path';
 import { createInterface } from 'node:readline';
 
@@ -75,7 +75,7 @@ export async function ensureCloudflared(log: (message: string) => void = () => {
   const release = CLOUDFLARED_FILES[`${process.platform}-${process.arch}`];
   if (!release) throw new Error(`No cloudflared download for ${process.platform}-${process.arch}. Install cloudflared yourself.`);
 
-  const binDir = join(homedir(), '.pubquiz', 'bin');
+  const binDir = join(appHome(), 'bin');
   const binary = join(binDir, `cloudflared-${CLOUDFLARED_VERSION}${process.platform === 'win32' ? '.exe' : ''}`);
   if (await stat(binary).then(() => true, () => false)) return binary;
 

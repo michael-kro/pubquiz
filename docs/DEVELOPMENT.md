@@ -44,3 +44,7 @@ The server is TypeScript run directly by Node (no build step). The browser pages
 - `server/server.ts`: HTTP for the pages and QR code, plus the WebSocket protocol (`server/protocol.ts`).
 - `server/quiz.ts`: YAML loading and validation.
 - `test/`: unit tests, and an end-to-end test that plays a quiz over real WebSockets.
+
+## Trying things without your real quizzes
+
+`npm run try` starts the quiz with a brand-new, empty library and settings in temporary folders, on port 3001 (so it can run beside your real one), and deletes them when you stop. `npm run try -- --keep` keeps the folders. To choose the folders yourself, set `PUBQUIZ_HOME` (quizzes, clips, branding, saved games) and `PUBQUIZ_CONFIG_DIR` (the app's own settings and downloaded helper), or pass `--quizzes <folder>`. These work with the downloaded programs too, for example `PUBQUIZ_HOME=/tmp/trial ./pubquiz-macos-arm64`.

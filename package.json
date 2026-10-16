@@ -1,6 +1,6 @@
 {
   "name": "pubquiz",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Self-hosted live pub quiz. Teams join from their phones by QR code.",
   "type": "module",
@@ -9,6 +9,7 @@
   },
   "scripts": {
     "start": "node server/main.ts",
+    "try": "node scripts/try-fresh.mjs",
     "dev": "node --watch server/main.ts examples/sample-quiz.yaml",
     "test": "npm run test:fast && npm run test:slow",
     "test:fast": "PUBQUIZ_POINTS_UNIT=1000 node --test --test-timeout=60000 --test-force-exit \"test/*.test.ts\"",

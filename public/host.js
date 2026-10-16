@@ -855,6 +855,7 @@ function stage(s) {
             ? h('span', { class: 'countdown big', 'data-countdown': true })
             : h('span', { class: 'phase-label' }, s.phase === 'reading' ? 'Listen to the answers' : s.phase === 'closed' ? "Time's up" : 'Answer'),
         ),
+        q.halveOnWrong ? h('p', { class: 'halve-banner', role: 'note' }, '⚠ Halving round: one wrong answer halves a team’s score for this round') : null,
         q.paused ? h('p', { class: 'paused-banner', role: 'status' }, s.buzzers?.some((b) => b.status === 'answering') ? '⏱ The clock is held while a team answers' : '⏸ Paused') : null,
         q.type === 'music' && !q.audio ? h('p', { class: 'music-badge' }, '🎵 Music round: play the track now') : null,
         clipBar(q),

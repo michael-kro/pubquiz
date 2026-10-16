@@ -166,7 +166,9 @@ export const QuizFile = z
       .default({ speedFactor: 0.5, mode: 'speed', bonus: POINTS_UNIT / 2, fastBonus: 0, fastPlaces: 1, leaderboard: 'round' }),
     rounds: z
       .array(
-        z.object({ name: text, wager: z.boolean().optional(), wagerCap: z.number().int().min(1).max(100_000).optional(), mode: z.enum(SCORING_MODES, { error: `must be one of: ${SCORING_MODES.join(', ')}` }).optional(), questions: z.array(QuestionSchema, { error: 'needs a list of questions' }).min(1, 'needs at least one question') }).strict(),
+        z.object({ name: text, wager: z.boolean().optional(), halveOnWrong: z.boolean().optional(), wagerCap: z.number().int().min(1).max(100_000).optional(), mode: z.enum(SCORING_MODES, { error: `must be one of: ${SCORING_MODES.join(', ')}` }).optional(), questions: z.array(QuestionSchema, { error: 'needs a list of questions' }).min(1, 'needs at least one question') })
+          .strict()
+          .refine((round) => !(round.wager && round.halveOnWrong), { message: 'a round cannot be both a wager round and a halve-on-wrong round', path: ['halveOnWrong'] }),
         { error: 'needs a list of rounds' },
       )
       .min(1, 'needs at least one round'),
@@ -181,6 +183,8 @@ export type Question = z.infer<typeof QuestionSchema> & {
   mode: ScoringMode;
   /** The question is in a wager round: teams bet points before seeing it. */
   wager: boolean;
+  /** In this round, a team that gets an answer wrong has its score for the round halved (usually the last round). */
+  halveOnWrong?: boolean;
   /** The most a team may bet, if the round sets one (otherwise its score, with a small minimum). */
   wagerCap?: number;
   /** Where browsers load the image from, once resolved. */
@@ -309,6 +313,7 @@ function quizFromData(file: QuizFileData): Quiz {
         roundIndex,
         mode: round.mode ?? file.scoring.mode,
         wager: round.wager === true,
+        halveOnWrong: round.halveOnWrong === true,
         wagerCap: round.wagerCap,
         imageUrl: q.image && isUrl(q.image) ? q.image : undefined,
         audioUrl: q.audio && isUrl(q.audio) ? q.audio : undefined,

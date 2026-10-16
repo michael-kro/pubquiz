@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1
+
+- **Docker image:** each release now publishes a ready-made image to `ghcr.io/michael-kro/pubquiz` (Intel/AMD and Apple-silicon/Raspberry Pi), so Docker needs no download warning and no source folder.
+- **Try it without your data:** `npm run try` starts with a fresh, empty library and settings in temporary folders (port 3001). `PUBQUIZ_HOME`, `PUBQUIZ_CONFIG_DIR` and `--quizzes` choose folders yourself.
+- README is a quick start; docs are split into a host guide, quiz format and development notes; the unsigned programs are explained honestly, with the macOS 15 way past the warning.
+- Load test runs on its own after the rest of the suite, so it isn't starved of CPU.
+- **Halving round:** `halveOnWrong: true` on a round (usually the last): a team that gets any answer wrong has its score for that round halved. Phones and the TV warn about it, and the reveal explains the loss.
+
 ## 0.1.0: first release
 
 A self-hosted live pub quiz: the host runs it on a laptop, teams join from their phones, the TV shows the questions.
@@ -26,5 +34,5 @@ A self-hosted live pub quiz: the host runs it on a laptop, teams join from their
 
 **Known limits**
 - Checked in headless Chrome and with simulated phones; real-phone and real-TV testing is still to come. The Linux and Windows binaries are built but were not run on those systems.
-- The binaries are not code-signed: macOS and Windows will warn the first time. On macOS, right-click and choose Open.
+- The binaries are not code-signed (Apple's developer programme is $99 a year and Windows certificates cost money, which a free project hasn't paid for), so macOS and Windows warn the first time. Windows: More info → Run anyway. macOS: System Settings → Privacy & Security → Open Anyway, or download with `curl` to skip the warning. Docker and running from source need no warning.
 - Tested with 30 teams; the setting allows up to 100.

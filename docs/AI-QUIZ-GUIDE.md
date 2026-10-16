@@ -63,6 +63,7 @@ Typed answers (`accept`) ignore capitals, punctuation, accents, a leading "the" 
 ## Rounds and extras
 
 - **Wager round (Jeopardy style):** `wager: true` on a round, usually the last. Teams bet points before seeing each question, so give every question in it a `category:` (a short topic like `Rivers`). Optional `wagerCap:` limits the bet.
+- **Halving round:** `halveOnWrong: true` on a round (usually the last): one wrong answer halves a team's score for that round. Not allowed together with `wager`.
 - **Per-round scoring:** `mode: flat` on a round overrides the quiz's mode for that round.
 - **Ask first:** `readOut: true` at the top makes the host ask each question (and read out the multiple-choice answers one by one) before starting the timer.
 
