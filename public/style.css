@@ -282,10 +282,18 @@ input {
   grid-area: bar;
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 12px 24px;
+  gap: 12px;
+  padding: 10px 18px;
   background: var(--surface);
 }
+.host-bar > * { flex-shrink: 0; }
+.host-bar button, .host-bar .button { white-space: nowrap; padding: 8px 12px; }
+.host-bar .primary.next { padding: 10px 20px; }
+.bar-id { flex: 1 1 0 !important; min-width: 120px; display: grid; gap: 2px; line-height: 1.2; }
+.bar-id .quiz-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-id .join-hint { flex: none; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.more-menu-wrap .break-menu { right: 0; left: auto; }
+@media (max-width: 980px) { .host-bar { flex-wrap: wrap; } .bar-id { flex-basis: 100% !important; order: -1; } }
 .quiz-title { font-weight: 800; font-size: 1.2rem; }
 .join-hint { flex: 1; color: var(--muted); }
 .network-pill { font-size: 0.9rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: var(--surface-2); white-space: nowrap; }
@@ -353,7 +361,7 @@ input {
 
 .standings.two-col { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); font-size: 1.25rem; }
 
-.teams { grid-area: teams; background: var(--surface); padding: 20px 16px; overflow: auto; border-left: 1px solid var(--surface-2); }
+.teams { grid-area: teams; background: var(--surface); padding: 20px 16px; overflow: auto; border-left: 1px solid var(--surface-2); position: sticky; top: 0; align-self: start; max-height: 100vh; }
 .teams h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .teams .panel-heading { margin: 22px 0 8px; padding-top: 14px; border-top: 1px solid var(--surface-2); font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
 .teams ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
@@ -821,6 +829,16 @@ input {
 .uncover .tile { background: #000; outline: 1px solid #1b1b1b; outline-offset: -1px; transition: opacity 0.6s ease-out; }
 .uncover .tile.gone { opacity: 0; }
 .uncover-check { margin: 8px 0; align-items: flex-start; }
+
+/* Host start screen: fee and prizes side by side so they fit without scrolling */
+.lobby-extras { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; max-width: 660px; }
+body:not(.tv) .lobby { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 36px; min-height: 0; align-items: center; justify-content: start; padding-top: 8px; }
+body:not(.tv) .lobby .qr { width: min(38vh, 340px); }
+body:not(.tv) .lobby .qr-pair { flex-wrap: nowrap; }
+.lobby-extras .prizes-editor { margin: 8px 0; padding: 8px 12px 10px; }
+.lobby-extras .prizes-editor input[type=text], .lobby-extras .prizes-editor input:not([type]) { padding: 8px 10px; }
+@media (max-width: 1100px) { .lobby-extras { grid-template-columns: 1fr; } }
+.host .lobby h1 { font-size: clamp(1.8rem, 3vw, 2.6rem); margin: 8px 0; }
 
 /* Entry fee and admitting teams */
 .entry-fee { margin: 10px 0; font-size: 1.2rem; }

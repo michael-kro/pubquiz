@@ -735,28 +735,22 @@ function topBar(s) {
     s.canEnd
       ? h('button', { type: 'button', class: 'logo-home', title: 'Back to your quizzes', 'aria-label': 'Back to your quizzes', onclick: () => endQuiz(s) }, brandLogo('brand-logo small'))
       : brandLogo('brand-logo small'),
-    h('span', { class: 'quiz-title' }, s.quizTitle),
+    h(
+      'div',
+      { class: 'bar-id' },
+      h('span', { class: 'quiz-title', title: s.quizTitle }, s.quizTitle),
+      h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Join ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)]),
+    ),
     networkPill(s.network),
     soundButton(),
-    h('a', { class: 'button', href: `/screen?key=${encodeURIComponent(s.screenKey)}`, target: '_blank', rel: 'noopener', title: 'Open this on the TV or projector' }, 'TV screen ↗'),
-    h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Join: ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)]),
+    h('a', { class: 'button', href: `/screen?key=${encodeURIComponent(s.screenKey)}`, target: '_blank', rel: 'noopener', title: 'Open this on the TV or projector' }, 'TV ↗'),
     breakControl(s),
     h('button', { type: 'button', onclick: openClips, title: 'Play sound clips whenever you like' }, '🎵 Clips'),
     s.pendingTeams?.length ? h('button', { type: 'button', class: 'pending-pill', title: 'Let in every team that is waiting', onclick: () => socket.send({ t: 'admit-all' }) }, `⏳ ${s.pendingTeams.length} waiting · Admit`) : null,
-    TV
-      ? null
-      : h('button', {
-          type: 'button',
-          class: 'link-button',
-          title: 'Make a new host key. The old host link and the TV screen link stop working.',
-          onclick: () => {
-            if (confirm('Make a new host key? The old host link and the TV screen stop working until you open the new TV link.')) socket.send({ t: 'rotate-key' });
-          },
-        }, '🔑 New key'),
     !TV && s.phase === 'reveal' && s.skipsLeaderboardNext
       ? h('button', { onclick: () => socket.send({ t: 'leaderboard' }), title: 'Show the full leaderboard first' }, 'Leaderboard')
       : null,
-    s.canEnd ? h('button', { class: 'end', onclick: () => endQuiz(s) }, s.phase === 'finished' ? 'Back to quizzes' : 'End quiz') : null,
+    moreControl(s),
     h(
       'button',
       { class: 'primary next', onclick: advance, disabled: s.phase === 'finished', title: 'Space or → also works' },
@@ -784,12 +778,12 @@ function stage(s) {
         h(
           'div',
           {},
-          brandBlock(),
+          TV ? brandBlock() : null,
           h('h1', {}, 'Scan to join'),
           h('p', { class: 'big' }, s.joinUrl.replace(/^https?:\/\//, '')),
           h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
           h('p', { class: 'muted' }, `One phone per team. ${s.teams.length} of ${s.maxTeams} teams joined.`),
-          TV ? [entryFeeBanner(s), prizeList(s.prizes, true)] : [entryFeeEditor(s), prizesEditor(s)],
+          TV ? [entryFeeBanner(s), prizeList(s.prizes, true)] : h('div', { class: 'lobby-extras' }, entryFeeEditor(s), prizesEditor(s)),
           TV
             ? null
             : h(
@@ -933,13 +927,34 @@ function breakStage(s) {
 
 let breakMenuOpen = false;
 document.addEventListener('click', (event) => {
-  if (breakMenuOpen && !event.target.closest?.('.break-menu-wrap')) {
+  if ((breakMenuOpen || moreOpen) && !event.target.closest?.('.break-menu-wrap')) {
     breakMenuOpen = false;
+    moreOpen = false;
     render();
   }
 });
 
 /** The Break button and its choice of lengths, shown between questions. */
+let moreOpen = false;
+
+/** Rarely used actions, tucked into a menu so the top bar stays on one line. */
+function moreControl(s) {
+  const items = [
+    ...(s.canEnd ? [[s.phase === 'finished' ? '⏎ Back to quizzes' : '⏹ End quiz', () => endQuiz(s)]] : []),
+    ['🔑 New host key', () => {
+      if (confirm('Make a new host key? The old host link and the TV screen stop working until you open the new TV link.')) socket.send({ t: 'rotate-key' });
+    }],
+  ];
+  return h(
+    'span',
+    { class: 'break-menu-wrap more-menu-wrap' },
+    h('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': String(moreOpen), title: 'More actions', onclick: () => { moreOpen = !moreOpen; render(); } }, '⋯ More'),
+    moreOpen
+      ? h('div', { class: 'break-menu', role: 'menu' }, items.map(([label, run]) => h('button', { role: 'menuitem', onclick: () => { moreOpen = false; run(); render(); } }, label)))
+      : null,
+  );
+}
+
 function breakControl(s) {
   if (TV || s.onBreak || !['lobby', 'reveal', 'leaderboard'].includes(s.phase)) return null;
   const start = (minutes) => {
