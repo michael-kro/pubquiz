@@ -9,3 +9,4 @@ dist/
 clips/audio/
 venues/*/movie-quotes/audio/
 venues/*/clips/
+.trash/
