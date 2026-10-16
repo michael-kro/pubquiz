@@ -1,6 +1,7 @@
 # docker compose up -d     then     docker compose logs pubquiz     for the host link.
 services:
   pubquiz:
+    # Build from this folder, or use the published image instead: image: ghcr.io/michael-kro/pubquiz:latest
     build: .
     ports:
       - "3000:3000"

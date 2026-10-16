@@ -26,7 +26,12 @@ Run a live pub quiz from your laptop. Teams join on their own phones by scanning
 
 That is a whole quiz night. Everything else is optional.
 
-**Docker instead:** `docker compose up -d`, then `docker compose logs pubquiz` for the host link.
+**Docker instead** (no download warning, and it runs on Intel and Apple-silicon machines):
+```sh
+docker run -d --name pubquiz -p 3000:3000 -v pubquiz-data:/data ghcr.io/michael-kro/pubquiz:latest
+docker logs pubquiz        # prints the host link
+```
+Or from a copy of the source: `docker compose up -d`, then `docker compose logs pubquiz`. For venue Wi-Fi with no internet, add `-e PUBQUIZ_LAN=1 -e PUBQUIZ_PUBLIC_HOST=<your laptop's address>`.
 **From source** (Node.js 22.18+): `npm install`, then `npm start`.
 
 ## Where your things live
