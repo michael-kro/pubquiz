@@ -815,6 +815,21 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
             }),
             ' Wager round (teams bet before each question)',
           ),
+          h(
+            'label',
+            { class: 'check round-halve', title: 'A team that gets any answer wrong in this round has its score for the round halved. Usually the last round.' },
+            h('input', {
+              type: 'checkbox',
+              checked: round.halveOnWrong === true,
+              disabled: round.wager === true,
+              onchange: (e) => {
+                if (e.target.checked) round.halveOnWrong = true;
+                else delete round.halveOnWrong;
+                changed({ structure: true });
+              },
+            }),
+            ' Halve a team’s round score if it gets an answer wrong',
+          ),
           round.wager
             ? h('input', {
                 class: 'round-cap',

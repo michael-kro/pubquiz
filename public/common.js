@@ -355,7 +355,7 @@ export function prizeList(prizes, big = false) {
 /** "+950" and an arrow for how far a team moved. */
 export function movement(row) {
   const parts = [];
-  if (row.gained) parts.push(h('span', { class: 'gained' }, `+${row.gained}`));
+  if (row.gained) parts.push(h('span', { class: row.gained < 0 ? 'gained lost' : 'gained' }, row.gained > 0 ? `+${row.gained}` : String(row.gained)));
   if (row.moved) {
     parts.push(
       h(

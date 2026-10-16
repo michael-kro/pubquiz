@@ -945,3 +945,6 @@ body:not(.tv) .lobby .qr-pair { flex-wrap: nowrap; }
 
 .max-teams { display: flex !important; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0; font-weight: 600; }
 .max-teams-input { width: 4.2em; text-align: right; font-variant-numeric: tabular-nums; }
+
+.gained.lost, .points.lost { color: var(--wrong); }
+.halve-banner { margin: 8px 0; padding: 8px 12px; border-radius: 10px; background: #e2574c26; border-left: 4px solid var(--wrong); font-weight: 700; }
