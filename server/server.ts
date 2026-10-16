@@ -91,7 +91,7 @@ export interface ServerOptions {
   closeEarly?: boolean;
   /** Pressing Start quiz stops new teams joining. On by default; the host can untick it in the lobby. */
   lockOnStart?: boolean;
-  /** Show the team list on the TV screen. Off by default; the host can tick it. */
+  /** List the teams on the TV's wait screen as they join. On by default; the host can untick it. */
   tvShowTeams?: boolean;
   /** Let the quiz start with no teams. Off by default: the host waits for players (and can tick it to start anyway). */
   allowEmptyStart?: boolean;
@@ -228,9 +228,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       review: revealed ? view.review : undefined,
       // A list of guesses with how far off each was gives the answer away.
       guesses: revealed ? view.guesses : undefined,
-      // The host can keep team names off the TV (the leaderboard still shows who is winning).
-      teams: view.tvShowTeams ? view.teams.map((t) => ({ ...t, code: '' })) : [],
-      teamsHidden: !view.tvShowTeams,
+      // The TV lists the teams only on the wait screen, as they join (and only if the host has not hidden them).
+      // Once the quiz is under way it never shows the team list: the leaderboard shows who is winning.
+      teams: view.tvShowTeams && view.phase === 'lobby' ? view.teams.map((t) => ({ ...t, code: '' })) : [],
+      teamsHidden: !view.tvShowTeams || view.phase !== 'lobby',
       pendingTeams: [],
       screenKey: '',
       canEnd: false,
@@ -309,7 +310,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       nameFilter: options.nameFilter,
       closeEarly: options.closeEarly ?? false,
       lockOnStart: options.lockOnStart ?? true,
-      tvShowTeams: options.tvShowTeams ?? false,
+      tvShowTeams: options.tvShowTeams ?? true,
       allowEmptyStart: options.allowEmptyStart ?? false,
       onChange() {
         current.saver?.schedule();

@@ -77,7 +77,7 @@ test('out of the box a question is worth 100 points; the tests run with a unit o
   assert.equal(out.trim(), '100 100');
 });
 
-test('the TV hides the team list unless the host ticks "Show teams on the TV"', async () => {
+test('the TV lists teams as they join on the wait screen, never during questions, and the host can hide them', async () => {
   const server = await createQuizServer({ quiz: quiz(), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   const host = await Client.connect(server.port);
   host.send({ t: 'host', key: server.hostKey });
@@ -86,11 +86,19 @@ test('the TV hides the team list unless the host ticks "Show teams on the TV"', 
   const ann = await Client.connect(server.port);
   ann.send({ t: 'join', room: server.roomCode, name: 'Ann' });
   await ann.waitFor((m) => m.t === 'joined');
+  const shown = await tv.state('lobby', (v) => v.teams.length === 1);
+  assert.deepEqual([shown.teamsHidden, shown.teams[0].name], [false, 'Ann'], 'shown by default, as they join');
+  assert.equal((await host.state('lobby', (v) => v.teams.length === 1)).tvShowTeams, true);
+
+  host.send({ t: 'tv-teams', visible: false });
   const hidden = await tv.state('lobby', (v) => v.teamsHidden === true);
   assert.deepEqual(hidden.teams, []);
-  assert.equal((await host.state('lobby', (v) => v.teams.length === 1)).tvShowTeams, false);
   host.send({ t: 'tv-teams', visible: true });
-  assert.equal((await tv.state('lobby', (v) => v.teamsHidden === false)).teams.length, 1);
+  await tv.state('lobby', (v) => v.teamsHidden === false);
+
+  host.send({ t: 'advance' });
+  const open = await tv.state('open');
+  assert.deepEqual([open.teams, open.teamsHidden], [[], true], 'during the quiz the TV has no team list');
   for (const c of [host, tv, ann]) await c.close();
   await server.close();
 });

@@ -281,10 +281,10 @@ function render() {
   keepFocus(() => app.replaceChildren(
     h(
       'div',
-      { class: `host-layout${TV && state.teamsHidden ? ' no-side' : ''}` },
+      { class: `host-layout${TV ? ' no-side' : ''}` },
       topBar(state),
       h('section', { class: 'stage' }, TV ? null : networkBanner(state), stage(state)),
-      TV && state.teamsHidden ? null : teamsPanel(state),
+      TV ? null : teamsPanel(state),
     ),
     codesOverlay(state),
     clipsOverlay(),
@@ -799,6 +799,14 @@ function stage(s) {
             ? null
             : h(
                 'label',
+                { class: 'check', title: 'The teams appear on the TV as they join. Untick to keep their names off the screen while people arrive.' },
+                h('input', { type: 'checkbox', checked: s.tvShowTeams, onchange: (e) => socket.send({ t: 'tv-teams', visible: e.target.checked }) }),
+                ' 📺 Show teams on the TV as they join',
+              ),
+          TV
+            ? null
+            : h(
+                'label',
                 { class: 'check', title: 'Normally the Start button waits until a team has joined. Tick this to start with nobody in, for example to try a quiz out.' },
                 h('input', { type: 'checkbox', checked: s.allowEmptyStart, onchange: (e) => socket.send({ t: 'allow-empty-start', on: e.target.checked }) }),
                 ' ▶ Allow starting with no teams (for trying a quiz out)',
@@ -807,6 +815,7 @@ function stage(s) {
             ? h('p', { class: 'muted small' }, 'Setting up the internet link. Until then, teams need to be on the same Wi-Fi as this laptop.')
             : null,
         ),
+        TV ? tvTeams(s) : null,
       );
 
     case 'wagering':
@@ -1293,6 +1302,18 @@ function reviewPanel(s, q) {
 }
 
 /** The entry fee, large, for the TV start screen. */
+/** The teams that have joined, popping onto the TV's wait screen one by one. */
+const seenOnTv = new Set();
+function tvTeams(s) {
+  if (s.teamsHidden || !s.teams.length) return null;
+  const chips = s.teams.map((t) => {
+    const fresh = !seenOnTv.has(t.id);
+    seenOnTv.add(t.id);
+    return h('li', { class: `tv-team${fresh ? ' fresh' : ''}${t.connected ? '' : ' offline'}` }, avatar(t.name, t.photo, 40), h('span', { class: 'tv-team-name' }, t.name));
+  });
+  return h('div', { class: 'tv-teams' }, h('p', { class: 'tv-teams-title' }, `${s.teams.length} ${s.teams.length === 1 ? 'team' : 'teams'} in`), h('ul', {}, chips));
+}
+
 function entryFeeBanner(s) {
   if (!s.entryFee) return null;
   return h('p', { class: 'entry-fee big' }, '💷 Entry fee: ', h('strong', {}, s.entryFee), s.requireAdmission ? h('span', { class: 'muted' }, ' · pay the quiz master to get in') : null);
@@ -1643,8 +1664,7 @@ function teamsPanel(s) {
     { class: 'teams' },
     pendingPanel(s),
     h('h2', {}, `Teams ${s.teams.length}/${s.maxTeams}`),
-    TV && s.teamsHidden ? h('p', { class: 'muted' }, `${s.standings.length} ${s.standings.length === 1 ? 'team is' : 'teams are'} playing`) : null,
-    s.teams.length === 0 && !s.teamsHidden ? h('p', { class: 'muted small' }, 'No teams yet.') : null,
+    s.teams.length === 0 ? h('p', { class: 'muted small' }, 'No teams yet.') : null,
     h(
       'ul',
       {},
@@ -1693,14 +1713,6 @@ function teamsPanel(s) {
           { class: 'check photos-toggle', title: 'Stop new teams joining. Teams already in can still rejoin with their code.' },
           h('input', { type: 'checkbox', checked: s.joiningLocked, onchange: (e) => socket.send({ t: 'lock-joining', locked: e.target.checked }) }),
           ' 🔒 Lock joining now (no new teams)',
-        ),
-    TV
-      ? null
-      : h(
-          'label',
-          { class: 'check photos-toggle', title: 'Show the list of teams on the TV screen' },
-          h('input', { type: 'checkbox', checked: s.tvShowTeams, onchange: (e) => socket.send({ t: 'tv-teams', visible: e.target.checked }) }),
-          ' Show teams on the TV',
         ),
     TV
       ? null

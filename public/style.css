@@ -920,3 +920,13 @@ body:not(.tv) .lobby .qr-pair { flex-wrap: nowrap; }
 
 @media (max-height: 760px) { .screen { padding-top: 14px; padding-bottom: 14px; } }
 .clips-list .kick { opacity: 1; position: static; }
+
+/* TV wait screen: the teams, popping in as they join */
+.tv-teams { flex-basis: 100%; width: 100%; max-width: 1400px; margin: 8px auto 0; }
+.tv-teams-title { margin: 0 0 10px; font-size: 1.3rem; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 0.08em; text-align: center; }
+.tv-teams ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px 14px; justify-content: center; }
+.tv-team { display: flex; align-items: center; gap: 10px; padding: 8px 18px 8px 8px; border-radius: 999px; background: var(--surface); font-size: clamp(1.1rem, 1.8vw, 1.6rem); font-weight: 700; }
+.tv-team.offline { opacity: 0.5; }
+.tv-team.fresh { animation: team-in 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+@keyframes team-in { from { opacity: 0; transform: scale(0.4) translateY(20px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .tv-team.fresh { animation: none; } }
