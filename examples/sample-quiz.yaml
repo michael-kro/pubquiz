@@ -11,7 +11,7 @@
 #                    out loud and you press Correct or Wrong. A wrong team is out; optional penalty: points lost.
 #   (any type)       in a round with wager: true, teams bet points on the category before seeing the question
 #   letter           answer: the full answer. Teams tap its first letter on an A-Z keypad
-#                    (classic style). "The" is skipped and people go by first name, so
+#                    (classic keypad style). "The" is skipped and people go by first name, so
 #                    write "John Lennon" and the letter is J. Add letter: X if it can't be worked out.
 #
 # Typed answers are matched ignoring case, punctuation, a leading "the" and small typos.

@@ -1,4 +1,4 @@
-# Quiz box: GL.iNet Architecture
+# Quiz box: GL.iNet router architecture
 
 Oct 14, 2026 · @Michael M Harms
 

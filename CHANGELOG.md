@@ -11,7 +11,7 @@ A self-hosted live pub quiz: the host runs it on a laptop, teams join from their
 - Host controls: pause, +10 s, skip, ask-the-question-first mode, review and change answers before the reveal, breaks with fun facts, a clips soundboard (play on the host or the TV), prizes, entry fee with "admit team" once paid, lock joining, start only once a team has joined.
 
 **Question types**
-- Multiple choice, picture (optionally revealed slowly behind black tiles), music (answer only), ordering, first-letter keypad (classic style), number, closest-wins, buzzer, and a Jeopardy-style wager round.
+- Multiple choice, picture (optionally revealed slowly behind black tiles), music (answer only), ordering, first-letter keypad, number, closest-wins, buzzer, and a Jeopardy-style wager round.
 - Reveal clips (a film quote after the answer), fastest-team bonus with photo flash, speed scoring.
 
 **Building quizzes**

@@ -612,7 +612,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
             h(
               'select',
               { 'aria-label': 'Keypad', onchange: (e) => { q.keypad = e.target.value === 'grouped' ? undefined : e.target.value; changed(); } },
-              h('option', { value: 'grouped', selected: (q.keypad ?? 'grouped') === 'grouped' }, 'classic style: Q/V and X/Z share a key'),
+              h('option', { value: 'grouped', selected: (q.keypad ?? 'grouped') === 'grouped' }, 'Classic layout: Q/V and X/Z share a key'),
               h('option', { value: 'single', selected: q.keypad === 'single' }, 'All 26 letters'),
             ),
             'keypad',

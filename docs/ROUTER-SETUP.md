@@ -57,4 +57,4 @@ More venue tips are in [VENUE-TROUBLESHOOTING.md](VENUE-TROUBLESHOOTING.md).
 
 ## What isn't here yet
 
-Running the quiz **on the router itself**, so no laptop is needed, is a later step (M7b and M7c in [PLAN.md](../PLAN.md)). It needs the hardware to test, and the plan recommends trying Node on the router before considering a rewrite in Go. A captive portal (so the join page pops up by itself when a phone joins the Wi-Fi) and a firewall switch that blocks the internet during questions are also router-side jobs, listed in the plan.
+Running the quiz **on the router itself**, so no laptop is needed, is a possible later step. It needs the router hardware to test, and trying Node on the router would come before considering a rewrite in Go. A captive portal (so the join page pops up by itself when a phone joins the Wi-Fi) and a firewall switch that blocks the internet during questions are also router-side jobs, listed in the plan.

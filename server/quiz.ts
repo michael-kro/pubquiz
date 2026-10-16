@@ -98,7 +98,7 @@ const QuestionSchema = z.discriminatedUnion('type', [
     .strict(),
   // Teams type a number; whoever is closest wins the points.
   z.object({ type: z.literal('nearest'), ...common, answer: number }).strict(),
-  // classic style: teams tap the first letter of the answer.
+  // Teams tap the first letter of the answer on a keypad.
   z
     .object({
       type: z.literal('letter'),
@@ -107,7 +107,7 @@ const QuestionSchema = z.discriminatedUnion('type', [
       answer: text,
       /** Only needed when the first letter can't be worked out, e.g. the answer starts with a number. */
       letter: z.string().regex(/^[A-Za-z]$/, 'must be a single letter A–Z').optional(),
-      /** 'grouped' (default): a 4×6 keypad like the usual, with the rare letters paired (QV, XZ) with Q/V and X/Z sharing a key. 'single': all 26 letters. */
+      /** 'grouped' (default): a 4×6 keypad with the rare letters paired (QV, XZ), so Q/V and X/Z share a key. 'single': all 26 letters. */
       keypad: z.enum(['grouped', 'single']).optional(),
     })
     .strict()

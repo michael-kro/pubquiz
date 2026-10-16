@@ -76,11 +76,15 @@ async function copyLibrary(from: string, to: string): Promise<number> {
 export async function changeLibraryDir(current: string, requested: string, copy: boolean): Promise<{ dir: string; copied: number }> {
   const text = requested.trim();
   if (!text) throw new SettingsError('Type the folder to use.');
-  const expanded = text === '~' ? homedir() : text.startsWith('~/') ? join(homedir(), text.slice(2)) : text;
+  // "~" means the home folder; on Windows people type "~\\PubQuiz" as well as "~/PubQuiz".
+  const tilde = text === '~' ? '' : text.startsWith('~/') || (process.platform === 'win32' && text.startsWith('~\\')) ? text.slice(2) : undefined;
+  const expanded = tilde === undefined ? text : join(homedir(), tilde);
   if (!isAbsolute(expanded)) throw new SettingsError('Use a full folder path, for example /Users/you/PubQuiz.');
   const dir = resolve(expanded);
   if (dir === resolve('/') || dir === homedir()) throw new SettingsError('Pick a folder just for the quizzes, not your whole home folder.');
-  if (dir === current) throw new SettingsError('That is the folder already in use.');
+  // Windows folder names ignore capital letters.
+  const same = (a: string, b: string) => (process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : a === b);
+  if (same(dir, current)) throw new SettingsError('That is the folder already in use.');
   const inside = (a: string, b: string) => {
     const r = relative(a, b);
     return r !== '' && !r.startsWith('..') && !isAbsolute(r);

@@ -16,7 +16,7 @@ After the internet link drops and comes back, it has a **new address**, so the o
 
 The quiz doesn't need the internet itself, only a network the phones and the laptop share. Run `pubquiz --lan` (or press **Switch to local Wi-Fi**), then pick one:
 
-1. **A small travel router** (about £20–£30, plugged into power) that makes its own Wi-Fi. Join the laptop to it and put the teams' phones on it too. This is the most reliable option, and it works with no venue network at all. Make sure client isolation ("AP isolation") is **off**. With the router's name for the laptop (or its address) set as `--public-host`, the QR code points at the right place. See [ROUTER-SETUP.md](ROUTER-SETUP.md) for a step-by-step guide, including a second QR code for joining the router's Wi-Fi. The router-box plan in `PLAN.md` goes further: the router becomes the whole product.
+1. **A small travel router** (about £20–£30, plugged into power) that makes its own Wi-Fi. Join the laptop to it and put the teams' phones on it too. This is the most reliable option, and it works with no venue network at all. Make sure client isolation ("AP isolation") is **off**. With the router's name for the laptop (or its address) set as `--public-host`, the QR code points at the right place. See [ROUTER-SETUP.md](ROUTER-SETUP.md) for a step-by-step guide, including a second QR code for joining the router's Wi-Fi.
 2. **Your phone's hotspot.** Join the laptop and the teams' phones to it. Try this before the night: some phones' hotspots won't let devices see each other, and most only allow a handful of devices.
 3. **The venue's own Wi-Fi**, if it lets devices see each other (many pubs' guest Wi-Fi does not).
 
