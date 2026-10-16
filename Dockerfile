@@ -16,7 +16,8 @@ COPY docker-entrypoint.sh ./
 
 # Quizzes, saved games, results and the downloaded cloudflared live in /data, so mount a volume there.
 ENV HOME=/data
-RUN mkdir -p /data && chown node:node /data
+# Writable by any user, so `docker run --user $(id -u):$(id -g)` works (on Linux, to keep your own files owned by you).
+RUN mkdir -p /data && chown node:node /data && chmod 1777 /data
 VOLUME /data
 USER node
 

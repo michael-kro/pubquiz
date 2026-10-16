@@ -1,0 +1,10 @@
+# HTTPS for the quiz. {$QUIZ_DOMAIN} is set in compose.yaml (default quiz.internal).
+#
+# "tls internal" makes Caddy its own little certificate authority, which is right for a name that is not on the
+# public internet. A computer or phone only shows a padlock once it trusts that authority (see docs/HTTPS.md).
+# For a real domain you own, delete the "tls internal" line and Caddy gets a Let's Encrypt certificate by itself.
+{$QUIZ_DOMAIN:quiz.internal} {
+	tls internal
+	# WebSockets (which the phones use) are passed through automatically.
+	reverse_proxy pubquiz:3000
+}
