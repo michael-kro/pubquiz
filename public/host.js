@@ -1331,7 +1331,7 @@ let feeTimer;
 /** "£5 per team" back into its parts. Anything else (an older free-text fee) shows as no amount. */
 function parseFee(text) {
   const m = /^£?\s*(\d{1,4})\s*(?:per\s+(person|team))?/i.exec(text ?? '');
-  return { amount: m ? m[1] : '', unit: (m?.[2] ?? 'team').toLowerCase() };
+  return { amount: m ? m[1] : '', unit: (m?.[2] ?? 'person').toLowerCase() };
 }
 
 function entryFeeEditor(s) {
@@ -1339,7 +1339,7 @@ function entryFeeEditor(s) {
   // The fee is always pounds, a whole number, and per team or per person: the app words it as "£5 per team".
   const send = () => {
     const digits = (document.querySelector('.fee-amount')?.value ?? '').replace(/\D/g, '').slice(0, 4);
-    const per = document.querySelector('.fee-unit')?.value === 'person' ? 'person' : 'team';
+    const per = document.querySelector('.fee-unit')?.value === 'team' ? 'team' : 'person';
     const fee = digits === '' ? '' : `£${Number(digits)} per ${per}`;
     if (fee !== (state?.entryFee ?? '')) socket.send({ t: 'set-entry-fee', fee });
   };
@@ -1376,8 +1376,8 @@ function entryFeeEditor(s) {
       h(
         'select',
         { class: 'fee-unit', 'aria-label': 'Charged per team or per person', onchange: send },
-        h('option', { value: 'team', selected: unit === 'team' }, 'per team'),
         h('option', { value: 'person', selected: unit === 'person' }, 'per person'),
+        h('option', { value: 'team', selected: unit === 'team' }, 'per team'),
       ),
     ),
     s.entryFee && !amount ? h('p', { class: 'muted small' }, `Currently: ${s.entryFee}. Type an amount to replace it.`) : null,
