@@ -16,9 +16,10 @@ Teams don't need HTTPS for the quiz to work. It removes the "Not secure" label a
    To use a different name, set it first: `QUIZ_DOMAIN=quiz.night docker compose --profile https up -d`. Ports 80 and 443 must be free on the laptop.
 3. **Open `https://quiz.internal`.** Your browser will say the certificate isn't trusted, because Caddy made its own certificate authority. To make the padlock appear on this laptop, trust that authority once:
    ```sh
-   docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./caddy-root.crt
-   sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain caddy-root.crt   # Mac
+   docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt /tmp/caddy-root.crt
+   sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain /tmp/caddy-root.crt   # Mac
    ```
+   (The file goes to `/tmp`, not this folder, so it can't be committed by accident. It is only the public certificate, not a secret.)
    (On Windows, double-click the file and install it into **Trusted Root Certification Authorities**. On Linux, add it to your system's certificate store.)
 
 Phones and the TV won't trust that authority, and a hosts-file entry only works on the computer you edited. For them to use the name you need DNS on the router (below), and for a padlock without warnings on their phones you need a real domain (below).

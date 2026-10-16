@@ -7,3 +7,7 @@ dist/
 .host-key
 *.photos.json
 .trash/
+# Certificates and keys never belong in the repo
+*.crt
+*.pem
+*.key
