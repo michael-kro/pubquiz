@@ -6,6 +6,8 @@ const app = document.getElementById('app');
 const statusBanner = document.getElementById('status');
 /** The TV screen: the same page without any controls, and without answers before the reveal. */
 const TV = document.body.classList.contains('tv');
+// A TV is read from across a room: scale everything with the screen, so a 1080p TV gets type about 1.4 times the laptop size.
+if (TV) document.documentElement.style.fontSize = 'clamp(13px, min(1.12vw, 1.9vh), 36px)';
 const KEY_STORAGE = 'pubquiz.host-key';
 const params = new URLSearchParams(location.search);
 
@@ -235,6 +237,11 @@ function pinForm() {
   );
 }
 
+/** Puts the page together, skipping any panel that has nothing to show (a null would be drawn as the word "null"). */
+function draw(...nodes) {
+  app.replaceChildren(...nodes.filter(Boolean));
+}
+
 function render() {
   if (needPin && !key) {
     app.replaceChildren(pinForm());
@@ -275,10 +282,10 @@ function render() {
     return;
   }
   if (state.phase === 'idle') {
-    keepFocus(() => app.replaceChildren(libraryView(state), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : ''));
+    keepFocus(() => draw(libraryView(state), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : null));
     return;
   }
-  keepFocus(() => app.replaceChildren(
+  keepFocus(() => draw(
     h(
       'div',
       { class: `host-layout${TV ? ' no-side' : ''}` },
@@ -1321,33 +1328,59 @@ function entryFeeBanner(s) {
 
 /** The optional entry fee, and whether teams must be admitted (once they've paid), set on the start screen. */
 let feeTimer;
+/** "£5 per team" back into its parts. Anything else (an older free-text fee) shows as no amount. */
+function parseFee(text) {
+  const m = /^£?\s*(\d{1,4})\s*(?:per\s+(person|team))?/i.exec(text ?? '');
+  return { amount: m ? m[1] : '', unit: (m?.[2] ?? 'team').toLowerCase() };
+}
+
 function entryFeeEditor(s) {
+  const { amount, unit } = parseFee(s.entryFee);
+  // The fee is always pounds, a whole number, and per team or per person: the app words it as "£5 per team".
+  const send = () => {
+    const digits = (document.querySelector('.fee-amount')?.value ?? '').replace(/\D/g, '').slice(0, 4);
+    const per = document.querySelector('.fee-unit')?.value === 'person' ? 'person' : 'team';
+    const fee = digits === '' ? '' : `£${Number(digits)} per ${per}`;
+    if (fee !== (state?.entryFee ?? '')) socket.send({ t: 'set-entry-fee', fee });
+  };
   return h(
     'fieldset',
     { class: 'prizes-editor fee-editor' },
     h('legend', {}, 'Entry fee (optional)'),
     h(
-      'label',
-      {},
-      h('span', { class: 'prize-medal' }, '💷'),
+      'div',
+      { class: 'fee-row' },
+      h('span', { class: 'fee-currency', 'aria-hidden': 'true' }, '£'),
       h('input', {
-        class: 'fee-input',
+        class: 'fee-amount',
         'data-keep': 'entry-fee',
-        maxlength: '40',
-        placeholder: 'e.g. £5 per team',
-        'aria-label': 'Entry fee',
-        value: s.entryFee ?? '',
+        type: 'text',
+        inputmode: 'numeric',
+        pattern: '[0-9]*',
+        maxlength: '4',
+        placeholder: '0',
+        'aria-label': 'Entry fee in pounds, a whole number',
+        value: amount,
         oninput: (e) => {
+          // Whole pounds only: anything that is not a digit is dropped as it is typed.
+          const clean = e.target.value.replace(/\D/g, '').slice(0, 4);
+          if (clean !== e.target.value) e.target.value = clean;
           clearTimeout(feeTimer);
-          const fee = e.target.value;
-          feeTimer = setTimeout(() => socket.send({ t: 'set-entry-fee', fee }), 400);
+          feeTimer = setTimeout(send, 400);
         },
-        onblur: (e) => {
+        onblur: () => {
           clearTimeout(feeTimer);
-          if (e.target.value.trim() !== (state?.entryFee ?? '')) socket.send({ t: 'set-entry-fee', fee: e.target.value });
+          send();
         },
       }),
+      h(
+        'select',
+        { class: 'fee-unit', 'aria-label': 'Charged per team or per person', onchange: send },
+        h('option', { value: 'team', selected: unit === 'team' }, 'per team'),
+        h('option', { value: 'person', selected: unit === 'person' }, 'per person'),
+      ),
     ),
+    s.entryFee && !amount ? h('p', { class: 'muted small' }, `Currently: ${s.entryFee}. Type an amount to replace it.`) : null,
     h(
       'label',
       { class: 'check', title: 'New teams wait on their phone until you press Admit, so you can check they have paid.' },
