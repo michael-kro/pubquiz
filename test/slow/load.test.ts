@@ -1,7 +1,7 @@
 // M6: 30 teams play a whole quiz over a slow, jittery, unreliable network, and every score comes out right.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { runLoad } from './helpers/load.ts';
+import { runLoad } from '../helpers/load.ts';
 
 test('30 teams, 5 questions, delayed and dropping connections: everyone ends up with the right score', { timeout: 120_000 }, async () => {
   const report = await runLoad({
