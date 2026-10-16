@@ -2,7 +2,10 @@
 // Plays a whole quiz with many simulated teams over a slow, jittery, unreliable network and checks every score.
 //   node scripts/loadtest.ts --teams 30 --questions 10 --latency 80 --jitter 40 --drop 0.1
 import { parseArgs } from 'node:util';
-import { runLoad } from '../test/helpers/load.ts';
+
+// The checks expect the 1000-point questions the tests use, so ask for that before the game code loads.
+process.env['PUBQUIZ_POINTS_UNIT'] ??= '1000';
+const { runLoad } = await import('../test/helpers/load.ts');
 
 const { values } = parseArgs({
   options: {
