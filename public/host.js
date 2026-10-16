@@ -203,6 +203,7 @@ document.addEventListener('keydown', (event) => {
 
 function nextLabel(s) {
   if (s.onBreak) return 'End break';
+  if (s.phase === 'lobby' && !s.canStart) return 'Waiting for teams…';
   const last = s.question && s.question.index + 1 === s.questionCount;
   return {
     lobby: 'Start quiz',
@@ -753,7 +754,7 @@ function topBar(s) {
     moreControl(s),
     h(
       'button',
-      { class: 'primary next', onclick: advance, disabled: s.phase === 'finished', title: 'Space or → also works' },
+      { class: 'primary next', onclick: advance, disabled: s.phase === 'finished' || (s.phase === 'lobby' && !s.canStart), title: s.phase === 'lobby' && !s.canStart ? 'The quiz can start once a team has joined' : 'Space or → also works' },
       nextLabel(s),
     ),
   );
@@ -791,6 +792,14 @@ function stage(s) {
                 { class: 'check', title: 'When you press Start quiz, no new teams can join. Teams already in can still rejoin.' },
                 h('input', { type: 'checkbox', checked: s.lockOnStart, onchange: (e) => socket.send({ t: 'lock-on-start', on: e.target.checked }) }),
                 ' 🔒 Lock the quiz when it starts (no new teams)',
+              ),
+          TV
+            ? null
+            : h(
+                'label',
+                { class: 'check', title: 'Normally the Start button waits until a team has joined. Tick this to start with nobody in, for example to try a quiz out.' },
+                h('input', { type: 'checkbox', checked: s.allowEmptyStart, onchange: (e) => socket.send({ t: 'allow-empty-start', on: e.target.checked }) }),
+                ' ▶ Allow starting with no teams (for trying a quiz out)',
               ),
           s.network.mode === 'tunnel' && s.network.state === 'starting'
             ? h('p', { class: 'muted small' }, 'Setting up the internet link. Until then, teams need to be on the same Wi-Fi as this laptop.')

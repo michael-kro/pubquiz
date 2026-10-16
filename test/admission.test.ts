@@ -110,3 +110,41 @@ test('over the socket: the TV never sees who is waiting, only the host can admit
   for (const c of [host, tv, ann]) await c.close();
   await server.close();
 });
+
+test('the quiz cannot start until a team has joined, unless the host allows it', async () => {
+  const waiting = new Game(parseQuiz(QUIZ), { allowEmptyStart: false });
+  assert.equal(waiting.canStart(), false);
+  waiting.advance();
+  assert.equal(waiting.phase, 'lobby', 'Start does nothing with nobody in');
+  waiting.setRequireAdmission(true);
+  assert.ok(waiting.join('Waiting').ok);
+  assert.equal(waiting.canStart(), false, 'a team that is still waiting to be admitted does not count');
+  waiting.admitAll();
+  assert.equal(waiting.hostView().canStart, true);
+  waiting.advance();
+  assert.equal(waiting.phase, 'open');
+  waiting.dispose();
+
+  const trial = new Game(parseQuiz(QUIZ), { allowEmptyStart: false });
+  trial.setAllowEmptyStart(true);
+  assert.equal(trial.hostView().allowEmptyStart, true);
+  trial.advance();
+  assert.equal(trial.phase, 'open', 'allowed: starts with nobody in');
+  trial.dispose();
+
+  // Over the socket the host is told why nothing happened.
+  const server = await createQuizServer({ quiz: parseQuiz(QUIZ), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const host = await Client.connect(server.port);
+  host.send({ t: 'host', key: server.hostKey });
+  assert.equal((await host.state('lobby')).canStart, false);
+  host.send({ t: 'advance' });
+  assert.match((await host.waitFor((m) => m.t === 'error')).message, /first team/);
+  const ann = await Client.connect(server.port);
+  ann.send({ t: 'join', name: 'Ann' });
+  await ann.waitFor((m) => m.t === 'joined');
+  assert.equal((await host.state('lobby', (v) => v.canStart)).canStart, true);
+  host.send({ t: 'advance' });
+  await host.state('open');
+  for (const c of [host, ann]) await c.close();
+  await server.close();
+});

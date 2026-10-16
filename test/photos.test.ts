@@ -45,7 +45,7 @@ test('the store hands out new versions, forgets, saves to a file and reloads onl
 });
 
 async function start(extra: Parameters<typeof createQuizServer>[0] = {}): Promise<QuizServer> {
-  return createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', ...extra });
+  return createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, allowEmptyStart: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', ...extra });
 }
 
 async function joinTeam(server: QuizServer, name: string) {

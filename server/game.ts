@@ -87,6 +87,7 @@ export interface GameSnapshot {
   startOnLastAnswer?: boolean;
   joiningLocked?: boolean;
   lockOnStart?: boolean;
+  allowEmptyStart?: boolean;
   prizes?: string[];
   entryFee?: string;
   requireAdmission?: boolean;
@@ -110,6 +111,8 @@ export interface GameOptions {
   closeEarly?: boolean;
   /** Show the team list on the TV screen (default on here; the server turns it off). */
   tvShowTeams?: boolean;
+  /** Let the quiz start with no teams in it (default on here; the server turns it off, so the host waits for players). */
+  allowEmptyStart?: boolean;
   /** Pressing Start quiz stops new teams joining (default off here; the server turns it on). */
   lockOnStart?: boolean;
 }
@@ -195,6 +198,8 @@ export class Game {
   readonly pending = new Map<string, Team>();
   /** Optional prizes for 1st, 2nd and 3rd ('' when not set). */
   prizes: string[] = ['', '', ''];
+  /** The quiz can be started with no teams in it. */
+  allowEmptyStart = true;
   /** Pressing Start quiz locks joining (the host can untick this in the lobby). */
   lockOnStart = false;
   /** teamId → photo version, for teams that have uploaded one. The pictures themselves are in the PhotoStore. */
@@ -227,6 +232,7 @@ export class Game {
     this.prizes = [0, 1, 2].map((i) => quiz.prizes?.[i] ?? '');
     this.entryFee = quiz.entryFee ?? '';
     this.tvShowTeams = options.tvShowTeams ?? true;
+    this.allowEmptyStart = options.allowEmptyStart ?? true;
   }
 
   /** The question as it stands now: the host may have changed its correct answer after time ran out. */
@@ -410,6 +416,16 @@ export class Game {
   setRequireAdmission(on: boolean): void {
     this.requireAdmission = on;
     if (!on) this.admitAll();
+    this.changed();
+  }
+
+  /** The Start button works once a team has joined (or the host has said an empty start is fine). */
+  canStart(): boolean {
+    return this.teams.size > 0 || this.allowEmptyStart;
+  }
+
+  setAllowEmptyStart(on: boolean): void {
+    this.allowEmptyStart = on;
     this.changed();
   }
 
@@ -735,6 +751,7 @@ export class Game {
     }
     switch (this.phase) {
       case 'lobby':
+        if (!this.canStart()) return;
         if (this.quiz.questions.length > 0) {
           if (this.lockOnStart) this.joiningLocked = true;
           this.openQuestion(0);
@@ -916,6 +933,7 @@ export class Game {
       startOnLastAnswer: this.startOnLastAnswer,
       joiningLocked: this.joiningLocked,
       lockOnStart: this.lockOnStart,
+      allowEmptyStart: this.allowEmptyStart,
       prizes: this.prizes,
       entryFee: this.entryFee,
       requireAdmission: this.requireAdmission,
@@ -950,6 +968,7 @@ export class Game {
     game.readShown = snapshot.readShown ?? 0;
     game.joiningLocked = snapshot.joiningLocked ?? false;
     game.lockOnStart = snapshot.lockOnStart ?? game.lockOnStart;
+    game.allowEmptyStart = snapshot.allowEmptyStart ?? game.allowEmptyStart;
     game.prizes = snapshot.prizes ?? game.prizes;
     game.entryFee = snapshot.entryFee ?? game.entryFee;
     game.requireAdmission = snapshot.requireAdmission ?? false;
@@ -1568,6 +1587,8 @@ export class Game {
       startOnLastAnswer: this.startOnLastAnswer,
       joiningLocked: this.joiningLocked,
       lockOnStart: this.lockOnStart,
+      allowEmptyStart: this.allowEmptyStart,
+      canStart: this.canStart(),
       closeEarly: this.closeEarly,
       reading: this.phase === 'reading' && question?.type === 'multiple-choice' ? { shown: this.readShown, total: question.options.length } : undefined,
       skipsLeaderboardNext: this.questionIndex >= 0 && this.skipsLeaderboardNext,

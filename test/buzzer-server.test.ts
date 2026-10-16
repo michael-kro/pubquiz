@@ -8,7 +8,7 @@ import { Client } from './client.ts';
 const quiz = parseQuiz('title: T\nrounds:\n  - name: R\n    questions:\n      - { type: buzzer, text: "Capital of Australia?", answer: Canberra, seconds: 30, penalty: 100 }\n');
 
 test('three teams, one buzzer question: first buzz answers, wrong locks them out, next gets it right', async () => {
-  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, allowEmptyStart: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   const host = await Client.connect(server.port);
   host.send({ t: 'host', key: server.hostKey });
   const tv = await Client.connect(server.port);

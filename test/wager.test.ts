@@ -191,7 +191,7 @@ test('bets are saved with the game', () => {
 });
 
 test('over the socket: teams bet, the TV never sees the question while they do, only teams can bet', async () => {
-  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, quiz: parseQuiz(QUIZ), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, allowEmptyStart: true, quiz: parseQuiz(QUIZ), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   const host = await Client.connect(server.port);
   host.send({ t: 'host', key: server.hostKey });
   const tv = await Client.connect(server.port);

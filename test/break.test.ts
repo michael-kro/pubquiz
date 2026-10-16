@@ -65,7 +65,7 @@ test('a break can be taken between questions, shows on teams, and ends with one 
 });
 
 test('over the socket: host starts and ends a break, the TV and phones follow, only the host can', async () => {
-  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, quiz: parseQuiz(QUIZ), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, allowEmptyStart: true, quiz: parseQuiz(QUIZ), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   const host = await Client.connect(server.port);
   host.send({ t: 'host', key: server.hostKey });
   const tv = await Client.connect(server.port);

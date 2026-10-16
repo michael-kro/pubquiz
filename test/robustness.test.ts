@@ -20,7 +20,7 @@ rounds:
 `);
 
 const start = (extra: Partial<Parameters<typeof createQuizServer>[0]> = {}) =>
-  createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', ...extra });
+  createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, allowEmptyStart: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', ...extra });
 
 async function hostOf(server: QuizServer): Promise<Client> {
   const host = await Client.connect(server.port);

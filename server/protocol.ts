@@ -34,6 +34,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('read-out'), on: z.boolean() }),
   z.object({ t: z.literal('rotate-key') }),
   z.object({ t: z.literal('lock-joining'), locked: z.boolean() }),
+  z.object({ t: z.literal('allow-empty-start'), on: z.boolean() }),
   z.object({ t: z.literal('play-clip'), name: z.string().max(100) }),
   z.object({ t: z.literal('stop-clips') }),
   z.object({ t: z.literal('admit'), teamId: z.string().max(64) }),
@@ -221,6 +222,10 @@ export interface HostView {
   joiningLocked: boolean;
   /** Pressing Start quiz locks joining. */
   lockOnStart: boolean;
+  /** The host has said the quiz may start with no teams. */
+  allowEmptyStart: boolean;
+  /** The Start button works: a team has joined, or an empty start is allowed. */
+  canStart: boolean;
   /** Read-out mode: the timer starts as soon as the last multiple-choice answer is shown. */
   startOnLastAnswer: boolean;
   /** Questions end as soon as every team has answered (otherwise the clock always runs down). */

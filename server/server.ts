@@ -90,6 +90,8 @@ export interface ServerOptions {
   lockOnStart?: boolean;
   /** Show the team list on the TV screen. Off by default; the host can tick it. */
   tvShowTeams?: boolean;
+  /** Let the quiz start with no teams. Off by default: the host waits for players (and can tick it to start anyway). */
+  allowEmptyStart?: boolean;
   /** Keeps the host link the same across restarts. Defaults to the resumed session's key, or a new one. */
   hostKey?: string;
   port?: number;
@@ -305,6 +307,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       closeEarly: options.closeEarly ?? false,
       lockOnStart: options.lockOnStart ?? true,
       tvShowTeams: options.tvShowTeams ?? false,
+      allowEmptyStart: options.allowEmptyStart ?? false,
       onChange() {
         current.saver?.schedule();
         if (game.phase === 'finished' && session && !current.resultsWritten) {
@@ -491,7 +494,11 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       }
 
       case 'advance':
-        if (hostOnly()) game?.advance();
+        if (!hostOnly()) return;
+        if (game && game.phase === 'lobby' && !game.canStart()) {
+          return send(conn, { t: 'error', message: 'Waiting for the first team to join. (Tick "Allow starting with no teams" to start anyway.)' });
+        }
+        game?.advance();
         return;
 
       case 'leaderboard': {
@@ -564,6 +571,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
       case 'stop-clips':
         if (hostOnly()) for (const other of connections) if (other.role === 'screen') send(other, { t: 'stop-clips' });
+        return;
+
+      case 'allow-empty-start':
+        if (hostOnly()) game?.setAllowEmptyStart(msg.on);
         return;
 
       case 'lock-joining':
