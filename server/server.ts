@@ -448,9 +448,12 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (conn.role) return send(conn, { t: 'error', message: 'Already joined.' });
         if (!active || !game) return send(conn, { t: 'error', message: 'No quiz is running right now. Ask the quiz master.' });
         if (joinGuesses.blocked(conn.address)) return send(conn, { t: 'error', message: 'Too many wrong tries. Wait a minute and try again.' });
-        if (msg.room.trim().toUpperCase() !== active.roomCode) {
+        // With no room code the phone just opened the home page, and joins the one quiz that is running.
+        // A code that is given (an old link, say) must still match.
+        const room = (msg.room ?? '').trim().toUpperCase();
+        if (room && room !== active.roomCode) {
           joinGuesses.add(conn.address);
-          return send(conn, { t: 'error', message: 'No quiz with that room code. Check the code on the screen.' });
+          return send(conn, { t: 'error', message: 'No quiz with that room code. Leave the room code out and open the home page, or scan the code on the screen again.' });
         }
         const result = game.join(msg.name);
         if (!result.ok) return send(conn, { t: 'error', message: result.error });
@@ -876,6 +879,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       res.writeHead(405).end();
+      return;
+    }
+
+    // Is a quiz running? The home page uses this to say so, and to carry on by itself once it starts.
+    if (pathname === '/status.json') {
+      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      res.end(JSON.stringify({ running: Boolean(active), title: active?.quiz.title ?? '' }));
       return;
     }
 

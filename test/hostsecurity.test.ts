@@ -94,3 +94,35 @@ test('the TV hides the team list unless the host ticks "Show teams on the TV"', 
   for (const c of [host, tv, ann]) await c.close();
   await server.close();
 });
+
+test('the home page needs no room code: teams just join the one quiz that is running', async () => {
+  const server = await createQuizServer({ quiz: quiz(), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  const status = await (await fetch(`http://127.0.0.1:${server.port}/status.json`)).json();
+  assert.deepEqual(status, { running: true, title: 'T' });
+
+  const plain = await Client.connect(server.port);
+  plain.send({ t: 'join', name: 'No Code' });
+  assert.equal((await plain.waitFor((m) => m.t === 'joined' || m.t === 'error')).t, 'joined');
+  const blank = await Client.connect(server.port);
+  blank.send({ t: 'join', room: '  ', name: 'Blank Code' });
+  assert.equal((await blank.waitFor((m) => m.t === 'joined' || m.t === 'error')).t, 'joined');
+  const stale = await Client.connect(server.port);
+  stale.send({ t: 'join', room: 'ZZZZ', name: 'Old Link' });
+  assert.match((await stale.waitFor((m) => m.t === 'error')).message, /room code/);
+  for (const c of [plain, blank, stale]) await c.close();
+  await server.close();
+});
+
+test('with no quiz running, the home page says so and nobody can join', async () => {
+  const { Library } = await import('../server/library.ts');
+  const { mkdtemp } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const server = await createQuizServer({ library: new Library(await mkdtemp(join(tmpdir(), 'pubquiz-idle-'))), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+  assert.deepEqual(await (await fetch(`http://127.0.0.1:${server.port}/status.json`)).json(), { running: false, title: '' });
+  const c = await Client.connect(server.port);
+  c.send({ t: 'join', name: 'Early Bird' });
+  assert.match((await c.waitFor((m) => m.t === 'error')).message, /No quiz is running/);
+  await c.close();
+  await server.close();
+});

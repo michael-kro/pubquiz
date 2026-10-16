@@ -11,7 +11,8 @@ export type AnswerValue = number | string | number[];
 const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('host'), key: z.string().max(200) }),
   z.object({ t: z.literal('screen'), key: z.string().max(200) }),
-  z.object({ t: z.literal('join'), room: z.string().max(20), name: z.string().max(200) }),
+  // The room code is optional: there is only ever one quiz running, so phones that just open the home page join it.
+  z.object({ t: z.literal('join'), room: z.string().max(20).optional(), name: z.string().max(200) }),
   z.object({ t: z.literal('rejoin'), token: z.string().max(200).optional(), code: z.string().max(20).optional() }),
   z.object({
     t: z.literal('answer'),

@@ -202,7 +202,7 @@ function enterClass(state) {
 
 function render() {
   const { remainingMs, ...question } = state?.question ?? {};
-  const key = JSON.stringify([state && { ...state, question, preloadImage: 0 }, ended, joinError, notice, pending, draftOrder, !!token, pendingJoin, connected, getBranding(), photoBusy, draftWager]);
+  const key = JSON.stringify([state && { ...state, question, preloadImage: 0 }, ended, joinError, notice, pending, draftOrder, !!token, pendingJoin, connected, getBranding(), photoBusy, draftWager, quizRunning]);
   if (key === lastRenderKey) return;
   lastRenderKey = key;
   // If someone is typing, keep the keyboard open across the rebuild.
@@ -343,6 +343,29 @@ function photoPrompt(s) {
   );
 }
 
+// The home page needs no room code: there is only one quiz. It checks whether one is running, and keeps checking.
+let quizRunning;
+let statusTimer;
+function watchForQuiz() {
+  if (statusTimer) return;
+  const check = async () => {
+    try {
+      const { running } = await (await fetch('/status.json', { cache: 'no-store' })).json();
+      if (running !== quizRunning) {
+        quizRunning = running;
+        if (!state) render();
+      }
+    } catch {
+      // Offline for a moment: leave things as they are.
+    }
+  };
+  void check();
+  statusTimer = setInterval(() => {
+    if (state || ended) return clearInterval(statusTimer), (statusTimer = undefined);
+    void check();
+  }, 4000);
+}
+
 function joinForm() {
   if (form.rejoining) return rejoinForm();
   const submit = (event) => {
@@ -352,29 +375,14 @@ function joinForm() {
     lastRenderKey = '';
     render();
   };
-  const hasRoomFromLink = Boolean(params.get('room'));
+  watchForQuiz();
 
   return h(
     'form',
     { class: 'screen join', onsubmit: submit },
     brandBlock(),
     h('h1', {}, 'Join the quiz'),
-    hasRoomFromLink
-      ? null
-      : h(
-          'label',
-          {},
-          'Room code',
-          h('input', {
-            name: 'room',
-            value: form.room,
-            autocomplete: 'off',
-            autocapitalize: 'characters',
-            maxlength: '4',
-            required: true,
-            oninput: (e) => (form.room = e.target.value.toUpperCase()),
-          }),
-        ),
+    quizRunning === false ? h('p', { class: 'muted', role: 'status' }, 'No quiz is running yet. Stay on this page: it will let you in as soon as the quiz master starts one.') : null,
     h(
       'label',
       {},
@@ -390,7 +398,7 @@ function joinForm() {
       }),
     ),
     joinError ? h('p', { class: 'error', role: 'alert' }, joinError) : null,
-    h('button', { class: 'primary', type: 'submit', disabled: Boolean(pendingJoin) }, joinButtonLabel('Join')),
+    h('button', { class: 'primary', type: 'submit', disabled: Boolean(pendingJoin) || quizRunning === false }, joinButtonLabel('Join')),
     h('p', { class: 'muted small' }, 'One phone per team.'),
     h('button', { class: 'link-button', type: 'button', onclick: () => switchForm(true) }, 'Already joined? Rejoin with your team code'),
   );
