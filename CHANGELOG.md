@@ -1,7 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.1.1
 
+- **Docker image:** each release now publishes a ready-made image to `ghcr.io/michael-kro/pubquiz` (Intel/AMD and Apple-silicon/Raspberry Pi), so Docker needs no download warning and no source folder.
+- **Try it without your data:** `npm run try` starts with a fresh, empty library and settings in temporary folders (port 3001). `PUBQUIZ_HOME`, `PUBQUIZ_CONFIG_DIR` and `--quizzes` choose folders yourself.
+- README is a quick start; docs are split into a host guide, quiz format and development notes; the unsigned programs are explained honestly, with the macOS 15 way past the warning.
+- Load test runs on its own after the rest of the suite, so it isn't starved of CPU.
 - **Halving round:** `halveOnWrong: true` on a round (usually the last): a team that gets any answer wrong has its score for that round halved. Phones and the TV warn about it, and the reveal explains the loss.
 
 ## 0.1.0: first release

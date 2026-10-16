@@ -1,6 +1,6 @@
 {
   "name": "pubquiz",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Self-hosted live pub quiz. Teams join from their phones by QR code.",
   "type": "module",
