@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Halving round:** `halveOnWrong: true` on a round (usually the last): a team that gets any answer wrong has its score for that round halved. Phones and the TV warn about it, and the reveal explains the loss.
+
 ## 0.1.0: first release
 
 A self-hosted live pub quiz: the host runs it on a laptop, teams join from their phones, the TV shows the questions.

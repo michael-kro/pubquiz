@@ -112,6 +112,8 @@ export interface QuestionView {
   category?: string;
   /** A wager-round question. */
   wager?: boolean;
+  /** In this round a wrong answer halves the team's score for the round. */
+  halveOnWrong?: boolean;
   /** Buzzin' questions, from this team's side. */
   buzz?: { state: 'ready' | 'queued' | 'answering' | 'locked' | 'won' | 'over'; answering?: string; position?: number };
   /** Multiple choice. */

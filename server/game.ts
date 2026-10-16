@@ -1240,10 +1240,56 @@ export class Game {
     return questionIndex === this.questionIndex && ['reveal', 'leaderboard', 'finished'].includes(this.phase);
   }
 
+  /** A submitted answer that was wrong. (Closest-wins has no wrong answers, and a buzz that never got a turn isn't one.) */
+  private isWrong(index: number, answer: Answer, marked: Marked): boolean {
+    const q = this.quiz.questions[index]!;
+    if (q.type === 'nearest') return false;
+    if (q.type === 'buzzer') return answer.value === 'wrong';
+    return !marked.correct;
+  }
+
+  /**
+   * In a halve-on-wrong round: what the team has earned in it so far, and whether any answer was wrong.
+   * One wrong answer halves everything the team scores in that round, before and after it.
+   */
+  private halvedRoundParts(team: Team, roundIndex: number, beforeQuestion: number): { sum: number; wrong: boolean } {
+    let sum = 0;
+    let wrong = false;
+    for (const [index, answer] of team.answers) {
+      const q = this.quiz.questions[index];
+      if (!q || q.roundIndex !== roundIndex || index >= beforeQuestion || !this.isRevealed(index) || this.skipped.has(index)) continue;
+      const marked = this.markAnswer(index, answer, team);
+      sum += marked.points;
+      if (this.isWrong(index, answer, marked)) wrong = true;
+    }
+    return { sum, wrong };
+  }
+
+  /** What a question in a halve-on-wrong round was really worth to a team, and a line saying why. */
+  private halvedResult(team: Team, index: number, answer: Answer | undefined, marked: Marked | undefined): { points: number; detail: string | undefined } | undefined {
+    if (this.skipped.has(index)) return undefined;
+    const points = this.scoreOf(team, index + 1) - this.scoreOf(team, index);
+    const roundIndex = this.quiz.questions[index]!.roundIndex;
+    const before = this.halvedRoundParts(team, roundIndex, index);
+    const wrongNow = answer && marked ? this.isWrong(index, answer, marked) : false;
+    let note: string | undefined;
+    if (wrongNow) note = before.wrong ? "Wrong again. This round's score stays halved" : 'Wrong: your score for this round is halved';
+    else if (before.wrong) note = "Halved: this round's score is halved after a wrong answer";
+    return { points, detail: [marked?.detail, note].filter(Boolean).join(' · ') || undefined };
+  }
+
   scoreOf(team: Team, beforeQuestion = Infinity): number {
     let score = 0;
+    const halving = new Set<number>();
     for (const [index, answer] of team.answers) {
-      if (index < beforeQuestion && this.isRevealed(index)) score += this.markAnswer(index, answer, team).points;
+      if (index >= beforeQuestion || !this.isRevealed(index)) continue;
+      const q = this.quiz.questions[index];
+      if (q?.halveOnWrong && !this.skipped.has(index)) halving.add(q.roundIndex);
+      else score += this.markAnswer(index, answer, team).points;
+    }
+    for (const roundIndex of halving) {
+      const { sum, wrong } = this.halvedRoundParts(team, roundIndex, beforeQuestion);
+      score += wrong ? Math.trunc(sum / 2) : sum;
     }
     for (const index of this.wagers.keys()) {
       if (index < beforeQuestion && this.isRevealed(index)) score += this.unansweredWagerLoss(team, index);
@@ -1312,7 +1358,7 @@ export class Game {
   resultsTable(): string[][] {
     const upTo = this.questionIndex >= 0 && this.isRevealed(this.questionIndex) ? this.questionIndex : this.questionIndex - 1;
     const questions = this.quiz.questions.slice(0, upTo + 1);
-    const header = ['Rank', 'Team', 'Total', ...questions.map((q, i) => `Q${i + 1} (${q.round})`)];
+    const header = ['Rank', 'Team', 'Total', ...questions.map((q, i) => `Q${i + 1} (${q.round}${q.halveOnWrong ? ', before halving' : ''})`)];
     const teams = this.standings();
     const rows = teams.map((row) => {
       const team = this.teams.get(row.teamId)!;
@@ -1360,6 +1406,7 @@ export class Game {
     }
     return {
       wager: q.wager || undefined,
+      halveOnWrong: q.halveOnWrong || undefined,
       category: q.wager ? q.category : undefined,
       index: this.questionIndex,
       total: this.quiz.questions.length,
@@ -1476,6 +1523,7 @@ export class Game {
     const question = this.currentQuestion;
     const answer = team.answers.get(this.questionIndex);
     const marked = question && answer ? this.markAnswer(this.questionIndex, answer, team) : undefined;
+    const halved = question?.halveOnWrong && this.isRevealed(this.questionIndex) ? this.halvedResult(team, this.questionIndex, answer, marked) : undefined;
     const showQuestion = this.phase !== 'lobby' && this.phase !== 'finished';
 
     return {
@@ -1509,9 +1557,9 @@ export class Game {
         question && this.isRevealed(this.questionIndex) && showQuestion
           ? {
               correct: marked?.correct ?? false,
-              points: marked?.points ?? this.unansweredWagerLoss(team, this.questionIndex),
+              points: halved ? halved.points : marked?.points ?? this.unansweredWagerLoss(team, this.questionIndex),
               answerText: answerText(question),
-              detail: marked?.detail ?? (this.unansweredWagerLoss(team, this.questionIndex) ? `No answer: you lose your ${this.wagerOf(this.questionIndex, team.id)} wager` : undefined),
+              detail: halved?.detail ?? marked?.detail ?? (this.unansweredWagerLoss(team, this.questionIndex) ? `No answer: you lose your ${this.wagerOf(this.questionIndex, team.id)} wager` : undefined),
               correctIndex: question.type === 'multiple-choice' ? question.answer : undefined,
               info: question.info,
             }
