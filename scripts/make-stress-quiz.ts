@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Writes a long quiz full of long questions, for user testing and stress tests:
-//   node scripts/make-stress-quiz.ts [out-folder]     (default venues/my-venue/stress-test)
+//   node scripts/make-stress-quiz.ts [out-folder]     (default examples/stress-test)
 // 12 rounds of 10 questions (120 in all) covering every type the phones can answer, with long question text,
 // long answer options, long round names, accents, emoji, quotes and angle brackets.
 import { copyFile, mkdir, writeFile } from 'node:fs/promises';
@@ -90,7 +90,7 @@ export function buildStressQuiz() {
 
 if (import.meta.main) {
   const here = dirname(fileURLToPath(import.meta.url));
-  const out = process.argv[2] ?? join(here, '..', 'venues', 'my-venue', 'stress-test');
+  const out = process.argv[2] ?? join(here, '..', 'examples', 'stress-test');
   await mkdir(join(out, 'images'), { recursive: true });
   await copyFile(join(here, '..', 'test', 'fixtures', 'images', 'flag.svg'), join(out, 'images', 'flag.svg'));
   const yaml = stringify(buildStressQuiz(), { lineWidth: 0 });

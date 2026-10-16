@@ -32,7 +32,7 @@ Teams who want their own internet can use mobile data; if you plug the router in
 2. Start the quiz in local mode, telling it the router's Wi-Fi so the screens can show a QR code for it:
 
    ```sh
-   npm start -- --quizzes venues/my-venue --lan \
+   npm start -- --lan \
      --public-host quiz.lan --port 80 \
      --wifi-ssid QuizNight --wifi-password beer1234
    ```

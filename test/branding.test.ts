@@ -13,9 +13,9 @@ const fresh = async () => new BrandingStore(await mkdtemp(join(tmpdir(), 'pubqui
 
 test('validation: colours must be hex (so nothing can be injected into the page), text is tidied', () => {
   assert.deepEqual(validateBranding({}), DEFAULT_BRANDING);
-  assert.deepEqual(validateBranding({ name: '  The   Quiz​ Pub ', tagline: 'Your Friendly your town Bar', accent: '#F9B233', background: '#045' }), {
+  assert.deepEqual(validateBranding({ name: '  The   Quiz​ Pub ', tagline: 'Your Friendly Local', accent: '#F9B233', background: '#045' }), {
     name: 'The Quiz Pub',
-    tagline: 'Your Friendly your town Bar',
+    tagline: 'Your Friendly Local',
     accent: '#f9b233',
     background: '#004455',
     showName: true,
@@ -73,7 +73,7 @@ test('pages get the branding from /branding.json and the logo from /branding/log
   await plain.close();
 
   const store = await fresh();
-  await store.save({ name: 'The Quiz Pub', tagline: 'Your Friendly your town Bar', accent: '#f9b233', background: '#0a1f12' });
+  await store.save({ name: 'The Quiz Pub', tagline: 'Your Friendly Local', accent: '#f9b233', background: '#0a1f12' });
   await store.setLogo('logo.png', PNG);
   const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, allowEmptyStart: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', branding: store });
   const res = await fetch(`${base(server)}/branding.json`);

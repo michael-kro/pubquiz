@@ -67,7 +67,7 @@ In the editor, tick **Reveal the picture slowly** on a picture question (or add 
 
 ## Long quizzes and big nights
 
-`scripts/make-stress-quiz.ts` writes a 120-question quiz of long questions and long answers (the Quiz Pub library has one called "Stress Test"). `node scripts/stress.ts --external` plays it with 30 simulated phones, random reconnects and 4 extra teams knocking, then checks every phone's own results against the final scores. `scripts/sim-rounds.ts` plays 5 rounds of 10 with 20 teams and prints each round's scoreboard.
+`scripts/make-stress-quiz.ts` writes a 120-question quiz of long questions and long answers (it is in `examples/stress-test`; import it from the quizzes page to try it). `node scripts/stress.ts --external` plays it with 30 simulated phones, random reconnects and 4 extra teams knocking, then checks every phone's own results against the final scores. `scripts/sim-rounds.ts` plays 5 rounds of 10 with 20 teams and prints each round's scoreboard.
 
 ## Where your quizzes are kept
 

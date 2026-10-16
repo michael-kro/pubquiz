@@ -7,7 +7,7 @@ import { loadQuizFile } from '../server/quiz.ts';
 import { createQuizServer } from '../server/server.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const quiz = await loadQuizFile(join(here, '..', 'venues', 'my-venue', 'stress-test', 'quiz.yaml'));
+const quiz = await loadQuizFile(join(here, '..', 'examples', 'stress-test', 'quiz.yaml'));
 const rounds = Number(process.argv[2] ?? 12);
 quiz.questions = quiz.questions.slice(0, rounds * 10);
 quiz.rounds = quiz.rounds.slice(0, rounds);

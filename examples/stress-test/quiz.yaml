@@ -1,0 +1,965 @@
+title: "Stress Test: Long Questions, Long Quiz"
+scoring:
+  mode: flat
+  leaderboard: round
+rounds:
+  - name: "Round 1: General knowledge with a rather long title to test wrapping"
+    questions:
+      - type: multiple-choice
+        text: Round 1, question 1. In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin planted a flag, collected around twenty-two kilograms of lunar rock and soil, deployed a seismometer and a laser reflector that scientists still bounce lasers off today, and left behind a plaque that reads that they came in peace for all mankind, while Michael Collins stayed in orbit above them. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Bravo: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Charlie: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Delta: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Echo: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Foxtrot: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+        answer: 0
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 1, question 2. The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden streets helped by a strong east wind, burned for four days, destroyed around thirteen thousand houses and eighty-seven parish churches including the old St Paul’s Cathedral, yet the official death toll recorded was famously only a handful of people. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Bravo: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Charlie: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Delta: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+        answer: 1
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: "Round 1, question 3. Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible, because its very low moisture and slight acidity make it a terrible place for bacteria to grow, and bees also add an enzyme from their stomachs that slowly produces a little hydrogen peroxide, which helps to keep it safe for a remarkably long time. Using only what you have just read, which of the following statements is the one the quiz master is looking for?"
+        options:
+          - "Option Alpha: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Bravo: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+        answer: 0
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 1, question 4. The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three thousand kilometres, climbs mountains such as the Col du Tourmalet and Alpe d’Huez, and awards a yellow jersey to the overall leader, a colour chosen because the newspaper that organised it was printed on yellow paper. What is the very first letter of the name of the main person, place or thing this passage is about?
+        answer: Tour de France
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 1, question 5. Which famous Queen guitarist, who also holds a PhD in astrophysics, shares his initials with a very long tagline of unnecessary words that go on and on across several lines of a small phone screen?
+        answer: Brian May
+        seconds: 20
+        points: 100
+      - type: number
+        text: Round 1, question 6. The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hieroglyphic, demotic and ancient Greek, which allowed scholars including Thomas Young and Jean-François Champollion to work out how to read Egyptian hieroglyphs for the first time in well over a thousand years. Give the single number of years between the event this passage describes and the year 2000, to the nearest whole number you can manage.
+        answer: 30
+        tolerance: 0
+        seconds: 20
+        points: 100
+      - type: nearest
+        text: Round 1, question 7. A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous that it is often said to exceed the number of atoms in the observable universe, which is why even the strongest computers did not defeat a reigning world champion until Deep Blue beat Garry Kasparov in 1997. Roughly how many people, in thousands, do you think are described, counted or involved in everything above? The closest guess wins.
+        answer: 1000
+        seconds: 20
+        points: 100
+      - type: ordering
+        text: Round 1, question 8. Put the following very long descriptions in the order that they happened, earliest first, reading carefully because every item begins with a similar phrase.
+        items:
+          - "Earliest: In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin plan…"
+          - "Early: The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden s…"
+          - "Middle: Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible…"
+          - "Late: The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three t…"
+          - "Latest: Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and…"
+        seconds: 20
+        points: 100
+      - type: picture
+        text: Round 1, question 9. In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin planted a flag, collected around twenty-two kilograms of lunar rock and soil, deployed a seismometer and a laser reflector that scientists still bounce lasers off today, and left behind a plaque that reads that they came in peace for all mankind, while Michael Collins stayed in orbit above them. Look closely at the picture and type the name of the country whose flag is shown.
+        image: images/flag.svg
+        accept:
+          - Japan
+          - Nippon
+        seconds: 20
+        points: 100
+      - type: music
+        text: Round 1, question 10. The host is playing a track now. The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden streets helped by a strong east wind, burned for four days, destroyed around thirteen thousand houses and eighty-seven parish churches including the old St Paul’s Cathedral, yet the official death toll recorded was famously only a handful of people. Type the name of the band as you would say it.
+        accept:
+          - Queen
+          - The Beatles
+          - Beatles
+        seconds: 20
+        points: 100
+  - name: "Round 2: History and heritage with a rather long title to test wrapping"
+    questions:
+      - type: multiple-choice
+        text: Round 2, question 1. The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three thousand kilometres, climbs mountains such as the Col du Tourmalet and Alpe d’Huez, and awards a yellow jersey to the overall leader, a colour chosen because the newspaper that organised it was printed on yellow paper. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Bravo: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Charlie: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Delta: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Echo: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Foxtrot: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+        answer: 1
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: "Round 2, question 2. Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and the blood is blue because it uses a copper-based molecule called haemocyanin rather than the iron-based haemoglobin that makes human blood red, a design that works well in cold, low-oxygen water. The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hieroglyphic, demotic and ancient Greek, which allowed scholars including Thomas Young and Jean-François Champollion to work out how to read Egyptian hieroglyphs for the first time in well over a thousand years. A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous that it is often said to exceed the number of atoms in the observable universe, which is why even the strongest computers did not defeat a reigning world champion until Deep Blue beat Garry Kasparov in 1997. The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the known species on Earth, and its river discharges more water into the Atlantic than any other, around two hundred thousand cubic metres every single second, more than the next seven largest rivers combined. Using only what you have just read, which of the following statements is the one the quiz master is looking for?"
+        options:
+          - "Option Alpha: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Bravo: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Charlie: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Delta: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+        answer: 2
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 2, question 3. The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hieroglyphic, demotic and ancient Greek, which allowed scholars including Thomas Young and Jean-François Champollion to work out how to read Egyptian hieroglyphs for the first time in well over a thousand years. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Bravo: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+        answer: 1
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 2, question 4. A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous that it is often said to exceed the number of atoms in the observable universe, which is why even the strongest computers did not defeat a reigning world champion until Deep Blue beat Garry Kasparov in 1997. What is the very first letter of the name of the main person, place or thing this passage is about?
+        answer: Octopus
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 2, question 5. Which famous Queen guitarist, who also holds a PhD in astrophysics, shares his initials with a very long tagline of unnecessary words that go on and on across several lines of a small phone screen?
+        answer: Brian May
+        seconds: 20
+        points: 100
+      - type: number
+        text: Round 2, question 6. In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin planted a flag, collected around twenty-two kilograms of lunar rock and soil, deployed a seismometer and a laser reflector that scientists still bounce lasers off today, and left behind a plaque that reads that they came in peace for all mankind, while Michael Collins stayed in orbit above them. Give the single number of years between the event this passage describes and the year 2000, to the nearest whole number you can manage.
+        answer: 37
+        tolerance: 0
+        seconds: 20
+        points: 100
+      - type: nearest
+        text: Round 2, question 7. The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden streets helped by a strong east wind, burned for four days, destroyed around thirteen thousand houses and eighty-seven parish churches including the old St Paul’s Cathedral, yet the official death toll recorded was famously only a handful of people. Roughly how many people, in thousands, do you think are described, counted or involved in everything above? The closest guess wins.
+        answer: 1111
+        seconds: 20
+        points: 100
+      - type: ordering
+        text: Round 2, question 8. Put the following very long descriptions in the order that they happened, earliest first, reading carefully because every item begins with a similar phrase.
+        items:
+          - "Earliest: The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than thr…"
+          - "Early: Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and …"
+          - "Middle: The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hierog…"
+          - "Late: A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous tha…"
+          - "Latest: The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the k…"
+        seconds: 20
+        points: 100
+      - type: picture
+        text: Round 2, question 9. The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three thousand kilometres, climbs mountains such as the Col du Tourmalet and Alpe d’Huez, and awards a yellow jersey to the overall leader, a colour chosen because the newspaper that organised it was printed on yellow paper. Look closely at the picture and type the name of the country whose flag is shown.
+        image: images/flag.svg
+        accept:
+          - Japan
+          - Nippon
+        seconds: 20
+        points: 100
+      - type: music
+        text: "Round 2, question 10. The host is playing a track now. Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and the blood is blue because it uses a copper-based molecule called haemocyanin rather than the iron-based haemoglobin that makes human blood red, a design that works well in cold, low-oxygen water. Type the name of the band as you would say it."
+        accept:
+          - Queen
+          - The Beatles
+          - Beatles
+        seconds: 20
+        points: 100
+  - name: "Round 3: Science and nature with a rather long title to test wrapping"
+    questions:
+      - type: multiple-choice
+        text: Round 3, question 1. A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous that it is often said to exceed the number of atoms in the observable universe, which is why even the strongest computers did not defeat a reigning world champion until Deep Blue beat Garry Kasparov in 1997. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Bravo: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Charlie: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Delta: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Echo: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Foxtrot: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+        answer: 2
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 3, question 2. The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the known species on Earth, and its river discharges more water into the Atlantic than any other, around two hundred thousand cubic metres every single second, more than the next seven largest rivers combined. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Bravo: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Charlie: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Delta: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+        answer: 3
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 3, question 3. In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin planted a flag, collected around twenty-two kilograms of lunar rock and soil, deployed a seismometer and a laser reflector that scientists still bounce lasers off today, and left behind a plaque that reads that they came in peace for all mankind, while Michael Collins stayed in orbit above them. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Bravo: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+        answer: 0
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 3, question 4. The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden streets helped by a strong east wind, burned for four days, destroyed around thirteen thousand houses and eighty-seven parish churches including the old St Paul’s Cathedral, yet the official death toll recorded was famously only a handful of people. What is the very first letter of the name of the main person, place or thing this passage is about?
+        answer: Rosetta Stone
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 3, question 5. Which famous Queen guitarist, who also holds a PhD in astrophysics, shares his initials with a very long tagline of unnecessary words that go on and on across several lines of a small phone screen?
+        answer: Brian May
+        seconds: 20
+        points: 100
+      - type: number
+        text: Round 3, question 6. The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three thousand kilometres, climbs mountains such as the Col du Tourmalet and Alpe d’Huez, and awards a yellow jersey to the overall leader, a colour chosen because the newspaper that organised it was printed on yellow paper. Give the single number of years between the event this passage describes and the year 2000, to the nearest whole number you can manage.
+        answer: 44
+        tolerance: 0
+        seconds: 20
+        points: 100
+      - type: nearest
+        text: "Round 3, question 7. Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and the blood is blue because it uses a copper-based molecule called haemocyanin rather than the iron-based haemoglobin that makes human blood red, a design that works well in cold, low-oxygen water. Roughly how many people, in thousands, do you think are described, counted or involved in everything above? The closest guess wins."
+        answer: 1222
+        seconds: 20
+        points: 100
+      - type: ordering
+        text: Round 3, question 8. Put the following very long descriptions in the order that they happened, earliest first, reading carefully because every item begins with a similar phrase.
+        items:
+          - "Earliest: A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous…"
+          - "Early: The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the kn…"
+          - "Middle: In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin plante…"
+          - "Late: The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden st…"
+          - "Latest: Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible…"
+        seconds: 20
+        points: 100
+      - type: picture
+        text: Round 3, question 9. A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous that it is often said to exceed the number of atoms in the observable universe, which is why even the strongest computers did not defeat a reigning world champion until Deep Blue beat Garry Kasparov in 1997. Look closely at the picture and type the name of the country whose flag is shown.
+        image: images/flag.svg
+        accept:
+          - Japan
+          - Nippon
+        seconds: 20
+        points: 100
+      - type: music
+        text: Round 3, question 10. The host is playing a track now. The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the known species on Earth, and its river discharges more water into the Atlantic than any other, around two hundred thousand cubic metres every single second, more than the next seven largest rivers combined. Type the name of the band as you would say it.
+        accept:
+          - Queen
+          - The Beatles
+          - Beatles
+        seconds: 20
+        points: 100
+  - name: "Round 4: Sport and leisure with a rather long title to test wrapping"
+    questions:
+      - type: multiple-choice
+        text: Round 4, question 1. The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden streets helped by a strong east wind, burned for four days, destroyed around thirteen thousand houses and eighty-seven parish churches including the old St Paul’s Cathedral, yet the official death toll recorded was famously only a handful of people. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Bravo: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Charlie: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Delta: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Echo: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Foxtrot: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+        answer: 3
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: "Round 4, question 2. Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible, because its very low moisture and slight acidity make it a terrible place for bacteria to grow, and bees also add an enzyme from their stomachs that slowly produces a little hydrogen peroxide, which helps to keep it safe for a remarkably long time. Using only what you have just read, which of the following statements is the one the quiz master is looking for?"
+        options:
+          - "Option Alpha: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Bravo: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Charlie: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Delta: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+        answer: 0
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 4, question 3. The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three thousand kilometres, climbs mountains such as the Col du Tourmalet and Alpe d’Huez, and awards a yellow jersey to the overall leader, a colour chosen because the newspaper that organised it was printed on yellow paper. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Bravo: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+        answer: 1
+        seconds: 20
+        points: 100
+      - type: letter
+        text: "Round 4, question 4. Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and the blood is blue because it uses a copper-based molecule called haemocyanin rather than the iron-based haemoglobin that makes human blood red, a design that works well in cold, low-oxygen water. What is the very first letter of the name of the main person, place or thing this passage is about?"
+        answer: Apollo
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 4, question 5. Which famous Queen guitarist, who also holds a PhD in astrophysics, shares his initials with a very long tagline of unnecessary words that go on and on across several lines of a small phone screen?
+        answer: Brian May
+        seconds: 20
+        points: 100
+      - type: number
+        text: Round 4, question 6. A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous that it is often said to exceed the number of atoms in the observable universe, which is why even the strongest computers did not defeat a reigning world champion until Deep Blue beat Garry Kasparov in 1997. Give the single number of years between the event this passage describes and the year 2000, to the nearest whole number you can manage.
+        answer: 51
+        tolerance: 0
+        seconds: 20
+        points: 100
+      - type: nearest
+        text: Round 4, question 7. The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the known species on Earth, and its river discharges more water into the Atlantic than any other, around two hundred thousand cubic metres every single second, more than the next seven largest rivers combined. Roughly how many people, in thousands, do you think are described, counted or involved in everything above? The closest guess wins.
+        answer: 1333
+        seconds: 20
+        points: 100
+      - type: ordering
+        text: Round 4, question 8. Put the following very long descriptions in the order that they happened, earliest first, reading carefully because every item begins with a similar phrase.
+        items:
+          - "Earliest: The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow woode…"
+          - "Early: Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible,…"
+          - "Middle: The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three…"
+          - "Late: Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and t…"
+          - "Latest: The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hierog…"
+        seconds: 20
+        points: 100
+      - type: picture
+        text: Round 4, question 9. The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden streets helped by a strong east wind, burned for four days, destroyed around thirteen thousand houses and eighty-seven parish churches including the old St Paul’s Cathedral, yet the official death toll recorded was famously only a handful of people. Look closely at the picture and type the name of the country whose flag is shown.
+        image: images/flag.svg
+        accept:
+          - Japan
+          - Nippon
+        seconds: 20
+        points: 100
+      - type: music
+        text: "Round 4, question 10. The host is playing a track now. Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible, because its very low moisture and slight acidity make it a terrible place for bacteria to grow, and bees also add an enzyme from their stomachs that slowly produces a little hydrogen peroxide, which helps to keep it safe for a remarkably long time. Type the name of the band as you would say it."
+        accept:
+          - Queen
+          - The Beatles
+          - Beatles
+        seconds: 20
+        points: 100
+  - name: "Round 5: Music and film with a rather long title to test wrapping"
+    questions:
+      - type: multiple-choice
+        text: "Round 5, question 1. Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and the blood is blue because it uses a copper-based molecule called haemocyanin rather than the iron-based haemoglobin that makes human blood red, a design that works well in cold, low-oxygen water. Using only what you have just read, which of the following statements is the one the quiz master is looking for?"
+        options:
+          - "Option Alpha: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Bravo: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Charlie: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Delta: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Echo: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Foxtrot: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+        answer: 4
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 5, question 2. The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hieroglyphic, demotic and ancient Greek, which allowed scholars including Thomas Young and Jean-François Champollion to work out how to read Egyptian hieroglyphs for the first time in well over a thousand years. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Bravo: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Charlie: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Delta: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+        answer: 1
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 5, question 3. A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous that it is often said to exceed the number of atoms in the observable universe, which is why even the strongest computers did not defeat a reigning world champion until Deep Blue beat Garry Kasparov in 1997. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Bravo: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+        answer: 0
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 5, question 4. The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the known species on Earth, and its river discharges more water into the Atlantic than any other, around two hundred thousand cubic metres every single second, more than the next seven largest rivers combined. What is the very first letter of the name of the main person, place or thing this passage is about?
+        answer: Baker Street Fire
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 5, question 5. Which famous Queen guitarist, who also holds a PhD in astrophysics, shares his initials with a very long tagline of unnecessary words that go on and on across several lines of a small phone screen?
+        answer: Brian May
+        seconds: 20
+        points: 100
+      - type: number
+        text: Round 5, question 6. The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden streets helped by a strong east wind, burned for four days, destroyed around thirteen thousand houses and eighty-seven parish churches including the old St Paul’s Cathedral, yet the official death toll recorded was famously only a handful of people. Give the single number of years between the event this passage describes and the year 2000, to the nearest whole number you can manage.
+        answer: 58
+        tolerance: 0
+        seconds: 20
+        points: 100
+      - type: nearest
+        text: "Round 5, question 7. Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible, because its very low moisture and slight acidity make it a terrible place for bacteria to grow, and bees also add an enzyme from their stomachs that slowly produces a little hydrogen peroxide, which helps to keep it safe for a remarkably long time. Roughly how many people, in thousands, do you think are described, counted or involved in everything above? The closest guess wins."
+        answer: 1444
+        seconds: 20
+        points: 100
+      - type: ordering
+        text: Round 5, question 8. Put the following very long descriptions in the order that they happened, earliest first, reading carefully because every item begins with a similar phrase.
+        items:
+          - "Earliest: Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, a…"
+          - "Early: The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hierogl…"
+          - "Middle: A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous t…"
+          - "Late: The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the kno…"
+          - "Latest: In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin plante…"
+        seconds: 20
+        points: 100
+      - type: picture
+        text: "Round 5, question 9. Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and the blood is blue because it uses a copper-based molecule called haemocyanin rather than the iron-based haemoglobin that makes human blood red, a design that works well in cold, low-oxygen water. Look closely at the picture and type the name of the country whose flag is shown."
+        image: images/flag.svg
+        accept:
+          - Japan
+          - Nippon
+        seconds: 20
+        points: 100
+      - type: music
+        text: Round 5, question 10. The host is playing a track now. The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hieroglyphic, demotic and ancient Greek, which allowed scholars including Thomas Young and Jean-François Champollion to work out how to read Egyptian hieroglyphs for the first time in well over a thousand years. Type the name of the band as you would say it.
+        accept:
+          - Queen
+          - The Beatles
+          - Beatles
+        seconds: 20
+        points: 100
+  - name: "Round 6: General knowledge with a rather long title to test wrapping"
+    questions:
+      - type: multiple-choice
+        text: Round 6, question 1. The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the known species on Earth, and its river discharges more water into the Atlantic than any other, around two hundred thousand cubic metres every single second, more than the next seven largest rivers combined. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Bravo: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Charlie: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Delta: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Echo: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Foxtrot: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+        answer: 5
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 6, question 2. In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin planted a flag, collected around twenty-two kilograms of lunar rock and soil, deployed a seismometer and a laser reflector that scientists still bounce lasers off today, and left behind a plaque that reads that they came in peace for all mankind, while Michael Collins stayed in orbit above them. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Bravo: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Charlie: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Delta: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+        answer: 2
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 6, question 3. The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden streets helped by a strong east wind, burned for four days, destroyed around thirteen thousand houses and eighty-seven parish churches including the old St Paul’s Cathedral, yet the official death toll recorded was famously only a handful of people. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Bravo: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+        answer: 1
+        seconds: 20
+        points: 100
+      - type: letter
+        text: "Round 6, question 4. Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible, because its very low moisture and slight acidity make it a terrible place for bacteria to grow, and bees also add an enzyme from their stomachs that slowly produces a little hydrogen peroxide, which helps to keep it safe for a remarkably long time. What is the very first letter of the name of the main person, place or thing this passage is about?"
+        answer: Honey
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 6, question 5. Which famous Queen guitarist, who also holds a PhD in astrophysics, shares his initials with a very long tagline of unnecessary words that go on and on across several lines of a small phone screen?
+        answer: Brian May
+        seconds: 20
+        points: 100
+      - type: number
+        text: "Round 6, question 6. Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and the blood is blue because it uses a copper-based molecule called haemocyanin rather than the iron-based haemoglobin that makes human blood red, a design that works well in cold, low-oxygen water. Give the single number of years between the event this passage describes and the year 2000, to the nearest whole number you can manage."
+        answer: 65
+        tolerance: 0
+        seconds: 20
+        points: 100
+      - type: nearest
+        text: Round 6, question 7. The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hieroglyphic, demotic and ancient Greek, which allowed scholars including Thomas Young and Jean-François Champollion to work out how to read Egyptian hieroglyphs for the first time in well over a thousand years. Roughly how many people, in thousands, do you think are described, counted or involved in everything above? The closest guess wins.
+        answer: 1555
+        seconds: 20
+        points: 100
+      - type: ordering
+        text: Round 6, question 8. Put the following very long descriptions in the order that they happened, earliest first, reading carefully because every item begins with a similar phrase.
+        items:
+          - "Earliest: The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the…"
+          - "Early: In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin planted…"
+          - "Middle: The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden …"
+          - "Late: Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible, …"
+          - "Latest: The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three…"
+        seconds: 20
+        points: 100
+      - type: picture
+        text: Round 6, question 9. The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the known species on Earth, and its river discharges more water into the Atlantic than any other, around two hundred thousand cubic metres every single second, more than the next seven largest rivers combined. Look closely at the picture and type the name of the country whose flag is shown.
+        image: images/flag.svg
+        accept:
+          - Japan
+          - Nippon
+        seconds: 20
+        points: 100
+      - type: music
+        text: Round 6, question 10. The host is playing a track now. In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin planted a flag, collected around twenty-two kilograms of lunar rock and soil, deployed a seismometer and a laser reflector that scientists still bounce lasers off today, and left behind a plaque that reads that they came in peace for all mankind, while Michael Collins stayed in orbit above them. Type the name of the band as you would say it.
+        accept:
+          - Queen
+          - The Beatles
+          - Beatles
+        seconds: 20
+        points: 100
+  - name: "Round 7: History and heritage with a rather long title to test wrapping"
+    questions:
+      - type: multiple-choice
+        text: "Round 7, question 1. Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible, because its very low moisture and slight acidity make it a terrible place for bacteria to grow, and bees also add an enzyme from their stomachs that slowly produces a little hydrogen peroxide, which helps to keep it safe for a remarkably long time. Using only what you have just read, which of the following statements is the one the quiz master is looking for?"
+        options:
+          - "Option Alpha: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Bravo: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Charlie: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Delta: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Echo: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Foxtrot: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+        answer: 0
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 7, question 2. The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three thousand kilometres, climbs mountains such as the Col du Tourmalet and Alpe d’Huez, and awards a yellow jersey to the overall leader, a colour chosen because the newspaper that organised it was printed on yellow paper. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Bravo: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Charlie: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Delta: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+        answer: 3
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: "Round 7, question 3. Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and the blood is blue because it uses a copper-based molecule called haemocyanin rather than the iron-based haemoglobin that makes human blood red, a design that works well in cold, low-oxygen water. Using only what you have just read, which of the following statements is the one the quiz master is looking for?"
+        options:
+          - "Option Alpha: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Bravo: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+        answer: 0
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 7, question 4. The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hieroglyphic, demotic and ancient Greek, which allowed scholars including Thomas Young and Jean-François Champollion to work out how to read Egyptian hieroglyphs for the first time in well over a thousand years. What is the very first letter of the name of the main person, place or thing this passage is about?
+        answer: Tour de France
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 7, question 5. Which famous Queen guitarist, who also holds a PhD in astrophysics, shares his initials with a very long tagline of unnecessary words that go on and on across several lines of a small phone screen?
+        answer: Brian May
+        seconds: 20
+        points: 100
+      - type: number
+        text: Round 7, question 6. The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the known species on Earth, and its river discharges more water into the Atlantic than any other, around two hundred thousand cubic metres every single second, more than the next seven largest rivers combined. Give the single number of years between the event this passage describes and the year 2000, to the nearest whole number you can manage.
+        answer: 72
+        tolerance: 0
+        seconds: 20
+        points: 100
+      - type: nearest
+        text: Round 7, question 7. In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin planted a flag, collected around twenty-two kilograms of lunar rock and soil, deployed a seismometer and a laser reflector that scientists still bounce lasers off today, and left behind a plaque that reads that they came in peace for all mankind, while Michael Collins stayed in orbit above them. Roughly how many people, in thousands, do you think are described, counted or involved in everything above? The closest guess wins.
+        answer: 1666
+        seconds: 20
+        points: 100
+      - type: ordering
+        text: Round 7, question 8. Put the following very long descriptions in the order that they happened, earliest first, reading carefully because every item begins with a similar phrase.
+        items:
+          - "Earliest: Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edib…"
+          - "Early: The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three …"
+          - "Middle: Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and…"
+          - "Late: The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hierogly…"
+          - "Latest: A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous t…"
+        seconds: 20
+        points: 100
+      - type: picture
+        text: "Round 7, question 9. Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible, because its very low moisture and slight acidity make it a terrible place for bacteria to grow, and bees also add an enzyme from their stomachs that slowly produces a little hydrogen peroxide, which helps to keep it safe for a remarkably long time. Look closely at the picture and type the name of the country whose flag is shown."
+        image: images/flag.svg
+        accept:
+          - Japan
+          - Nippon
+        seconds: 20
+        points: 100
+      - type: music
+        text: Round 7, question 10. The host is playing a track now. The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three thousand kilometres, climbs mountains such as the Col du Tourmalet and Alpe d’Huez, and awards a yellow jersey to the overall leader, a colour chosen because the newspaper that organised it was printed on yellow paper. Type the name of the band as you would say it.
+        accept:
+          - Queen
+          - The Beatles
+          - Beatles
+        seconds: 20
+        points: 100
+  - name: "Round 8: Science and nature with a rather long title to test wrapping"
+    questions:
+      - type: multiple-choice
+        text: Round 8, question 1. The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hieroglyphic, demotic and ancient Greek, which allowed scholars including Thomas Young and Jean-François Champollion to work out how to read Egyptian hieroglyphs for the first time in well over a thousand years. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Bravo: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Charlie: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Delta: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Echo: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Foxtrot: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+        answer: 1
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 8, question 2. A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous that it is often said to exceed the number of atoms in the observable universe, which is why even the strongest computers did not defeat a reigning world champion until Deep Blue beat Garry Kasparov in 1997. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Bravo: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Charlie: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Delta: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+        answer: 0
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 8, question 3. The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the known species on Earth, and its river discharges more water into the Atlantic than any other, around two hundred thousand cubic metres every single second, more than the next seven largest rivers combined. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Bravo: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+        answer: 1
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 8, question 4. In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin planted a flag, collected around twenty-two kilograms of lunar rock and soil, deployed a seismometer and a laser reflector that scientists still bounce lasers off today, and left behind a plaque that reads that they came in peace for all mankind, while Michael Collins stayed in orbit above them. What is the very first letter of the name of the main person, place or thing this passage is about?
+        answer: Octopus
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 8, question 5. Which famous Queen guitarist, who also holds a PhD in astrophysics, shares his initials with a very long tagline of unnecessary words that go on and on across several lines of a small phone screen?
+        answer: Brian May
+        seconds: 20
+        points: 100
+      - type: number
+        text: "Round 8, question 6. Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible, because its very low moisture and slight acidity make it a terrible place for bacteria to grow, and bees also add an enzyme from their stomachs that slowly produces a little hydrogen peroxide, which helps to keep it safe for a remarkably long time. Give the single number of years between the event this passage describes and the year 2000, to the nearest whole number you can manage."
+        answer: 79
+        tolerance: 0
+        seconds: 20
+        points: 100
+      - type: nearest
+        text: Round 8, question 7. The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three thousand kilometres, climbs mountains such as the Col du Tourmalet and Alpe d’Huez, and awards a yellow jersey to the overall leader, a colour chosen because the newspaper that organised it was printed on yellow paper. Roughly how many people, in thousands, do you think are described, counted or involved in everything above? The closest guess wins.
+        answer: 1777
+        seconds: 20
+        points: 100
+      - type: ordering
+        text: Round 8, question 8. Put the following very long descriptions in the order that they happened, earliest first, reading carefully because every item begins with a similar phrase.
+        items:
+          - "Earliest: The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hier…"
+          - "Early: A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous th…"
+          - "Middle: The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the k…"
+          - "Late: In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin planted …"
+          - "Latest: The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden …"
+        seconds: 20
+        points: 100
+      - type: picture
+        text: Round 8, question 9. The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hieroglyphic, demotic and ancient Greek, which allowed scholars including Thomas Young and Jean-François Champollion to work out how to read Egyptian hieroglyphs for the first time in well over a thousand years. Look closely at the picture and type the name of the country whose flag is shown.
+        image: images/flag.svg
+        accept:
+          - Japan
+          - Nippon
+        seconds: 20
+        points: 100
+      - type: music
+        text: Round 8, question 10. The host is playing a track now. A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous that it is often said to exceed the number of atoms in the observable universe, which is why even the strongest computers did not defeat a reigning world champion until Deep Blue beat Garry Kasparov in 1997. Type the name of the band as you would say it.
+        accept:
+          - Queen
+          - The Beatles
+          - Beatles
+        seconds: 20
+        points: 100
+  - name: "Round 9: Sport and leisure with a rather long title to test wrapping"
+    questions:
+      - type: multiple-choice
+        text: Round 9, question 1. In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin planted a flag, collected around twenty-two kilograms of lunar rock and soil, deployed a seismometer and a laser reflector that scientists still bounce lasers off today, and left behind a plaque that reads that they came in peace for all mankind, while Michael Collins stayed in orbit above them. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Bravo: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Charlie: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Delta: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Echo: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Foxtrot: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+        answer: 2
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 9, question 2. The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden streets helped by a strong east wind, burned for four days, destroyed around thirteen thousand houses and eighty-seven parish churches including the old St Paul’s Cathedral, yet the official death toll recorded was famously only a handful of people. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Bravo: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Charlie: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Delta: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+        answer: 1
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: "Round 9, question 3. Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible, because its very low moisture and slight acidity make it a terrible place for bacteria to grow, and bees also add an enzyme from their stomachs that slowly produces a little hydrogen peroxide, which helps to keep it safe for a remarkably long time. Using only what you have just read, which of the following statements is the one the quiz master is looking for?"
+        options:
+          - "Option Alpha: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Bravo: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+        answer: 0
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 9, question 4. The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three thousand kilometres, climbs mountains such as the Col du Tourmalet and Alpe d’Huez, and awards a yellow jersey to the overall leader, a colour chosen because the newspaper that organised it was printed on yellow paper. What is the very first letter of the name of the main person, place or thing this passage is about?
+        answer: Rosetta Stone
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 9, question 5. Which famous Queen guitarist, who also holds a PhD in astrophysics, shares his initials with a very long tagline of unnecessary words that go on and on across several lines of a small phone screen?
+        answer: Brian May
+        seconds: 20
+        points: 100
+      - type: number
+        text: Round 9, question 6. The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hieroglyphic, demotic and ancient Greek, which allowed scholars including Thomas Young and Jean-François Champollion to work out how to read Egyptian hieroglyphs for the first time in well over a thousand years. Give the single number of years between the event this passage describes and the year 2000, to the nearest whole number you can manage.
+        answer: 86
+        tolerance: 0
+        seconds: 20
+        points: 100
+      - type: nearest
+        text: Round 9, question 7. A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous that it is often said to exceed the number of atoms in the observable universe, which is why even the strongest computers did not defeat a reigning world champion until Deep Blue beat Garry Kasparov in 1997. Roughly how many people, in thousands, do you think are described, counted or involved in everything above? The closest guess wins.
+        answer: 1888
+        seconds: 20
+        points: 100
+      - type: ordering
+        text: Round 9, question 8. Put the following very long descriptions in the order that they happened, earliest first, reading carefully because every item begins with a similar phrase.
+        items:
+          - "Earliest: In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin plan…"
+          - "Early: The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden s…"
+          - "Middle: Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible…"
+          - "Late: The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three t…"
+          - "Latest: Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and…"
+        seconds: 20
+        points: 100
+      - type: picture
+        text: Round 9, question 9. In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin planted a flag, collected around twenty-two kilograms of lunar rock and soil, deployed a seismometer and a laser reflector that scientists still bounce lasers off today, and left behind a plaque that reads that they came in peace for all mankind, while Michael Collins stayed in orbit above them. Look closely at the picture and type the name of the country whose flag is shown.
+        image: images/flag.svg
+        accept:
+          - Japan
+          - Nippon
+        seconds: 20
+        points: 100
+      - type: music
+        text: Round 9, question 10. The host is playing a track now. The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden streets helped by a strong east wind, burned for four days, destroyed around thirteen thousand houses and eighty-seven parish churches including the old St Paul’s Cathedral, yet the official death toll recorded was famously only a handful of people. Type the name of the band as you would say it.
+        accept:
+          - Queen
+          - The Beatles
+          - Beatles
+        seconds: 20
+        points: 100
+  - name: "Round 10: Music and film with a rather long title to test wrapping"
+    questions:
+      - type: multiple-choice
+        text: Round 10, question 1. The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three thousand kilometres, climbs mountains such as the Col du Tourmalet and Alpe d’Huez, and awards a yellow jersey to the overall leader, a colour chosen because the newspaper that organised it was printed on yellow paper. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Bravo: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Charlie: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Delta: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Echo: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Foxtrot: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+        answer: 3
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: "Round 10, question 2. Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and the blood is blue because it uses a copper-based molecule called haemocyanin rather than the iron-based haemoglobin that makes human blood red, a design that works well in cold, low-oxygen water. Using only what you have just read, which of the following statements is the one the quiz master is looking for?"
+        options:
+          - "Option Alpha: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Bravo: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Charlie: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Delta: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+        answer: 2
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 10, question 3. The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hieroglyphic, demotic and ancient Greek, which allowed scholars including Thomas Young and Jean-François Champollion to work out how to read Egyptian hieroglyphs for the first time in well over a thousand years. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Bravo: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+        answer: 1
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 10, question 4. A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous that it is often said to exceed the number of atoms in the observable universe, which is why even the strongest computers did not defeat a reigning world champion until Deep Blue beat Garry Kasparov in 1997. What is the very first letter of the name of the main person, place or thing this passage is about?
+        answer: Apollo
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 10, question 5. Which famous Queen guitarist, who also holds a PhD in astrophysics, shares his initials with a very long tagline of unnecessary words that go on and on across several lines of a small phone screen?
+        answer: Brian May
+        seconds: 20
+        points: 100
+      - type: number
+        text: Round 10, question 6. In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin planted a flag, collected around twenty-two kilograms of lunar rock and soil, deployed a seismometer and a laser reflector that scientists still bounce lasers off today, and left behind a plaque that reads that they came in peace for all mankind, while Michael Collins stayed in orbit above them. Give the single number of years between the event this passage describes and the year 2000, to the nearest whole number you can manage.
+        answer: 93
+        tolerance: 0
+        seconds: 20
+        points: 100
+      - type: nearest
+        text: Round 10, question 7. The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden streets helped by a strong east wind, burned for four days, destroyed around thirteen thousand houses and eighty-seven parish churches including the old St Paul’s Cathedral, yet the official death toll recorded was famously only a handful of people. Roughly how many people, in thousands, do you think are described, counted or involved in everything above? The closest guess wins.
+        answer: 1999
+        seconds: 20
+        points: 100
+      - type: ordering
+        text: Round 10, question 8. Put the following very long descriptions in the order that they happened, earliest first, reading carefully because every item begins with a similar phrase.
+        items:
+          - "Earliest: The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than thr…"
+          - "Early: Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and …"
+          - "Middle: The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hierog…"
+          - "Late: A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous tha…"
+          - "Latest: The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the k…"
+        seconds: 20
+        points: 100
+      - type: picture
+        text: Round 10, question 9. The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three thousand kilometres, climbs mountains such as the Col du Tourmalet and Alpe d’Huez, and awards a yellow jersey to the overall leader, a colour chosen because the newspaper that organised it was printed on yellow paper. Look closely at the picture and type the name of the country whose flag is shown.
+        image: images/flag.svg
+        accept:
+          - Japan
+          - Nippon
+        seconds: 20
+        points: 100
+      - type: music
+        text: "Round 10, question 10. The host is playing a track now. Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and the blood is blue because it uses a copper-based molecule called haemocyanin rather than the iron-based haemoglobin that makes human blood red, a design that works well in cold, low-oxygen water. Type the name of the band as you would say it."
+        accept:
+          - Queen
+          - The Beatles
+          - Beatles
+        seconds: 20
+        points: 100
+  - name: "Round 11: General knowledge with a rather long title to test wrapping"
+    questions:
+      - type: multiple-choice
+        text: Round 11, question 1. A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous that it is often said to exceed the number of atoms in the observable universe, which is why even the strongest computers did not defeat a reigning world champion until Deep Blue beat Garry Kasparov in 1997. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+          - "Option Bravo: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Charlie: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Delta: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Echo: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Foxtrot: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+        answer: 4
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 11, question 2. The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the known species on Earth, and its river discharges more water into the Atlantic than any other, around two hundred thousand cubic metres every single second, more than the next seven largest rivers combined. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Bravo: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Charlie: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Delta: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+        answer: 3
+        seconds: 20
+        points: 100
+      - type: multiple-choice
+        text: Round 11, question 3. In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin planted a flag, collected around twenty-two kilograms of lunar rock and soil, deployed a seismometer and a laser reflector that scientists still bounce lasers off today, and left behind a plaque that reads that they came in peace for all mankind, while Michael Collins stayed in orbit above them. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Bravo: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+        answer: 0
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 11, question 4. The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden streets helped by a strong east wind, burned for four days, destroyed around thirteen thousand houses and eighty-seven parish churches including the old St Paul’s Cathedral, yet the official death toll recorded was famously only a handful of people. What is the very first letter of the name of the main person, place or thing this passage is about?
+        answer: Baker Street Fire
+        seconds: 20
+        points: 100
+      - type: letter
+        text: Round 11, question 5. Which famous Queen guitarist, who also holds a PhD in astrophysics, shares his initials with a very long tagline of unnecessary words that go on and on across several lines of a small phone screen?
+        answer: Brian May
+        seconds: 20
+        points: 100
+      - type: number
+        text: Round 11, question 6. The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three thousand kilometres, climbs mountains such as the Col du Tourmalet and Alpe d’Huez, and awards a yellow jersey to the overall leader, a colour chosen because the newspaper that organised it was printed on yellow paper. Give the single number of years between the event this passage describes and the year 2000, to the nearest whole number you can manage.
+        answer: 100
+        tolerance: 0
+        seconds: 20
+        points: 100
+      - type: nearest
+        text: "Round 11, question 7. Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and the blood is blue because it uses a copper-based molecule called haemocyanin rather than the iron-based haemoglobin that makes human blood red, a design that works well in cold, low-oxygen water. Roughly how many people, in thousands, do you think are described, counted or involved in everything above? The closest guess wins."
+        answer: 2110
+        seconds: 20
+        points: 100
+      - type: ordering
+        text: Round 11, question 8. Put the following very long descriptions in the order that they happened, earliest first, reading carefully because every item begins with a similar phrase.
+        items:
+          - "Earliest: A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous…"
+          - "Early: The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the kn…"
+          - "Middle: In 1969 the Apollo 11 crew spent just over twenty-one hours on the surface of the Moon, and in that time Neil Armstrong and Buzz Aldrin plante…"
+          - "Late: The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden st…"
+          - "Latest: Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible…"
+        seconds: 20
+        points: 100
+      - type: picture
+        text: Round 11, question 9. A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous that it is often said to exceed the number of atoms in the observable universe, which is why even the strongest computers did not defeat a reigning world champion until Deep Blue beat Garry Kasparov in 1997. Look closely at the picture and type the name of the country whose flag is shown.
+        image: images/flag.svg
+        accept:
+          - Japan
+          - Nippon
+        seconds: 20
+        points: 100
+      - type: music
+        text: Round 11, question 10. The host is playing a track now. The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the known species on Earth, and its river discharges more water into the Atlantic than any other, around two hundred thousand cubic metres every single second, more than the next seven largest rivers combined. Type the name of the band as you would say it.
+        accept:
+          - Queen
+          - The Beatles
+          - Beatles
+        seconds: 20
+        points: 100
+  - name: The grand finale wager round with a deliberately long round name that goes on and on
+    wager: true
+    wagerCap: 500
+    questions:
+      - type: multiple-choice
+        text: Round 12, question 1. The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden streets helped by a strong east wind, burned for four days, destroyed around thirteen thousand houses and eighty-seven parish churches including the old St Paul’s Cathedral, yet the official death toll recorded was famously only a handful of people. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Back\\slash / slash 'single' \"double\", a surprisingly detailed answer that goes on for rather longer than you expect"
+          - "Option Bravo: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Charlie: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Delta: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Echo: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+          - "Option Foxtrot: Emoji 🎉🦉🍺 and naïve façade, and nobody argues about it, apart from a few historians who enjoy arguing"
+        answer: 5
+        seconds: 20
+        points: 100
+        category: History
+      - type: multiple-choice
+        text: "Round 12, question 2. Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible, because its very low moisture and slight acidity make it a terrible place for bacteria to grow, and bees also add an enzyme from their stomachs that slowly produces a little hydrogen peroxide, which helps to keep it safe for a remarkably long time. Using only what you have just read, which of the following statements is the one the quiz master is looking for?"
+        options:
+          - "Option Alpha: Café “quotes” & <angle brackets>, and this is the answer that most people at the table would confidently pick first"
+          - "Option Bravo: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Charlie: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+          - "Option Delta: Café “quotes” & <angle brackets>, according to the version of the story that is usually told in school lessons"
+        answer: 0
+        seconds: 20
+        points: 100
+        category: Science
+      - type: multiple-choice
+        text: Round 12, question 3. The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three thousand kilometres, climbs mountains such as the Col du Tourmalet and Alpe d’Huez, and awards a yellow jersey to the overall leader, a colour chosen because the newspaper that organised it was printed on yellow paper. Using only what you have just read, which of the following statements is the one the quiz master is looking for?
+        options:
+          - "Option Alpha: Emoji 🎉🦉🍺 and naïve façade, which, despite sounding plausible, is a very common misconception repeated in many books"
+          - "Option Bravo: Back\\slash / slash 'single' \"double\", as described in several well-known encyclopaedias, though with a number of caveats"
+        answer: 1
+        seconds: 20
+        points: 100
+        category: Nature
+      - type: letter
+        text: "Round 12, question 4. Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and the blood is blue because it uses a copper-based molecule called haemocyanin rather than the iron-based haemoglobin that makes human blood red, a design that works well in cold, low-oxygen water. What is the very first letter of the name of the main person, place or thing this passage is about?"
+        answer: Honey
+        seconds: 20
+        points: 100
+        category: Sport
+      - type: letter
+        text: Round 12, question 5. Which famous Queen guitarist, who also holds a PhD in astrophysics, shares his initials with a very long tagline of unnecessary words that go on and on across several lines of a small phone screen?
+        answer: Brian May
+        seconds: 20
+        points: 100
+        category: Maths
+      - type: number
+        text: Round 12, question 6. A standard game of chess begins with sixteen pieces per side, and although the rules look simple the number of possible games is so enormous that it is often said to exceed the number of atoms in the observable universe, which is why even the strongest computers did not defeat a reigning world champion until Deep Blue beat Garry Kasparov in 1997. Give the single number of years between the event this passage describes and the year 2000, to the nearest whole number you can manage.
+        answer: 107
+        tolerance: 0
+        seconds: 20
+        points: 100
+        category: History
+      - type: nearest
+        text: Round 12, question 7. The Amazon rainforest covers roughly five and a half million square kilometres across nine countries, is home to about one in ten of all the known species on Earth, and its river discharges more water into the Atlantic than any other, around two hundred thousand cubic metres every single second, more than the next seven largest rivers combined. Roughly how many people, in thousands, do you think are described, counted or involved in everything above? The closest guess wins.
+        answer: 2221
+        seconds: 20
+        points: 100
+        category: Science
+      - type: ordering
+        text: Round 12, question 8. Put the following very long descriptions in the order that they happened, earliest first, reading carefully because every item begins with a similar phrase.
+        items:
+          - "Earliest: The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow woode…"
+          - "Early: Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible,…"
+          - "Middle: The Tour de France, first held in 1903 to boost newspaper sales, is raced over about three weeks and twenty-one stages, covers more than three…"
+          - "Late: Octopuses have three hearts and blue blood: two hearts pump blood through the gills while the third circulates it to the rest of the body, and t…"
+          - "Latest: The Rosetta Stone, found by French soldiers in 1799 near the Egyptian town of Rashid, carries the same decree written in three scripts, hierog…"
+        seconds: 20
+        points: 100
+        category: Nature
+      - type: picture
+        text: Round 12, question 9. The Great Fire of London began in the early hours of 2 September 1666 in a baker’s shop on Pudding Lane, spread quickly through narrow wooden streets helped by a strong east wind, burned for four days, destroyed around thirteen thousand houses and eighty-seven parish churches including the old St Paul’s Cathedral, yet the official death toll recorded was famously only a handful of people. Look closely at the picture and type the name of the country whose flag is shown.
+        image: images/flag.svg
+        accept:
+          - Japan
+          - Nippon
+        seconds: 20
+        points: 100
+        category: Sport
+      - type: music
+        text: "Round 12, question 10. The host is playing a track now. Honey never really spoils: archaeologists opening Egyptian tombs thousands of years old have found pots of it that were still perfectly edible, because its very low moisture and slight acidity make it a terrible place for bacteria to grow, and bees also add an enzyme from their stomachs that slowly produces a little hydrogen peroxide, which helps to keep it safe for a remarkably long time. Type the name of the band as you would say it."
+        accept:
+          - Queen
+          - The Beatles
+          - Beatles
+        seconds: 20
+        points: 100
+        category: Maths

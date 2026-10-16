@@ -75,7 +75,7 @@ export async function runStress(options: { rounds?: number; teams?: number; exte
   const rounds = options.rounds ?? 12;
   const teams = options.teams ?? 30;
   const log = options.log ?? (() => {});
-  const quiz = await loadQuizFile(join(here, '..', 'venues', 'my-venue', 'stress-test', 'quiz.yaml'));
+  const quiz = await loadQuizFile(join(here, '..', 'examples', 'stress-test', 'quiz.yaml'));
   const count = rounds * STRESS_PER_ROUND;
   const questions = quiz.questions.slice(0, count);
   quiz.questions = questions;
