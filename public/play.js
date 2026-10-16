@@ -434,7 +434,7 @@ function waitingScreen(s) {
     brandBlock(),
     h('h1', {}, 'Nearly there!'),
     s.entryFee ? [h('p', {}, 'The entry fee is'), h('p', { class: 'waiting-fee' }, s.entryFee)] : null,
-    h('p', {}, 'Pay the quiz master and they will let your team in. This screen updates by itself.'),
+    h('p', {}, s.entryFee ? ['Pay the quiz master ', h('strong', {}, s.entryFee), ' and they will let your team in.'] : 'The quiz master will let your team in shortly.', ' This screen updates by itself.'),
     h('p', { class: 'muted' }, `Your team: ${s.teamName}`),
   );
 }

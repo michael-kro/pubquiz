@@ -1295,7 +1295,7 @@ function reviewPanel(s, q) {
 /** The entry fee, large, for the TV start screen. */
 function entryFeeBanner(s) {
   if (!s.entryFee) return null;
-  return h('p', { class: 'entry-fee big' }, '💷 Entry fee: ', h('strong', {}, s.entryFee), s.requireAdmission ? h('span', { class: 'muted' }, ' · pay the quiz master, then you are in') : null);
+  return h('p', { class: 'entry-fee big' }, '💷 Entry fee: ', h('strong', {}, s.entryFee), s.requireAdmission ? h('span', { class: 'muted' }, ' · pay the quiz master to get in') : null);
 }
 
 /** The optional entry fee, and whether teams must be admitted (once they've paid), set on the start screen. */
