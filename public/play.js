@@ -44,7 +44,16 @@ let photoBusy = false;
 let pendingJoin = null; // A join or rejoin tapped before the connection was ready.
 let connected = false;
 let stopped = false; // This page is done with the server (quiz over, kicked or replaced).
-const form = { room: (params.get('room') ?? '').toUpperCase(), name: '', code: '', rejoining: false };
+// The join form remembers what this phone used last time, so a new night starts with the team name already filled in.
+const NAME_KEY = 'pubquiz.team-name';
+const readSaved = (key) => {
+  try {
+    return localStorage.getItem(key) ?? '';
+  } catch {
+    return '';
+  }
+};
+const form = { room: (params.get('room') ?? '').toUpperCase(), name: readSaved(NAME_KEY), code: '', rejoining: false };
 
 // Per-question drafts, reset when a new question opens.
 let draftFor = -1;
@@ -88,6 +97,11 @@ const socket = connectSocket({
     switch (message.t) {
       case 'joined':
         writeToken(message.token);
+        try {
+          if (message.teamName) localStorage.setItem(NAME_KEY, message.teamName);
+        } catch {
+          // Not remembered; nothing else is affected.
+        }
         joinError = '';
         break;
       case 'rejoin-failed':
