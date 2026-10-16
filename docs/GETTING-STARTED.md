@@ -10,7 +10,8 @@ Pick one:
 - **From the source folder**, if you have Node.js 22.18 or newer: `npm install`, then `npm start`.
 - **Docker**: `docker compose up -d`, then `docker compose logs pubquiz` for the host link.
 
-These files are not signed, so your computer may warn about them the first time:
+These files are not signed (Apple charges $99 a year for a developer account and Windows certificates cost money too, so this free project hasn't paid for them), so your computer may warn about them the first time. Nothing is wrong with the files: it just can't vouch for who made them. Docker and running from the source folder need no warning.
+
 
 - **Mac:** open Terminal, type `chmod +x ` (with a space), drag the file in, press Enter. Then drag the file in again and press Enter to run it. If macOS says it can't verify the developer, open System Settings → Privacy & Security and choose **Open Anyway**.
 - **Windows:** double-click it. If SmartScreen appears, choose **More info → Run anyway**.

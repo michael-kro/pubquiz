@@ -30,5 +30,5 @@ A self-hosted live pub quiz: the host runs it on a laptop, teams join from their
 
 **Known limits**
 - Checked in headless Chrome and with simulated phones; real-phone and real-TV testing is still to come. The Linux and Windows binaries are built but were not run on those systems.
-- The binaries are not code-signed: macOS and Windows will warn the first time. On macOS, right-click and choose Open.
+- The binaries are not code-signed (Apple's developer programme is $99 a year and Windows certificates cost money, which a free project hasn't paid for), so macOS and Windows warn the first time. Windows: More info → Run anyway. macOS: System Settings → Privacy & Security → Open Anyway, or download with `curl` to skip the warning. Docker and running from source need no warning.
 - Tested with 30 teams; the setting allows up to 100.

@@ -13,7 +13,13 @@ Run a live pub quiz from your laptop. Teams join on their own phones by scanning
    | Windows | `pubquiz-windows-x64.exe` |
    | Linux | `pubquiz-linux-x64` or `pubquiz-linux-arm64` |
 
-2. **Run it.** Windows: double-click (if SmartScreen appears: **More info → Run anyway**). Mac/Linux: in a terminal, `chmod +x pubquiz-macos-arm64` then `./pubquiz-macos-arm64` (on a Mac, if it is blocked, right-click the file and choose **Open**). The files are not signed, so a first-run warning is normal.
+2. **Run it.** Windows: double-click. Mac/Linux: in a terminal, `chmod +x pubquiz-macos-arm64`, then `./pubquiz-macos-arm64`.
+
+   **Why your computer warns you:** the programs aren't code-signed. Signing costs money (Apple charges $99 a year for a developer account, and Windows certificates cost too), and this is a free project, so I haven't paid for it. Nothing is wrong with the files: the checksums are in the release, and the source is all here. Your computer just can't vouch for who made them. You'll see the warning once:
+   - **Windows:** SmartScreen says "Windows protected your PC": choose **More info → Run anyway**.
+   - **Mac:** if it says the developer can't be verified, open **System Settings → Privacy & Security** and choose **Open Anyway** next to the message. Or skip the warning by downloading in Terminal instead of the browser: `curl -L -o pubquiz https://github.com/michael-kro/pubquiz/releases/latest/download/pubquiz-macos-arm64 && chmod +x pubquiz && ./pubquiz` (use `pubquiz-macos-x64` on an Intel Mac).
+   - **Linux:** no warning.
+   If you'd rather not run an unsigned program, use Docker or run it from source (below): they need no warning at all.
 3. **Your browser opens the host screen.** Press **Add a sample quiz to try**, then **Run ▶**.
 4. **Teams join.** Put the QR code on the TV (press **TV screen ↗** and open that link on the TV's browser). Teams scan it, or open the address shown, on the same Wi-Fi as your laptop. They type a team name and they are in. No code needed.
 5. **Run the quiz** with the yellow button (or Space): **Start quiz → Close question → Reveal answer → Next question**.
