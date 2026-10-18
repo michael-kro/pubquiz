@@ -899,6 +899,35 @@ export class Game {
     return { ok: true, value: null };
   }
 
+  /** A round can be ended while one of its questions is on screen, unless it is the last one and already revealed. */
+  canEndRound(): boolean {
+    if (this.breakState || this.questionIndex < 0) return false;
+    if (!['wagering', 'reading', 'open', 'closed', 'reveal'].includes(this.phase)) return false;
+    return !(this.phase === 'reveal' && this.isLastInRound(this.questionIndex));
+  }
+
+  /**
+   * Ends the current round early: the question on screen (if it has not been revealed) and every question
+   * still to come in the round are skipped, and the round's leaderboard shows.
+   */
+  endRound(): Result<null> {
+    if (!this.canEndRound()) return fail('A round can be ended while one of its questions is on screen.');
+    const current = this.quiz.questions[this.questionIndex]!;
+    let last = this.questionIndex;
+    while (this.quiz.questions[last + 1]?.roundIndex === current.roundIndex) last++;
+    const first = this.phase === 'reveal' ? this.questionIndex + 1 : this.questionIndex;
+    for (let i = first; i <= last; i++) this.skipped.add(i);
+    clearTimeout(this.buzzTimer);
+    this.buzzTimer = undefined;
+    clearTimeout(this.timer);
+    this.timer = undefined;
+    this.pausedAt = undefined;
+    this.questionIndex = last;
+    this.phase = 'leaderboard';
+    this.changed();
+    return { ok: true, value: null };
+  }
+
   /** Throws the current question away (it scores nothing for anyone) and moves straight on. */
   skip(): Result<null> {
     if (this.phase !== 'open' && this.phase !== 'closed' && this.phase !== 'wagering' && this.phase !== 'reading') return fail('Only a question that has not been revealed can be skipped.');
@@ -1668,6 +1697,7 @@ export class Game {
       lockOnStart: this.lockOnStart,
       allowEmptyStart: this.allowEmptyStart,
       canStart: this.canStart(),
+      canEndRound: this.canEndRound(),
       closeEarly: this.closeEarly,
       reading: this.phase === 'reading' && question?.type === 'multiple-choice' ? { shown: this.readShown, total: question.options.length } : undefined,
       skipsLeaderboardNext: this.questionIndex >= 0 && this.skipsLeaderboardNext,

@@ -26,6 +26,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('resume') }),
   z.object({ t: z.literal('extend'), seconds: z.number().min(1).max(120).optional() }),
   z.object({ t: z.literal('skip') }),
+  z.object({ t: z.literal('end-round') }),
   z.object({ t: z.literal('leaderboard') }),
   z.object({ t: z.literal('break'), minutes: z.number().min(1).max(60).optional() }),
   z.object({ t: z.literal('end-break') }),
@@ -229,6 +230,8 @@ export interface HostView {
   allowEmptyStart: boolean;
   /** The Start button works: a team has joined, or an empty start is allowed. */
   canStart: boolean;
+  /** The host can end the current round early. */
+  canEndRound: boolean;
   /** Read-out mode: the timer starts as soon as the last multiple-choice answer is shown. */
   startOnLastAnswer: boolean;
   /** Questions end as soon as every team has answered (otherwise the clock always runs down). */

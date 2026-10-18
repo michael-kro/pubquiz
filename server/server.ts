@@ -633,6 +633,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         return;
       }
 
+      case 'end-round': {
+        if (!hostOnly() || !game) return;
+        const result = game.endRound();
+        if (!result.ok) send(conn, { t: 'error', message: result.error });
+        return;
+      }
+
       case 'pause':
       case 'resume':
       case 'extend':
