@@ -959,3 +959,7 @@ body:not(.tv) .lobby .qr-pair { flex-wrap: nowrap; }
 .reorder-item.dragging { position: relative; z-index: 5; box-shadow: 0 8px 24px #000a; background: var(--accent); color: var(--accent-text); }
 .reorder.locked .reorder-item { opacity: 0.6; }
 @media (prefers-reduced-motion: reduce) { .reorder-item { transition: none !important; } }
+.join-card { text-align: center; display: grid; gap: 8px; justify-items: center; }
+.join-card .qr { width: min(50vh, 420px); }
+body.tv .join-card { padding: 4vh 6vw; }
+body.tv .join-card .qr { width: min(55vh, 50vw); }

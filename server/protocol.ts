@@ -32,6 +32,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('end-break') }),
   z.object({ t: z.literal('set-answer'), value: z.union([z.number(), z.string().max(4)]) }),
   z.object({ t: z.literal('tv-teams'), visible: z.boolean() }),
+  z.object({ t: z.literal('show-join'), shown: z.boolean() }),
   z.object({ t: z.literal('read-out'), on: z.boolean() }),
   z.object({ t: z.literal('rotate-key') }),
   z.object({ t: z.literal('lock-joining'), locked: z.boolean() }),
@@ -214,6 +215,8 @@ export interface HostView {
   question?: QuestionView & { answerText: string; answer?: number; info?: string; answerEdited?: boolean; editable?: boolean; editValue?: number | string; hostText?: string };
   /** Show the team list on the TV. The host can hide it. */
   tvShowTeams: boolean;
+  /** The host has put the join QR code up on the host and TV screens. */
+  showJoin: boolean;
   /** What it costs to play ('' if nothing). */
   entryFee: string;
   /** New teams wait for the host to admit them. */
