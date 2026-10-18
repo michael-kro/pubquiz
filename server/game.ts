@@ -1107,12 +1107,29 @@ export class Game {
       return { correct: marked.correct, points, detail: bet === 0 ? 'No wager' : `Wagered ${bet}: ${marked.correct ? '+' : '-'}${bet}` };
     }
     if (!marked.correct) return marked;
+    // Rank scoring: a bonus for being among the quickest right answers (10, then 9, 8, … by default).
+    const rank = this.rankBonusFor(questionIndex, team.id);
+    const withRank = rank ? { ...marked, points: marked.points + rank.points, detail: [marked.detail, rank.label].filter(Boolean).join(' · ') } : marked;
     const bonus = this.fastBonusFor(questionIndex, team.id);
-    if (!bonus) return marked;
-    return { ...marked, points: marked.points + bonus.points, detail: [marked.detail, bonus.label].filter(Boolean).join(' · ') };
+    if (!bonus) return withRank;
+    return { ...withRank, points: withRank.points + bonus.points, detail: [withRank.detail, bonus.label].filter(Boolean).join(' · ') };
   }
 
   /** What a team earns for being among the quickest correct answers to a question, if anything. */
+  /** Rank scoring: the bonus a right answer earns for how many teams were quicker. */
+  private rankBonusFor(questionIndex: number, teamId: string): { points: number; label: string } | undefined {
+    const q = this.effectiveQuestion(questionIndex);
+    if (!q || q.mode !== 'rank' || q.wager || q.type === 'nearest' || q.type === 'buzzer') return undefined;
+    const place = this.fastestOrder(questionIndex).indexOf(teamId);
+    if (place < 0) return undefined;
+    const points = (this.quiz.rankBonus ?? 10) - place;
+    if (points <= 0) return undefined;
+    const n = place + 1;
+    const suffix = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th';
+    const ordinal = place === 0 ? 'fastest' : `${n}${suffix} fastest`;
+    return { points, label: `${q.points} for the right answer + ${points} for the ${ordinal} answer` };
+  }
+
   private fastBonusFor(questionIndex: number, teamId: string): { points: number; label: string; place: number } | undefined {
     const q = this.quiz.questions[questionIndex]!;
     if (q.type === 'nearest' || q.type === 'buzzer') return undefined; // Closest wins / the host judges: being quick adds nothing.
