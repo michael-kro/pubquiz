@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { normalise } from './matching.ts';
 
 export const ORDERING_ITEMS = 5;
-export const SCORING_MODES = ['speed', 'flat', 'first'] as const;
+export const SCORING_MODES = ['rank', 'speed', 'flat', 'first'] as const;
 export type ScoringMode = (typeof SCORING_MODES)[number];
 /**
  * The size of one question's points: 100, so scores stay small and readable. (The tests set
@@ -14,6 +14,11 @@ export type ScoringMode = (typeof SCORING_MODES)[number];
 export const POINTS_UNIT = Number(process.env['PUBQUIZ_POINTS_UNIT']) || 100;
 /** What a question is worth when it doesn't say. */
 export const DEFAULT_POINTS = POINTS_UNIT;
+/** In "rank" scoring a right answer is worth this, with a bonus of this much for the fastest correct team, one less for the next, and so on. */
+export const RANK_POINTS = 10;
+/** The scoring a quiz uses when it doesn't say. (The tests set PUBQUIZ_SCORING_DEFAULT=speed so their long-standing numbers still apply.) */
+const fromEnv = process.env['PUBQUIZ_SCORING_DEFAULT'];
+export const DEFAULT_MODE: ScoringMode = (SCORING_MODES as readonly string[]).includes(fromEnv ?? '') ? (fromEnv as ScoringMode) : 'rank';
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const MAX_AUDIO_BYTES = 20 * 1024 * 1024;
@@ -41,7 +46,8 @@ const text = z.string({ error: 'needs some text' }).trim().min(1, 'is empty');
 const common = {
   text,
   seconds: z.number({ error: 'must be a number' }).int('must be a whole number').min(5, 'must be at least 5 seconds').max(300, 'can be at most 300 seconds').default(20),
-  points: z.number({ error: 'must be a number' }).int('must be a whole number').min(0, "can't be negative").max(10_000, 'can be at most 10,000').default(DEFAULT_POINTS),
+  // What a right answer is worth. Left out, it is 10 in rank scoring and 100 otherwise (worked out when the quiz is built).
+  points: z.number({ error: 'must be a number' }).int('must be a whole number').min(0, "can't be negative").max(10_000, 'can be at most 10,000').optional(),
   /** A file path relative to the quiz file, or an http(s) URL. */
   image: text.optional(),
   /** A sound clip, played on the host or TV screen (never on phones): a file path or an http(s) URL. */
@@ -151,8 +157,10 @@ export const QuizFile = z
       .object({
         // Share of a correct answer's points lost by answering at the very last moment.
         speedFactor: z.number().min(0).max(1).default(0.5),
-        /** speed: faster scores more. flat: every correct answer scores the same. first: flat, plus a bonus for the first correct team. */
-        mode: z.enum(SCORING_MODES, { error: `must be one of: ${SCORING_MODES.join(', ')}` }).default('speed'),
+        /** rank: 10 for a right answer plus 10, 9, 8… for the fastest teams. speed: faster scores more. flat: every correct answer scores the same. first: flat, plus a bonus for the first correct team. */
+        mode: z.enum(SCORING_MODES, { error: `must be one of: ${SCORING_MODES.join(', ')}` }).default(DEFAULT_MODE),
+        /** Rank scoring: the bonus for the fastest correct team. The next gets one less, and so on down to nothing. */
+        rankBonus: z.number().int().min(0).max(1000).default(10),
         /** Extra points for the first correct team in "first" mode. */
         bonus: z.number().int().min(0).max(10_000).default(POINTS_UNIT / 2),
         /** Extra points for the quickest correct teams on every question (0 = off). First place gets all of it, second 60%, third 30%. */
@@ -163,7 +171,7 @@ export const QuizFile = z
         leaderboard: z.enum(['question', 'round'], { error: 'must be question or round' }).default('round'),
       })
       .strict()
-      .default({ speedFactor: 0.5, mode: 'speed', bonus: POINTS_UNIT / 2, fastBonus: 0, fastPlaces: 1, leaderboard: 'round' }),
+      .default({ speedFactor: 0.5, mode: DEFAULT_MODE, rankBonus: 10, bonus: POINTS_UNIT / 2, fastBonus: 0, fastPlaces: 1, leaderboard: 'round' }),
     rounds: z
       .array(
         z.object({ name: text, wager: z.boolean().optional(), halveOnWrong: z.boolean().optional(), wagerCap: z.number().int().min(1).max(100_000).optional(), mode: z.enum(SCORING_MODES, { error: `must be one of: ${SCORING_MODES.join(', ')}` }).optional(), questions: z.array(QuestionSchema, { error: 'needs a list of questions' }).min(1, 'needs at least one question') })
@@ -176,6 +184,8 @@ export const QuizFile = z
   .strict();
 
 export type Question = z.infer<typeof QuestionSchema> & {
+  /** What a right answer is worth. */
+  points: number;
   round: string;
   /** Position of the question's round, from 0. */
   roundIndex: number;
@@ -212,6 +222,8 @@ export interface Quiz {
   /** The quiz's own fun facts for the break screen (empty: use the built-in ones). */
   facts: string[];
   speedFactor: number;
+  /** Rank scoring: the bonus for the fastest correct team (the next gets one less, and so on). */
+  rankBonus?: number;
   /** Extra points for the first correct team, in "first" mode. */
   bonus: number;
   /** Extra points for the quickest correct teams, any mode but "first". */
@@ -300,6 +312,7 @@ function quizFromData(file: QuizFileData): Quiz {
     startOnLastAnswer: file.startOnLastAnswer,
     closeEarly: file.closeEarly,
     speedFactor: file.scoring.speedFactor,
+    rankBonus: file.scoring.rankBonus,
     bonus: file.scoring.bonus,
     fastBonus: file.scoring.fastBonus,
     fastPlaces: file.scoring.fastPlaces,
@@ -309,6 +322,7 @@ function quizFromData(file: QuizFileData): Quiz {
       round.questions.map((q) => ({
         ...q,
         ...(q.type === 'letter' ? { letter: firstLetter(q.answer, q.letter) } : {}),
+        points: q.points ?? ((round.mode ?? file.scoring.mode) === 'rank' ? RANK_POINTS : DEFAULT_POINTS),
         round: round.name,
         roundIndex,
         mode: round.mode ?? file.scoring.mode,
