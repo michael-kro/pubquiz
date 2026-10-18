@@ -2,7 +2,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { dirname, extname, resolve } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
-import { normalise } from './matching.ts';
+import { normalise, normaliseKeepingA } from './matching.ts';
 
 export const ORDERING_ITEMS = 5;
 export const SCORING_MODES = ['rank', 'speed', 'flat', 'first'] as const;
@@ -279,9 +279,9 @@ export class QuizError extends Error {
 
 const isUrl = (s: string) => /^https?:\/\//i.test(s);
 
-/** "The Lion King" → L, "Paul McCartney" → P (people go by first name, so write them first name first). */
+/** "The Lion King" → L, "A Glitzy Finale" → A, "Paul McCartney" → P (people go by first name, so write them first name first). Only "The" is skipped. */
 export function firstLetter(answer: string, override?: string): string {
-  return (override ?? normalise(answer)[0] ?? '').toUpperCase();
+  return (override ?? normaliseKeepingA(answer)[0] ?? '').toUpperCase();
 }
 
 /** Parses and validates a quiz. Local image files are not read here; see loadQuizFile. */
