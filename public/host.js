@@ -968,6 +968,7 @@ let moreOpen = false;
 /** Rarely used actions, tucked into a menu so the top bar stays on one line. */
 function moreControl(s) {
   const items = [
+    ...(s.canEndRound ? [['⏭ End round', () => endRound(s)]] : []),
     ...(s.canEnd ? [[s.phase === 'finished' ? '⏎ Back to quizzes' : '⏹ End quiz', () => endQuiz(s)]] : []),
     ['🔑 New host key', () => {
       if (confirm('Make a new host key? The old host link and the TV screen stop working until you open the new TV link.')) socket.send({ t: 'rotate-key' });
@@ -1096,8 +1097,22 @@ function podium(standings) {
 }
 
 /** Pause, add time and skip, for the question in progress. */
+/** Ends the round early, after checking: whatever is on screen unrevealed and the rest of the round are skipped. */
+function endRound(s) {
+  const revealed = s.phase === 'reveal';
+  const ok = confirm(
+    revealed
+      ? 'End this round now? The rest of its questions are skipped and the round leaderboard shows.'
+      : 'End this round now? The question on screen and the rest of the round are skipped (nobody scores on them) and the round leaderboard shows.',
+  );
+  if (ok) socket.send({ t: 'end-round' });
+}
+
 function questionControls(s) {
   const q = s.question;
+  if (s.phase === 'reveal' && s.canEndRound) {
+    return h('div', { class: 'question-controls' }, h('button', { class: 'danger', onclick: () => endRound(s), title: 'Skip the rest of this round and show its leaderboard' }, '⏭ End round'));
+  }
   if (s.phase !== 'open' && s.phase !== 'closed') return null;
   return h(
     'div',
@@ -1120,6 +1135,7 @@ function questionControls(s) {
       },
       'Skip question',
     ),
+    s.canEndRound ? h('button', { class: 'danger', onclick: () => endRound(s), title: 'Skip the rest of this round and show its leaderboard' }, '⏭ End round') : null,
   );
 }
 
