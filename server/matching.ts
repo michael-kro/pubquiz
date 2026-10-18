@@ -4,7 +4,7 @@
 export type Match = 'exact' | 'close' | 'none';
 
 /** Lower-case, no accents or punctuation, "&" as "and", no leading "the"/"a"/"an". */
-export function normalise(text: string): string {
+function clean(text: string): string {
   return text
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
@@ -12,8 +12,16 @@ export function normalise(text: string): string {
     .replace(/&/g, ' and ')
     .replace(/[^\p{L}\p{N}\s]/gu, '')
     .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/^(the|a|an) /, '');
+    .trim();
+}
+
+export function normalise(text: string): string {
+  return clean(text).replace(/^(the|a|an) /, '');
+}
+
+/** Like normalise, but only drops a leading "the": for picking a first letter. */
+export function normaliseKeepingA(text: string): string {
+  return clean(text).replace(/^the /, '');
 }
 
 export function editDistance(a: string, b: string): number {

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Join QR code mid-quiz:** More → "Show join QR code" puts the QR code and room code over the host and TV screens for latecomers; "Hide QR code" takes it down.
 - **Rank scoring is the new default:** a right answer is worth 10, plus a bonus for the fastest right answers: 10 for the quickest team, 9 for the next, 8, and so on down to nothing (`scoring: { mode: rank, rankBonus: 10 }`). The reveal tells each team what it got. Quizzes can still choose `speed`, `flat` or `first`, per quiz or per round.
 - **End round button:** the host can end the current round early; the rest of it is skipped and the round leaderboard shows.
 - **Ordering questions:** all five items are on the list from the start, shuffled; teams move them into order with ▲▼ arrows or by dragging the handle, then lock the order in. No more empty placeholders.

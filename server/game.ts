@@ -184,6 +184,8 @@ export class Game {
   private readonly answerEdits = new Map<number, number | string>();
   /** Show the team list on the TV screen. The host can hide it. */
   tvShowTeams = true;
+  /** The host has put the join QR code up on the screens (not saved: it is a moment-to-moment thing). */
+  showJoin = false;
   /** Multiple choice: announce the answers one by one before the timer starts. */
   readOut = false;
   /** Close a question once every team has answered, rather than always counting down. */
@@ -477,6 +479,11 @@ export class Game {
     if (this.phase !== 'reading') return fail('The timer is not waiting to start.');
     this.beginPlay();
     return { ok: true, value: null };
+  }
+
+  setShowJoin(shown: boolean): void {
+    this.showJoin = shown;
+    this.changed();
   }
 
   setTvShowTeams(visible: boolean): void {
@@ -1688,6 +1695,7 @@ export class Game {
       maxTeams: this.maxTeams,
       photosEnabled: this.photosEnabled,
       tvShowTeams: this.tvShowTeams,
+      showJoin: this.showJoin,
       entryFee: this.entryFee,
       requireAdmission: this.requireAdmission,
       pendingTeams: [...this.pending.values()].map((t) => ({ id: t.id, name: t.name, code: t.code, connected: t.connected })),

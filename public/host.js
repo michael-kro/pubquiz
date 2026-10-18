@@ -294,6 +294,7 @@ function render() {
       TV ? null : teamsPanel(state),
     ),
     codesOverlay(state),
+    joinOverlay(state),
     clipsOverlay(),
     settingsOverlay(),
     notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '',
@@ -968,6 +969,7 @@ let moreOpen = false;
 /** Rarely used actions, tucked into a menu so the top bar stays on one line. */
 function moreControl(s) {
   const items = [
+    ['📱 Show join QR code', () => socket.send({ t: 'show-join', shown: true })],
     ...(s.canEndRound ? [['⏭ End round', () => endRound(s)]] : []),
     ...(s.canEnd ? [[s.phase === 'finished' ? '⏎ Back to quizzes' : '⏹ End quiz', () => endQuiz(s)]] : []),
     ['🔑 New host key', () => {
@@ -1682,6 +1684,25 @@ function clipsOverlay() {
 let codesOpen = false;
 
 /** A big, easy-to-read list of every team and its rejoin code, for when a phone dies or someone changes device. */
+/** The join QR code, put up over the host and TV screens on request (for latecomers) and taken down again. */
+function joinOverlay(s) {
+  if (!s.showJoin || s.phase === 'lobby' || s.phase === 'idle') return null;
+  const close = () => socket.send({ t: 'show-join', shown: false });
+  return h(
+    'div',
+    { class: 'codes-overlay join-overlay', role: 'dialog', 'aria-label': 'Join the quiz', onclick: (e) => !TV && e.target === e.currentTarget && close() },
+    h(
+      'div',
+      { class: 'codes-card join-card' },
+      h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }),
+      h('h1', {}, 'Scan to join'),
+      h('p', { class: 'big' }, s.joinUrl.replace(/^https?:\/\//, '')),
+      h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
+      TV ? null : h('button', { type: 'button', onclick: close }, 'Hide QR code'),
+    ),
+  );
+}
+
 function codesOverlay(s) {
   if (TV || !codesOpen) return null;
   const close = () => {

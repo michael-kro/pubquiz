@@ -608,6 +608,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         }
         return;
 
+      case 'show-join':
+        if (hostOnly()) game?.setShowJoin(msg.shown);
+        return;
+
       case 'tv-teams':
         if (hostOnly()) game?.setTvShowTeams(msg.visible);
         return;
