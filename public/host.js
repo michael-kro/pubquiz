@@ -6,6 +6,14 @@ const app = document.getElementById('app');
 const statusBanner = document.getElementById('status');
 /** The TV screen: the same page without any controls, and without answers before the reveal. */
 const TV = document.body.classList.contains('tv');
+/** On a phone the host screen becomes a remote: a slim header and the buttons in a bar at the bottom, in thumb reach. */
+const phoneQuery = window.matchMedia('(max-width: 700px)');
+const isPhone = () => !TV && phoneQuery.matches;
+phoneQuery.addEventListener?.('change', () => {
+  document.body.classList.toggle('phone', isPhone());
+  render();
+});
+document.body.classList.toggle('phone', isPhone());
 // A TV is read from across a room: scale everything with the screen, so a 1080p TV gets type about 1.4 times the laptop size.
 if (TV) document.documentElement.style.fontSize = 'clamp(13px, min(1.12vw, 1.9vh), 36px)';
 const KEY_STORAGE = 'pubquiz.host-key';
@@ -740,6 +748,28 @@ function topBar(s) {
       soundButton(),
     );
   }
+  if (isPhone()) {
+    return h(
+      'div',
+      { class: 'phone-top' },
+      h(
+        'header',
+        { class: 'host-bar' },
+        h('div', { class: 'bar-id' }, h('span', { class: 'quiz-title', title: s.quizTitle }, s.quizTitle), h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Room ', h('strong', {}, s.roomCode)])),
+        networkPill(s.network),
+        soundButton(),
+      ),
+      h(
+        'div',
+        { class: 'phone-actions' },
+        s.pendingTeams?.length ? h('button', { type: 'button', class: 'pending-pill', onclick: () => socket.send({ t: 'admit-all' }) }, `⏳ ${s.pendingTeams.length} · Admit`) : null,
+        !TV && s.phase === 'reveal' && s.skipsLeaderboardNext ? h('button', { onclick: () => socket.send({ t: 'leaderboard' }) }, 'Board') : null,
+        breakControl(s),
+        moreControl(s),
+        h('button', { class: 'primary next', onclick: advance, disabled: s.phase === 'finished' || (s.phase === 'lobby' && !s.canStart) }, nextLabel(s)),
+      ),
+    );
+  }
   return h(
     'header',
     { class: 'host-bar' },
@@ -969,6 +999,7 @@ let moreOpen = false;
 /** Rarely used actions, tucked into a menu so the top bar stays on one line. */
 function moreControl(s) {
   const items = [
+    ...(isPhone() ? [['🎵 Clips', openClips]] : []),
     ['📱 Show join QR code', () => socket.send({ t: 'show-join', shown: true })],
     ...(s.canEndRound ? [['⏭ End round', () => endRound(s)]] : []),
     ...(s.canEnd ? [[s.phase === 'finished' ? '⏎ Back to quizzes' : '⏹ End quiz', () => endQuiz(s)]] : []),

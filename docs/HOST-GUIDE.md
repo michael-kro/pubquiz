@@ -37,7 +37,7 @@ A question also closes on its own when time runs out or every connected team has
 
 **Running the night:** during a question the host can **Pause** (the clock stops for every team, and resuming gives back exactly the time left; **P** also works), add **+10 s**, or **Skip question** (nobody scores on it). Teams with equal scores are separated by their quicker total answer time.
 
-**From a phone:** start with `--host-pin <pin>` (6 or more characters), open `/host` on the host's phone and type the PIN. The phone remembers it. Wrong guesses are limited, but if the quiz is on the internet link, choose a long PIN.
+**From a phone:** start with `--host-pin <pin>` (6 or more characters), open `/host` on the host's phone and type the PIN. The phone remembers it. Wrong guesses are limited, but if the quiz is on the internet link, choose a long PIN. The host screen reshapes itself on a phone: a slim header, the question and answers, and a bar of big buttons along the bottom (Next, Break, More). The QR code, Clips and End round are under More.
 
 **Branding:** press **Branding** on the quizzes screen to set your venue's name, tagline, accent and background colours, and logo. They show on the team phones (join, lobby and final screens), the host screen and the TV. Text colours are worked out for you so everything stays readable, and the panel warns if the accent is hard to see. Use a logo with a transparent background. To brand a single quiz file, point `--branding <folder>` at a folder holding `branding.json` and `logo.png` (see `venues/my-venue/branding` for a real one).
 
