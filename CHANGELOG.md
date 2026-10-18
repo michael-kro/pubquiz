@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Ordering questions:** all five items are on the list from the start, shuffled; teams move them into order with ▲▼ arrows or by dragging the handle, then lock the order in. No more empty placeholders.
+
 - **Docker uses your home folder:** the `docker run` command and `compose.yaml` mount `~/PubQuiz` as the library, so Docker and the downloaded program share quizzes and clips. The settings volume is writable by any user (`--user $(id -u):$(id -g)` on Linux).
 - **HTTPS on port 443:** an optional Caddy service (`docker compose --profile https up -d`) with a local certificate for a name like `quiz.internal`. See `docs/HTTPS.md`.
 
