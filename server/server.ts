@@ -740,7 +740,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
       res.end(JSON.stringify(body));
     };
-    if (req.method === 'GET') return json(200, { pin: Boolean(options.hostPin) && !options.openHost, open: Boolean(options.openHost) });
+    if (req.method === 'GET') return json(200, options.openHost ? { pin: false, open: true } : { pin: Boolean(options.hostPin) });
     if (req.method !== 'POST' || !(options.hostPin || options.openHost)) return json(404, { error: 'Not found.' });
     if (!hostAllowed(req)) return json(403, { error: 'The host screen can only be used on the laptop running the quiz.' });
 

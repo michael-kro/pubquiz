@@ -19,7 +19,7 @@ async function login(port: number, body?: object) {
 
 test('by default there is no keyless sign-in', async () => {
   const server = await createQuizServer({ quiz: parseQuiz(QUIZ), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
-  assert.deepEqual((await login(server.port)).data, { pin: false, open: false });
+  assert.deepEqual((await login(server.port)).data, { pin: false });
   assert.equal((await login(server.port, { pin: '' })).status, 404);
   await server.close();
 });
