@@ -220,10 +220,24 @@ function advance() {
 }
 
 // Space, → and PageDown (what presentation clickers send) all move on.
+/** Escape closes whichever pop-up is open, the one on top first. Returns whether there was one. */
+function closeTopPopup() {
+  if (hostQrOpen) hostQrOpen = false;
+  else if (clipsOpen) clipsOpen = false;
+  else if (settingsOpen) settingsOpen = false;
+  else if (codesOpen) codesOpen = false;
+  else if (state?.showJoin && !TV) socket?.send({ t: 'show-join', shown: false });
+  else if (moreOpen || breakMenuOpen) {
+    moreOpen = false;
+    breakMenuOpen = false;
+  } else return false;
+  render();
+  return true;
+}
+
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && codesOpen) {
-    codesOpen = false;
-    render();
+  if (event.key === 'Escape' && closeTopPopup()) {
+    event.preventDefault();
     return;
   }
   if (TV || !state || state.phase === 'idle' || editingId() || event.target !== document.body) return;

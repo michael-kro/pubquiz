@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Escape closes pop-ups:** on the host screen, Escape closes whichever pop-up is open (host QR code, clips, settings, team codes, the join QR on the screens, the More and Break menus).
 - **Branding profiles (venues):** keep a branding setup per pub and switch between them from a drop-down on the quizzes screen or the tabs in the Branding panel. An existing branding setup becomes the "default" profile automatically. Fixes the Tiles/List toggle being unreadable on light backgrounds.
 - **Ordering is drag and drop only:** teams drag any row into place and the others slide out of the way; the ▲▼ arrows are gone. (Keyboard: focus a row and use the up and down arrow keys.)
 - **Fix:** the final results (and any leaderboard) on a team's phone no longer scroll sideways when team names are long; the list shrinks to fit and names are cut short.
