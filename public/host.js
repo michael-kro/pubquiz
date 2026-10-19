@@ -61,7 +61,30 @@ let brandingOpen = false;
 const editingId = () => /^#edit\/([a-z0-9-]+)$/.exec(location.hash)?.[1];
 window.addEventListener('hashchange', () => render());
 
+/** The venues (branding profiles) to switch between, or null when this host has a single branding folder. */
+let venues = null;
+
+async function loadVenues() {
+  try {
+    const info = await api('GET', '/branding');
+    venues = info.profiles && info.profiles.length > 1 ? { list: info.profiles, active: info.active } : null;
+  } catch {
+    venues = null;
+  }
+}
+
+async function switchVenue(id) {
+  try {
+    await api('POST', '/branding/active', { id });
+    // Every page picks its colours and logo up when it loads, so load this one again.
+    location.reload();
+  } catch (error) {
+    showNotice(error.message);
+  }
+}
+
 async function loadLibrary() {
+  void loadVenues().then(render);
   try {
     library = { items: await api('GET', '/quizzes'), error: '' };
   } catch (error) {
@@ -536,6 +559,14 @@ function libraryView(s) {
       networkPill(s.network),
       h('span', { class: 'spacer' }),
       h('button', { type: 'button', onclick: openClips, title: 'Play sound clips whenever you like' }, '🎵 Clips'),
+      venues
+        ? h(
+            'label',
+            { class: 'venue-switch', title: 'The venue whose logo and colours every screen shows' },
+            '🍺 ',
+            h('select', { 'aria-label': 'Venue', onchange: (e) => switchVenue(e.target.value) }, venues.list.map((v) => h('option', { value: v.id, selected: v.id === venues.active }, v.label))),
+          )
+        : null,
       h('a', { class: 'button', href: '#branding' }, 'Branding'),
       h('button', { type: 'button', onclick: openSettings, title: 'Where your quizzes are kept' }, '⚙ Settings'),
       isPhone() ? null : h('button', { type: 'button', onclick: () => { hostQrOpen = true; render(); }, title: 'A QR code to open this host page on your phone' }, '📲 Host on my phone'),

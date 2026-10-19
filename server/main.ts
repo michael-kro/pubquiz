@@ -5,7 +5,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { BrandingStore } from './branding.ts';
+import { BrandingProfiles, BrandingStore } from './branding.ts';
 import { Library } from './library.ts';
 import { chooseLibraryDir } from './settings.ts';
 import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
@@ -145,8 +145,10 @@ async function main(): Promise<void> {
   const branding = values.branding
     ? new BrandingStore(resolve(values.branding), { readOnly: !library })
     : library
-      ? new BrandingStore(join(library.dir, 'branding'))
+      ? new BrandingProfiles(join(library.dir, 'branding'))
       : undefined;
+
+  if (branding instanceof BrandingProfiles) await branding.init();
 
   let tunnel: TunnelManager | undefined;
   let server: QuizServer | undefined;
