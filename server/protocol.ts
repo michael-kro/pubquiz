@@ -204,6 +204,8 @@ export interface HostView {
   lanJoinUrl: string;
   /** Changes whenever the QR code does, so the page reloads the image. */
   qrVersion: number;
+  /** Short is.gd addresses for the internet link, when the host switched that on. */
+  shortLinks?: { join?: string; tv?: string };
   /** The testing switch is on: the host and TV pages open without the key. */
   openHost?: boolean;
   network: NetworkStatus;

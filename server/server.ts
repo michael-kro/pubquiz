@@ -16,6 +16,7 @@ import { clientAddress, isLocalRequest, TokenBucket, WindowCounter } from './lim
 import { MAX_PHOTO_BYTES, PhotoStore, sniffImage } from './photos.ts';
 import { loadBundledFacts, pickFacts } from './facts.ts';
 import { lanAddress, wifiQrText } from './net.ts';
+import type { ShortLinks } from './shortlink.ts';
 import { parseClientMessage, type HostIdleView, type HostView, type ServerMessage } from './protocol.ts';
 import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
 import { createSaver, hashQuiz, readSession, writeSession, type Session } from './session.ts';
@@ -126,6 +127,8 @@ export interface QuizServer {
   startQuiz(quiz: Quiz, session?: SessionOptions): Promise<void>;
   endQuiz(): Promise<void>;
   setNetwork(status: NetworkStatus): void;
+  /** Short addresses for the internet link (shown instead of the long one), or none. */
+  setShortLinks(links: ShortLinks | undefined): void;
   close(): Promise<void>;
 }
 
@@ -185,6 +188,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   let active: ActiveQuiz | undefined;
   let baseUrl = '';
   let joinUrl = '';
+  let shortLinks: ShortLinks | undefined;
   let qrSvg = '';
   let qrVersion = 0;
   let network: NetworkStatus = { mode: 'lan' };
@@ -214,6 +218,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       qrVersion,
       network,
       ...(options.openHost ? { openHost: true } : {}),
+      ...(shortLinks && (shortLinks.join || shortLinks.tv) ? { shortLinks } : {}),
       canEnd: Boolean(options.library),
       screenKey,
       wifi: options.wifi,
@@ -1140,6 +1145,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     setNetwork(status) {
       network = status;
       void updateJoinUrl().then(broadcast);
+    },
+    setShortLinks(links) {
+      shortLinks = links;
+      broadcast();
     },
     close() {
       closing ??= (async () => {
