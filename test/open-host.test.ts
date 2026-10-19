@@ -53,3 +53,15 @@ test('the host view says the testing switch is on (so the page can warn), and sa
     await server.close();
   }
 });
+
+test('the host QR code is for the host only, and leaves the key out in testing mode', async () => {
+  for (const openHost of [false, true]) {
+    const server = await createQuizServer({ openHost, quiz: parseQuiz(QUIZ), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+    assert.equal((await fetch(`http://127.0.0.1:${server.port}/host-qr.svg`)).status, 401);
+    assert.equal((await fetch(`http://127.0.0.1:${server.port}/host-qr.svg?key=wrong`)).status, 401);
+    const ok = await fetch(`http://127.0.0.1:${server.port}/host-qr.svg?key=${server.hostKey}`);
+    assert.equal(ok.status, 200);
+    assert.match(await ok.text(), /<svg/);
+    await server.close();
+  }
+});

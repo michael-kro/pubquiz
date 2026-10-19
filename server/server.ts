@@ -991,6 +991,20 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       return;
     }
 
+    // The host's own link as a QR code, so the host can open the controls on a phone. Host key only.
+    if (pathname === '/host-qr.svg') {
+      if (!(isHostKey(url.searchParams.get('key') ?? undefined) && hostAllowed(req))) {
+        res.writeHead(401, { 'content-type': 'text/plain' });
+        res.end('Use the host link.');
+        return;
+      }
+      const base = network.mode === 'tunnel' && network.state === 'up' && network.publicUrl ? network.publicUrl : baseUrl;
+      const svg = await QRCode.toString(`${base}/host${options.openHost ? '' : `?key=${hostKey}`}`, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
+      res.writeHead(200, { 'content-type': CONTENT_TYPES['.svg'], 'cache-control': 'no-store' });
+      res.end(svg);
+      return;
+    }
+
     if (pathname === '/qr.svg') {
       res.writeHead(200, { 'content-type': CONTENT_TYPES['.svg'], 'cache-control': 'private, max-age=3600' });
       res.end(qrSvg);
