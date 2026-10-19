@@ -6,6 +6,11 @@ import { isTextAnswer, LETTER_GROUPS, ORDERING_ITEMS, POINTS_UNIT, type Question
 import { scoreAnswer } from './scoring.ts';
 
 /** The usual limit on teams, and what the quiz is tested with. The host can change it (up to ABSOLUTE_MAX_TEAMS). */
+/** Teams wait to be admitted (the host ticks them once paid) and the host asks each question before the timer starts, unless the host says otherwise.
+ *  (The tests set these to "off" so their long-standing flows still apply.) */
+const ADMISSION_DEFAULT = process.env['PUBQUIZ_ADMISSION_DEFAULT'] !== 'off';
+const READ_OUT_DEFAULT = process.env['PUBQUIZ_READOUT_DEFAULT'] !== 'off';
+
 export const MAX_TEAMS = 30;
 export const ABSOLUTE_MAX_TEAMS = 100;
 export { MAX_NAME_LENGTH };
@@ -199,7 +204,7 @@ export class Game {
   /** What it costs to play, shown on the start screen ('' for free). */
   entryFee = '';
   /** Teams wait in `pending` until the host admits them (after they've paid). */
-  requireAdmission = false;
+  requireAdmission = ADMISSION_DEFAULT;
   readonly pending = new Map<string, Team>();
   /** Optional prizes for 1st, 2nd and 3rd ('' when not set). */
   prizes: string[] = ['', '', ''];
@@ -232,7 +237,7 @@ export class Game {
     this.now = options.now ?? Date.now;
     this.onChange = options.onChange ?? (() => {});
     this.nameFilter = options.nameFilter ?? true;
-    this.readOut = quiz.readOut ?? false;
+    this.readOut = quiz.readOut ?? READ_OUT_DEFAULT;
     this.startOnLastAnswer = quiz.startOnLastAnswer ?? true;
     this.closeEarly = quiz.closeEarly ?? options.closeEarly ?? true;
     this.lockOnStart = options.lockOnStart ?? false;
@@ -1013,7 +1018,7 @@ export class Game {
     game.breakState = snapshot.break;
     for (const [index, bets] of snapshot.wagers ?? []) game.wagers.set(index, new Map(bets));
     game.tvShowTeams = snapshot.tvShowTeams ?? game.tvShowTeams;
-    game.readOut = snapshot.readOut ?? quiz.readOut ?? false;
+    game.readOut = snapshot.readOut ?? quiz.readOut ?? READ_OUT_DEFAULT;
     game.readShown = snapshot.readShown ?? 0;
     game.joiningLocked = snapshot.joiningLocked ?? false;
     game.lockOnStart = snapshot.lockOnStart ?? game.lockOnStart;
@@ -1021,7 +1026,7 @@ export class Game {
     game.maxTeams = snapshot.maxTeams ?? game.maxTeams;
     game.prizes = snapshot.prizes ?? game.prizes;
     game.entryFee = snapshot.entryFee ?? game.entryFee;
-    game.requireAdmission = snapshot.requireAdmission ?? false;
+    game.requireAdmission = snapshot.requireAdmission ?? ADMISSION_DEFAULT;
     for (const t of snapshot.pending ?? []) game.pending.set(t.id, { ...t, connected: false, answers: new Map() });
     game.startOnLastAnswer = snapshot.startOnLastAnswer ?? game.startOnLastAnswer;
     game.closeEarly = snapshot.closeEarly ?? game.closeEarly;

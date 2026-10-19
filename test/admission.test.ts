@@ -187,3 +187,19 @@ test('the most teams that can join is a host setting that defaults to 30', async
   for (const c of [host, ann, bob]) await c.close();
   await server.close();
 });
+
+test('out of the box teams wait to be admitted and each question is asked before its timer starts', async () => {
+  const script = `
+    import { Game } from './server/game.ts';
+    import { parseQuiz } from './server/quiz.ts';
+    const g = new Game(parseQuiz('title: D\\nrounds:\\n  - name: R\\n    questions:\\n      - { type: multiple-choice, text: Q, options: [a, b], answer: 0 }\\n'));
+    const v = g.hostView();
+    console.log(JSON.stringify({ requireAdmission: v.requireAdmission, readOut: v.readOut }));
+    g.dispose();`;
+  const env = { ...process.env };
+  delete env['PUBQUIZ_ADMISSION_DEFAULT'];
+  delete env['PUBQUIZ_READOUT_DEFAULT'];
+  const { execFileSync } = await import('node:child_process');
+  const out = execFileSync(process.execPath, ['--input-type=module', '-e', script], { env, encoding: 'utf8' });
+  assert.deepEqual(JSON.parse(out.trim()), { requireAdmission: true, readOut: true });
+});
