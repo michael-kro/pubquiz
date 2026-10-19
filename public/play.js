@@ -690,40 +690,58 @@ function moveItem(from, to) {
   draftOrder = next;
   render();
   glide(before);
-  // Keep the pressed arrow under the finger so repeated taps keep moving the same item.
   const moved = document.querySelector(`.reorder-item[data-item="${item}"]`);
   moved?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
-/** Dragging by the handle: the row follows the finger, and drops into the slot it is over. */
+/** Dragging: pick a row up anywhere, it follows the finger and the others slide out of its way; it drops into the slot it is over. */
 function startDrag(event, position) {
+  if (event.button !== undefined && event.button !== 0) return;
   event.preventDefault();
-  const handle = event.currentTarget;
-  const row = handle.closest('.reorder-item');
+  const row = event.currentTarget;
   const rows = [...document.querySelectorAll('.reorder-item')];
+  const rects = rows.map((r) => r.getBoundingClientRect());
   const startY = event.clientY;
-  const heights = rows.map((r) => r.getBoundingClientRect());
+  const step = rects[position].height + 8; // a row plus the gap between rows
   let target = position;
-  handle.setPointerCapture?.(event.pointerId);
+  row.setPointerCapture?.(event.pointerId);
   row.classList.add('dragging');
+  rows.forEach((r) => r !== row && r.classList.add('shifting'));
   const onMove = (e) => {
     const dy = e.clientY - startY;
     row.style.transform = `translateY(${dy}px)`;
-    const centre = heights[position].top + heights[position].height / 2 + dy;
-    target = heights.findIndex((r) => centre < r.top + r.height);
+    const centre = rects[position].top + rects[position].height / 2 + dy;
+    target = rects.findIndex((r) => centre < r.top + r.height);
     if (target < 0) target = rows.length - 1;
+    rows.forEach((r, i) => {
+      if (r === row) return;
+      const shift = position < target && i > position && i <= target ? -step : position > target && i < position && i >= target ? step : 0;
+      r.style.transform = shift ? `translateY(${shift}px)` : '';
+    });
   };
   const onUp = () => {
-    handle.removeEventListener('pointermove', onMove);
-    handle.removeEventListener('pointerup', onUp);
-    handle.removeEventListener('pointercancel', onUp);
-    row.classList.remove('dragging');
-    row.style.transform = '';
+    row.removeEventListener('pointermove', onMove);
+    row.removeEventListener('pointerup', onUp);
+    row.removeEventListener('pointercancel', onUp);
+    rows.forEach((r) => {
+      r.classList.remove('shifting', 'dragging');
+      r.style.transform = '';
+    });
     moveItem(position, target);
   };
-  handle.addEventListener('pointermove', onMove);
-  handle.addEventListener('pointerup', onUp);
-  handle.addEventListener('pointercancel', onUp);
+  row.addEventListener('pointermove', onMove);
+  row.addEventListener('pointerup', onUp);
+  row.addEventListener('pointercancel', onUp);
+}
+
+/** Without a finger: a focused row moves with the up and down arrow keys. */
+function reorderKey(event, position) {
+  const to = event.key === 'ArrowUp' ? position - 1 : event.key === 'ArrowDown' ? position + 1 : null;
+  if (to === null) return;
+  event.preventDefault();
+  const item = draftOrder[position];
+  moveItem(position, to);
+  document.querySelector(`.reorder-item[data-item="${item}"]`)?.focus();
 }
 
 function answerInput(s, q, locked) {
@@ -835,27 +853,24 @@ function answerInput(s, q, locked) {
     case 'ordering': {
       // Every item is already on the list. The team moves them into the right order (first at the top) and locks it in.
       if (draftOrder.length !== q.items.length) draftOrder = q.items.map((_, i) => i);
-      const last = q.items.length - 1;
       return h(
         'div',
         { class: `ordering reorder${locked ? ' locked' : ''}` },
-        locked ? null : h('p', { class: 'muted small center' }, 'Put the items in order, first at the top. Use the arrows, or drag the handle.'),
+        locked ? null : h('p', { class: 'muted small center' }, 'Drag the items into order, first at the top.'),
         h(
           'ol',
           { class: 'reorder-list' },
           draftOrder.map((item, position) =>
             h(
               'li',
-              { class: 'reorder-item', 'data-item': String(item) },
+              {
+                class: 'reorder-item',
+                'data-item': String(item),
+                ...(locked ? {} : { tabindex: '0', title: 'Drag to move', 'aria-label': `${q.items[item]}, position ${position + 1} of ${q.items.length}. Use the up and down arrow keys to move it.`, onpointerdown: (e) => startDrag(e, position), onkeydown: (e) => reorderKey(e, position) }),
+              },
               h('span', { class: 'slot-number' }, position + 1),
               h('span', { class: 'reorder-text' }, q.items[item]),
-              locked
-                ? null
-                : [
-                    h('button', { type: 'button', class: 'move', 'aria-label': `Move ${q.items[item]} up`, disabled: position === 0, onclick: () => moveItem(position, position - 1) }, '▲'),
-                    h('button', { type: 'button', class: 'move', 'aria-label': `Move ${q.items[item]} down`, disabled: position === last, onclick: () => moveItem(position, position + 1) }, '▼'),
-                    h('span', { class: 'drag-handle', role: 'presentation', title: 'Drag to move', onpointerdown: (e) => startDrag(e, position) }, '⠿'),
-                  ],
+              locked ? null : h('span', { class: 'drag-handle', 'aria-hidden': 'true' }, '⠿'),
             ),
           ),
         ),
