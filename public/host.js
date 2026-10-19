@@ -1786,7 +1786,7 @@ function clipsOverlay() {
             h('span', { class: 'clip-name' }, clip.title),
             playHereOn ? h('button', { type: 'button', class: 'primary', onclick: () => playHere(clip), title: 'Play on this device' }, playingClip === clip.name ? '⏸ Stop' : '▶ Play') : null,
             h('button', { type: 'button', class: playHereOn ? '' : 'primary', onclick: () => socket.send({ t: 'play-clip', name: clip.name }), title: 'Play on the TV screen (its 🔊 sound must be on)' }, playHereOn ? '📺 TV' : '📺 Play'),
-            h('button', { type: 'button', class: 'kick', 'aria-label': `Delete ${clip.title}`, title: 'Delete this clip', onclick: async () => {
+            isPhone() ? null : h('button', { type: 'button', class: 'kick', 'aria-label': `Delete ${clip.title}`, title: 'Delete this clip', onclick: async () => {
               if (!confirm(`Delete the clip “${clip.title}”?`)) return;
               try {
                 await api('DELETE', `/clips/${encodeURIComponent(clip.name)}`);
