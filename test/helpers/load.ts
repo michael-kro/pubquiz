@@ -164,6 +164,16 @@ class Bot {
     }
   }
 
+  /** Like a real phone: if the connection has gone (dropped by the server, say, on a busy machine), open it again. */
+  async ensureConnected(): Promise<void> {
+    if (this.stopped || (this.ws && this.ws.readyState <= 1)) return;
+    try {
+      await this.connect();
+    } catch {
+      // Try again on the next look.
+    }
+  }
+
   /** Ends the simulation: no more reconnecting, and the socket is dropped. */
   stop(): void {
     this.stopped = true;
@@ -327,7 +337,10 @@ async function runLoadUnbounded(options: LoadOptions): Promise<LoadReport> {
 
     // Every phone, including the ones that dropped near the end, comes back and shows the final results.
     const settleBy = Date.now() + 25_000;
-    while (bots.some((b) => b.view?.phase !== 'finished') && Date.now() < settleBy) await sleep(100);
+    while (bots.some((b) => b.view?.phase !== 'finished') && Date.now() < settleBy) {
+      await Promise.all(bots.filter((b) => b.view?.phase !== 'finished').map((b) => b.ensureConnected()));
+      await sleep(200);
+    }
 
     // Checks, against what the server itself recorded for each team.
     const snapshot = server.game!.snapshot();

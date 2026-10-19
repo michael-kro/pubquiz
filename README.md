@@ -28,10 +28,13 @@ That is a whole quiz night. Everything else is optional.
 
 **Docker instead** (no download warning, and it runs on Intel and Apple-silicon machines):
 ```sh
-docker run -d --name pubquiz -p 3000:3000 -v pubquiz-data:/data ghcr.io/michael-kro/pubquiz:latest
+mkdir -p ~/PubQuiz
+docker run -d --name pubquiz -p 3000:3000 \
+  -v ~/PubQuiz:/data/quizzes -v pubquiz-data:/data \
+  ghcr.io/michael-kro/pubquiz:latest
 docker logs pubquiz        # prints the host link
 ```
-Or from a copy of the source: `docker compose up -d`, then `docker compose logs pubquiz`. For venue Wi-Fi with no internet, add `-e PUBQUIZ_LAN=1 -e PUBQUIZ_PUBLIC_HOST=<your laptop's address>`.
+This uses your own `~/PubQuiz` folder, the same one the downloaded program uses, so your quizzes and clips are in both (run only one at a time). On Linux add `--user $(id -u):$(id -g)` so files stay yours; on Windows use `-v "%USERPROFILE%\PubQuiz:/data/quizzes"`. Or from a copy of the source: `docker compose up -d`, then `docker compose logs pubquiz` (it uses `~/PubQuiz` too). For HTTPS on port 443 with your own name, see [docs/HTTPS.md](docs/HTTPS.md). For venue Wi-Fi with no internet, add `-e PUBQUIZ_LAN=1 -e PUBQUIZ_PUBLIC_HOST=<your laptop's address>`.
 **From source** (Node.js 22.18+): `npm install`, then `npm start`.
 
 ## Where your things live
@@ -59,4 +62,5 @@ Back that folder up and you have everything. To use a different folder (a Dropbo
 
 - [Getting started](docs/GETTING-STARTED.md): a longer walk-through of a first night.
 - [Host guide](docs/HOST-GUIDE.md): everything the host screen can do.
+- [HTTPS](docs/HTTPS.md): your own name on port 443 with a certificate.
 - [Development](docs/DEVELOPMENT.md): building from source, the single-file programs, tests and how timing stays fair.

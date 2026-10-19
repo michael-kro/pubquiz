@@ -694,7 +694,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           q.seconds = v;
           changed();
         }), 'seconds'),
-        field('Points', numberInput(q.points, '100', (v) => {
+        field('Points', numberInput(q.points, (model.scoring?.mode ?? 'rank') === 'rank' ? '10' : '100', (v) => {
           q.points = v;
           changed();
         }), 'points'),
@@ -898,11 +898,14 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
       h(
         'div',
         { class: 'settings' },
-        setting('Scoring', [['speed', 'Faster scores more'], ['flat', 'Same for every correct answer'], ['first', 'Flat + bonus for the first correct team']], () => model.scoring?.mode ?? 'speed', (v) => setScoring('mode', v)),
-        (model.scoring?.mode ?? 'speed') === 'speed'
+        setting('Scoring', [['rank', 'Right answer + bonus for the fastest (10, then 9, 8…)'], ['speed', 'Faster scores more'], ['flat', 'Same for every correct answer'], ['first', 'Flat + bonus for the first correct team']], () => model.scoring?.mode ?? 'rank', (v) => setScoring('mode', v)),
+        (model.scoring?.mode ?? 'rank') === 'rank'
+          ? field('Fastest team bonus', numberInput(model.scoring?.rankBonus, '10', (v) => setScoring('rankBonus', v)), 'rankBonus', 'The fastest right answer gets this on top of the question’s points; the next gets one less, and so on.')
+          : null,
+        (model.scoring?.mode ?? 'rank') === 'speed'
           ? setting('Speed bonus', [[0.5, 'Half points at the buzzer'], [0.25, 'Small'], [0, 'Off']], () => model.scoring?.speedFactor ?? 0.5, (v) => setScoring('speedFactor', Number(v)))
           : null,
-        (model.scoring?.mode ?? 'speed') === 'first'
+        (model.scoring?.mode ?? 'rank') === 'first'
           ? field('First-correct bonus', numberInput(model.scoring?.bonus, '50', (v) => setScoring('bonus', v)), 'bonus')
           : null,
         setting('Fastest teams bonus', [[0, 'Off'], [10, 'Small: 10'], [25, 'Medium: 25'], [50, 'Big: 50']], () => model.scoring?.fastBonus ?? 0, (v) => setScoring('fastBonus', Number(v) || undefined)),

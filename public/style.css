@@ -948,3 +948,40 @@ body:not(.tv) .lobby .qr-pair { flex-wrap: nowrap; }
 
 .gained.lost, .points.lost { color: var(--wrong); }
 .halve-banner { margin: 8px 0; padding: 8px 12px; border-radius: 10px; background: #e2574c26; border-left: 4px solid var(--wrong); font-weight: 700; }
+
+/* Ordering: every item is on the list already; move them into order */
+.reorder-list { list-style: none; padding: 0; margin: 8px 0 12px; display: grid; gap: 8px; }
+.reorder-item { display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 12px; border-radius: 12px; background: var(--surface-2); font-weight: 600; touch-action: pan-y; }
+.reorder-text { flex: 1; min-width: 0; overflow-wrap: anywhere; line-height: 1.25; }
+.reorder-item .move { width: 44px; height: 44px; padding: 0; flex: none; font-size: 1.1rem; background: var(--surface); }
+.reorder-item .move:disabled { opacity: 0.25; }
+.drag-handle { flex: none; width: 36px; height: 44px; display: grid; place-items: center; font-size: 1.6rem; color: var(--muted); cursor: grab; touch-action: none; user-select: none; }
+.reorder-item.dragging { position: relative; z-index: 5; box-shadow: 0 8px 24px #000a; background: var(--accent); color: var(--accent-text); }
+.reorder.locked .reorder-item { opacity: 0.6; }
+@media (prefers-reduced-motion: reduce) { .reorder-item { transition: none !important; } }
+.join-card { text-align: center; display: grid; gap: 8px; justify-items: center; }
+.join-card .qr { width: min(50vh, 420px); }
+body.tv .join-card { padding: 4vh 6vw; }
+body.tv .join-card .qr { width: min(55vh, 50vw); }
+
+/* Phone: the host screen as a remote. Slim header on top, the buttons in a bar at the bottom. */
+body.phone { overflow-x: hidden; padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+body.phone .host-layout { display: block; }
+body.phone .host-bar { padding: 10px 14px; gap: 10px; flex-wrap: nowrap; }
+body.phone .bar-id { flex: 1 1 auto !important; flex-basis: auto !important; order: 0 !important; min-width: 0; }
+body.phone .quiz-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 1.05rem; }
+body.phone .stage { padding: 16px 14px; overflow: visible; }
+body.phone .teams { position: static; max-height: none; border-left: 0; border-top: 1px solid var(--surface-2); }
+body.phone:not(.tv) .lobby { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 16px; text-align: center; }
+body.phone .lobby > * { min-width: 0; max-width: 100%; }
+body.phone .lobby h1 { font-size: 1.8rem; }
+body.phone .lobby .qr, body.phone:not(.tv) .lobby .qr { width: min(70vw, 300px); }
+body.phone .lobby-extras { grid-template-columns: 1fr; max-width: 100%; }
+body.phone .question-text { font-size: 1.5rem; }
+body.phone .phone-actions { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: flex; gap: 8px; align-items: center; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--surface-2); box-shadow: 0 -8px 24px #0006; }
+body.phone .phone-actions .primary.next { flex: 1; min-height: 52px; font-size: 1.05rem; order: 9; }
+body.phone .phone-actions button { min-height: 52px; white-space: nowrap; }
+body.phone .phone-actions .break-menu { top: auto; bottom: calc(100% + 8px); }
+.open-host-warning { position: sticky; top: 0; z-index: 40; padding: 8px 16px; text-align: center; font-size: 0.9rem; background: #c0392b; color: #fff; }
+body.phone .open-host-warning { font-size: 0.8rem; padding: 6px 12px; }
+.short-links { margin: 0 0 12px; font-size: 0.9rem; }

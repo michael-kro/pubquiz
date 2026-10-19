@@ -16,6 +16,7 @@ import { clientAddress, isLocalRequest, TokenBucket, WindowCounter } from './lim
 import { MAX_PHOTO_BYTES, PhotoStore, sniffImage } from './photos.ts';
 import { loadBundledFacts, pickFacts } from './facts.ts';
 import { lanAddress, wifiQrText } from './net.ts';
+import type { ShortLinks } from './shortlink.ts';
 import { parseClientMessage, type HostIdleView, type HostView, type ServerMessage } from './protocol.ts';
 import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
 import { createSaver, hashQuiz, readSession, writeSession, type Session } from './session.ts';
@@ -77,6 +78,8 @@ export interface ServerOptions {
   libraryFolder?: FolderChoice;
   /** Only let the host controls be used from the machine running the quiz (not the network or the tunnel). */
   hostLocalOnly?: boolean;
+  /** Testing only: /host and /screen open without the key (the page asks for the key itself). Not documented for hosts. */
+  openHost?: boolean;
   /** Called when the host key is changed from the host screen, so it can be saved. */
   onHostKeyChange?(key: string): void;
   /** Name, colours and logo for every page. */
@@ -124,6 +127,8 @@ export interface QuizServer {
   startQuiz(quiz: Quiz, session?: SessionOptions): Promise<void>;
   endQuiz(): Promise<void>;
   setNetwork(status: NetworkStatus): void;
+  /** Short addresses for the internet link (shown instead of the long one), or none. */
+  setShortLinks(links: ShortLinks | undefined): void;
   close(): Promise<void>;
 }
 
@@ -183,6 +188,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   let active: ActiveQuiz | undefined;
   let baseUrl = '';
   let joinUrl = '';
+  let shortLinks: ShortLinks | undefined;
   let qrSvg = '';
   let qrVersion = 0;
   let network: NetworkStatus = { mode: 'lan' };
@@ -203,7 +209,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   }
 
   function hostView(): HostView | HostIdleView {
-    if (!active) return { phase: 'idle', library: Boolean(options.library), network };
+    if (!active) return { phase: 'idle', library: Boolean(options.library), network, ...(options.openHost ? { openHost: true } : {}) };
     return {
       ...active.game.hostView(),
       roomCode: active.roomCode,
@@ -211,6 +217,8 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       lanJoinUrl: lanUrl(),
       qrVersion,
       network,
+      ...(options.openHost ? { openHost: true } : {}),
+      ...(shortLinks && (shortLinks.join || shortLinks.tv) ? { shortLinks } : {}),
       canEnd: Boolean(options.library),
       screenKey,
       wifi: options.wifi,
@@ -608,6 +616,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         }
         return;
 
+      case 'show-join':
+        if (hostOnly()) game?.setShowJoin(msg.shown);
+        return;
+
       case 'tv-teams':
         if (hostOnly()) game?.setTvShowTeams(msg.visible);
         return;
@@ -629,6 +641,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       case 'judge': {
         if (!hostOnly() || !game) return;
         const result = game.judge(msg.correct);
+        if (!result.ok) send(conn, { t: 'error', message: result.error });
+        return;
+      }
+
+      case 'end-round': {
+        if (!hostOnly() || !game) return;
+        const result = game.endRound();
         if (!result.ok) send(conn, { t: 'error', message: result.error });
         return;
       }
@@ -727,8 +746,8 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
       res.end(JSON.stringify(body));
     };
-    if (req.method === 'GET') return json(200, { pin: Boolean(options.hostPin) });
-    if (req.method !== 'POST' || !options.hostPin) return json(404, { error: 'Not found.' });
+    if (req.method === 'GET') return json(200, options.openHost ? { pin: false, open: true } : { pin: Boolean(options.hostPin) });
+    if (req.method !== 'POST' || !(options.hostPin || options.openHost)) return json(404, { error: 'Not found.' });
     if (!hostAllowed(req)) return json(403, { error: 'The host screen can only be used on the laptop running the quiz.' });
 
     const now = Date.now();
@@ -750,7 +769,8 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     } catch {
       return json(400, { error: 'Expected JSON.' });
     }
-    if (typeof pin === 'string' && keyIs(options.hostPin, pin.trim())) {
+    if (options.openHost && hostAllowed(req)) return json(200, { key: (JSON.parse(body) as { screen?: unknown }).screen === true ? screenKey : hostKey });
+    if (typeof pin === 'string' && options.hostPin && keyIs(options.hostPin, pin.trim())) {
       failures.delete(address);
       return json(200, { key: hostKey });
     }
@@ -971,6 +991,20 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       return;
     }
 
+    // The host's own link as a QR code, so the host can open the controls on a phone. Host key only.
+    if (pathname === '/host-qr.svg') {
+      if (!(isHostKey(url.searchParams.get('key') ?? undefined) && hostAllowed(req))) {
+        res.writeHead(401, { 'content-type': 'text/plain' });
+        res.end('Use the host link.');
+        return;
+      }
+      const base = network.mode === 'tunnel' && network.state === 'up' && network.publicUrl ? network.publicUrl : baseUrl;
+      const svg = await QRCode.toString(`${base}/host${options.openHost ? '' : `?key=${hostKey}`}`, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
+      res.writeHead(200, { 'content-type': CONTENT_TYPES['.svg'], 'cache-control': 'no-store' });
+      res.end(svg);
+      return;
+    }
+
     if (pathname === '/qr.svg') {
       res.writeHead(200, { 'content-type': CONTENT_TYPES['.svg'], 'cache-control': 'private, max-age=3600' });
       res.end(qrSvg);
@@ -1125,6 +1159,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     setNetwork(status) {
       network = status;
       void updateJoinUrl().then(broadcast);
+    },
+    setShortLinks(links) {
+      shortLinks = links;
+      broadcast();
     },
     close() {
       closing ??= (async () => {

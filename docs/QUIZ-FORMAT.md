@@ -10,7 +10,7 @@ See [examples/sample-quiz.yaml](../examples/sample-quiz.yaml), which has every q
 | `multiple-choice` | 2–6 coloured buttons | `options`, and `answer`: the right option's position counting from 0 |
 | `picture` | The picture and a text box | `image` and `accept`: the answers to accept |
 | `music` | A text box (you play the track) | `accept` |
-| `ordering` | 5 shuffled items to tap into order | `items`, listed in the correct order |
+| `ordering` | 5 items already on a list, shuffled, to move into order (▲▼ arrows, or drag the handle) | `items`, listed in the correct order |
 | `letter` | An A–Z keypad: tap the answer's first letter | `answer`, e.g. `John Lennon` (letter J). Skip "The"; people go first name first. |
 | `buzzer` | One huge BUZZ button | `answer` (for you to judge with), optionally `penalty` |
 | `number` | A box to type a number | `answer`, and optionally `tolerance` (give or take) |
@@ -32,9 +32,12 @@ Scoring is set for the whole quiz in a `scoring:` block, and can be overridden p
 
 ```yaml
 scoring:
-  mode: speed          # speed (default): faster answers score more
+  mode: rank           # rank (default): a right answer is worth 10, plus a bonus for the fastest right
+                       # answers: 10 for the quickest team, 9 for the next, 8, and so on down to nothing.
+                       # speed: faster answers score more
                        # flat: every correct answer scores the same
                        # first: flat, plus `bonus` extra points for the first correct team
+  rankBonus: 10        # rank mode: the bonus for the fastest team (the next gets one less)
   speedFactor: 0.5     # speed mode: a correct answer at the buzzer earns half the points
   bonus: 50            # first mode
   fastBonus: 25        # extra points for the quickest correct teams (0 = off)
@@ -45,7 +48,7 @@ rounds:
     mode: flat         # this round only
 ```
 
-Every question can also set `seconds` (default 20), `points` (default 100), `image`, and `speedBonus`. A correct answer earns its full points if instant, falling to half at the deadline. The speed bonus is off by default for music, because teams can't answer until they recognise the track. Set `scoring.speedFactor: 0` to turn it off everywhere. Ordering gives half the points for items in the right place and half for getting the whole order right.
+Every question can also set `seconds` (default 20), `points` (default 10 in rank scoring, 100 otherwise), `image`, and `speedBonus`. A correct answer earns its full points if instant, falling to half at the deadline. The speed bonus is off by default for music, because teams can't answer until they recognise the track. Set `scoring.speedFactor: 0` to turn it off everywhere. Ordering gives half the points for items in the right place and half for getting the whole order right.
 
 If the file has a mistake, the program says where, e.g. `Round 1, question 3, answer: must be the position of one of the options, counting from 0`.
 

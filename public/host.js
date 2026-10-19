@@ -6,6 +6,14 @@ const app = document.getElementById('app');
 const statusBanner = document.getElementById('status');
 /** The TV screen: the same page without any controls, and without answers before the reveal. */
 const TV = document.body.classList.contains('tv');
+/** On a phone the host screen becomes a remote: a slim header and the buttons in a bar at the bottom, in thumb reach. */
+const phoneQuery = window.matchMedia('(max-width: 700px)');
+const isPhone = () => !TV && phoneQuery.matches;
+phoneQuery.addEventListener?.('change', () => {
+  document.body.classList.toggle('phone', isPhone());
+  render();
+});
+document.body.classList.toggle('phone', isPhone());
 // A TV is read from across a room: scale everything with the screen, so a 1080p TV gets type about 1.4 times the laptop size.
 if (TV) document.documentElement.style.fontSize = 'clamp(13px, min(1.12vw, 1.9vh), 36px)';
 const KEY_STORAGE = 'pubquiz.host-key';
@@ -141,14 +149,19 @@ function forgetKey() {
 async function start() {
   await loadBranding();
   if (key) return connect();
+  let open = false;
+  try {
+    const login = await (await fetch('/login')).json();
+    open = login.open === true;
+    needPin = login.pin === true;
+  } catch {
+    needPin = false;
+  }
+  // Testing mode: the server hands out the key to anyone, so no link or PIN is needed.
+  if (open) return submitPin('');
   if (TV) {
     fatal = 'Open the TV link from the host screen.';
     return render();
-  }
-  try {
-    needPin = (await (await fetch('/login')).json()).pin === true;
-  } catch {
-    needPin = false;
   }
   if (!needPin) fatal = 'This page needs the host link printed in the terminal when the quiz started.';
   render();
@@ -157,12 +170,12 @@ async function start() {
 async function submitPin(pin) {
   pinError = '';
   try {
-    const res = await fetch('/login', { method: 'POST', body: JSON.stringify({ pin }), headers: { 'content-type': 'application/json' } });
+    const res = await fetch('/login', { method: 'POST', body: JSON.stringify({ pin, screen: TV }), headers: { 'content-type': 'application/json' } });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error ?? 'Could not sign in.');
     key = data.key;
     needPin = false;
-    rememberKey();
+    if (!TV) rememberKey();
     connect();
   } catch (error) {
     pinError = error.message;
@@ -282,18 +295,21 @@ function render() {
     return;
   }
   if (state.phase === 'idle') {
-    keepFocus(() => draw(libraryView(state), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : null));
+    keepFocus(() => draw(openHostWarning(state), libraryView(state), hostQrOverlay(state), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : null));
     return;
   }
   keepFocus(() => draw(
+    openHostWarning(state),
     h(
       'div',
       { class: `host-layout${TV ? ' no-side' : ''}` },
       topBar(state),
-      h('section', { class: 'stage' }, TV ? null : networkBanner(state), stage(state)),
+      h('section', { class: 'stage' }, TV ? null : networkBanner(state), TV ? null : shortLinksNote(state), stage(state)),
       TV ? null : teamsPanel(state),
     ),
     codesOverlay(state),
+    joinOverlay(state),
+    hostQrOverlay(state),
     clipsOverlay(),
     settingsOverlay(),
     notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '',
@@ -312,6 +328,24 @@ const NETWORK_LABELS = {
 function networkPill(network) {
   const key = network.mode === 'lan' ? 'lan' : network.state;
   return h('span', { class: `network-pill ${key}`, title: network.message ?? '' }, NETWORK_LABELS[key]);
+}
+
+/** The address to show people: the short link if there is one, else the full one, without the https://. */
+function joinText(s) {
+  return (s.shortLinks?.join ?? s.joinUrl).replace(/^https?:\/\//, '');
+}
+
+/** The short links on the host screen, for reading out or typing into the TV. */
+function shortLinksNote(s) {
+  if (TV || !s.shortLinks) return null;
+  const { join, tv } = s.shortLinks;
+  return h('p', { class: 'short-links muted' }, '🔗 Short links: ', join ? ['teams ', h('strong', {}, join.replace(/^https?:\/\//, ''))] : null, join && tv ? ' · ' : null, tv ? ['TV page ', h('strong', {}, tv.replace(/^https?:\/\//, ''))] : null);
+}
+
+/** Shown across the top while the testing switch is on: nobody needs the key to run this quiz. */
+function openHostWarning(s) {
+  if (TV || !s.openHost) return null;
+  return h('div', { class: 'open-host-warning', role: 'alert' }, h('strong', {}, '⚠ Testing mode: the host key is switched off.'), ' Anyone who opens this web address can control the quiz. Restart the app normally before a real quiz.');
 }
 
 /** Warning with a way out when the internet link is down, or a way back when the host chose local Wi-Fi. */
@@ -467,6 +501,7 @@ function libraryView(s) {
       h('button', { type: 'button', onclick: openClips, title: 'Play sound clips whenever you like' }, '🎵 Clips'),
       h('a', { class: 'button', href: '#branding' }, 'Branding'),
       h('button', { type: 'button', onclick: openSettings, title: 'Where your quizzes are kept' }, '⚙ Settings'),
+      isPhone() ? null : h('button', { type: 'button', onclick: () => { hostQrOpen = true; render(); }, title: 'A QR code to open this host page on your phone' }, '📲 Host on my phone'),
       h(
         'label',
         { class: 'button' },
@@ -735,8 +770,30 @@ function topBar(s) {
       { class: 'host-bar' },
       brandLogo('brand-logo small'),
       h('span', { class: 'quiz-title' }, s.quizTitle),
-      h('span', { class: 'join-hint' }, 'Join: ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)),
+      h('span', { class: 'join-hint' }, 'Join: ', h('strong', {}, joinText(s)), ' · Room ', h('strong', {}, s.roomCode)),
       soundButton(),
+    );
+  }
+  if (isPhone()) {
+    return h(
+      'div',
+      { class: 'phone-top' },
+      h(
+        'header',
+        { class: 'host-bar' },
+        h('div', { class: 'bar-id' }, h('span', { class: 'quiz-title', title: s.quizTitle }, s.quizTitle), h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Room ', h('strong', {}, s.roomCode)])),
+        networkPill(s.network),
+        soundButton(),
+      ),
+      h(
+        'div',
+        { class: 'phone-actions' },
+        s.pendingTeams?.length ? h('button', { type: 'button', class: 'pending-pill', onclick: () => socket.send({ t: 'admit-all' }) }, `⏳ ${s.pendingTeams.length} · Admit`) : null,
+        !TV && s.phase === 'reveal' && s.skipsLeaderboardNext ? h('button', { onclick: () => socket.send({ t: 'leaderboard' }) }, 'Board') : null,
+        breakControl(s),
+        moreControl(s),
+        h('button', { class: 'primary next', onclick: advance, disabled: s.phase === 'finished' || (s.phase === 'lobby' && !s.canStart) }, nextLabel(s)),
+      ),
     );
   }
   return h(
@@ -749,7 +806,7 @@ function topBar(s) {
       'div',
       { class: 'bar-id' },
       h('span', { class: 'quiz-title', title: s.quizTitle }, s.quizTitle),
-      h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Join ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)]),
+      h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Join ', h('strong', {}, joinText(s)), ' · Room ', h('strong', {}, s.roomCode)]),
     ),
     networkPill(s.network),
     soundButton(),
@@ -790,7 +847,7 @@ function stage(s) {
           {},
           TV ? brandBlock() : null,
           h('h1', {}, 'Scan to join'),
-          h('p', { class: 'big' }, s.joinUrl.replace(/^https?:\/\//, '')),
+          h('p', { class: 'big' }, joinText(s)),
           h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
           h('p', { class: 'muted' }, 'One phone per team.'),
           TV ? [entryFeeBanner(s), prizeList(s.prizes, true)] : h('div', { class: 'lobby-extras' }, entryFeeEditor(s), prizesEditor(s)),
@@ -968,6 +1025,9 @@ let moreOpen = false;
 /** Rarely used actions, tucked into a menu so the top bar stays on one line. */
 function moreControl(s) {
   const items = [
+    ...(isPhone() ? [['🎵 Clips', openClips]] : [['📲 Host on my phone', () => { hostQrOpen = true; }]]),
+    ['📱 Show join QR code', () => socket.send({ t: 'show-join', shown: true })],
+    ...(s.canEndRound ? [['⏭ End round', () => endRound(s)]] : []),
     ...(s.canEnd ? [[s.phase === 'finished' ? '⏎ Back to quizzes' : '⏹ End quiz', () => endQuiz(s)]] : []),
     ['🔑 New host key', () => {
       if (confirm('Make a new host key? The old host link and the TV screen stop working until you open the new TV link.')) socket.send({ t: 'rotate-key' });
@@ -1096,8 +1156,22 @@ function podium(standings) {
 }
 
 /** Pause, add time and skip, for the question in progress. */
+/** Ends the round early, after checking: whatever is on screen unrevealed and the rest of the round are skipped. */
+function endRound(s) {
+  const revealed = s.phase === 'reveal';
+  const ok = confirm(
+    revealed
+      ? 'End this round now? The rest of its questions are skipped and the round leaderboard shows.'
+      : 'End this round now? The question on screen and the rest of the round are skipped (nobody scores on them) and the round leaderboard shows.',
+  );
+  if (ok) socket.send({ t: 'end-round' });
+}
+
 function questionControls(s) {
   const q = s.question;
+  if (s.phase === 'reveal' && s.canEndRound) {
+    return h('div', { class: 'question-controls' }, h('button', { class: 'danger', onclick: () => endRound(s), title: 'Skip the rest of this round and show its leaderboard' }, '⏭ End round'));
+  }
   if (s.phase !== 'open' && s.phase !== 'closed') return null;
   return h(
     'div',
@@ -1120,6 +1194,7 @@ function questionControls(s) {
       },
       'Skip question',
     ),
+    s.canEndRound ? h('button', { class: 'danger', onclick: () => endRound(s), title: 'Skip the rest of this round and show its leaderboard' }, '⏭ End round') : null,
   );
 }
 
@@ -1608,11 +1683,32 @@ async function uploadClips(files) {
   await loadClips();
 }
 
+const CLIPS_HERE_STORAGE = 'pubquiz.clips-play-here';
+/** Whether the clips list offers "play on this device". Saved per device; a phone remote has it off until asked, since the sound should come from the TV. */
+function clipsPlayHere() {
+  try {
+    const saved = localStorage.getItem(CLIPS_HERE_STORAGE);
+    if (saved !== null) return saved === '1';
+  } catch {
+    // Fall through to the default.
+  }
+  return !isPhone();
+}
+function setClipsPlayHere(on) {
+  try {
+    localStorage.setItem(CLIPS_HERE_STORAGE, on ? '1' : '0');
+  } catch {
+    // The choice just lasts until the page is reloaded.
+  }
+  if (!on) soundboard.pause();
+}
+
 /** The soundboard panel: search, play here or on the TV, add and delete clips. */
 function clipsOverlay() {
   if (TV || !clipsOpen) return null;
   const needle = clipFilter.trim().toLowerCase();
   const shown = (clipList ?? []).filter((c) => !needle || c.title.toLowerCase().includes(needle));
+  const playHereOn = clipsPlayHere();
   return h(
     'div',
     { class: 'codes-overlay clips-overlay', role: 'dialog', 'aria-label': 'Clips', onclick: (e) => e.target === e.currentTarget && closeClips() },
@@ -1633,6 +1729,12 @@ function clipsOverlay() {
         h('input', { type: 'search', class: 'library-search', 'data-keep': 'clip-search', placeholder: `Search ${(clipList ?? []).length} clips`, 'aria-label': 'Search clips', value: clipFilter, oninput: (e) => { clipFilter = e.target.value; render(); } }),
         h('label', { class: 'button' }, '+ Add clips', h('input', { type: 'file', accept: 'audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/wav,.mp3,.m4a,.aac,.ogg,.opus,.wav', multiple: true, hidden: true, onchange: (e) => e.target.files.length && uploadClips([...e.target.files]) })),
       ),
+      h(
+        'label',
+        { class: 'check', title: 'Off: clips only play on the TV screen. On: each clip also has a button that plays it on this device.' },
+        h('input', { type: 'checkbox', checked: playHereOn, onchange: (e) => { setClipsPlayHere(e.target.checked); render(); } }),
+        ' Show “play on this device”',
+      ),
       clipBusy ? h('p', { class: 'muted' }, clipBusy) : null,
       clipList === null ? h('p', { class: 'muted' }, 'Loading…') : null,
       clipList && clipList.length === 0 ? h('p', { class: 'muted' }, 'No clips yet. Add mp3, m4a, ogg or wav files (up to 20 MB each) and play them whenever you like.') : null,
@@ -1645,8 +1747,8 @@ function clipsOverlay() {
             'li',
             { class: playingClip === clip.name ? 'playing' : '' },
             h('span', { class: 'clip-name' }, clip.title),
-            h('button', { type: 'button', class: 'primary', onclick: () => playHere(clip), title: 'Play on this device' }, playingClip === clip.name ? '⏸ Stop' : '▶ Play'),
-            h('button', { type: 'button', onclick: () => socket.send({ t: 'play-clip', name: clip.name }), title: 'Play on the TV screen (its 🔊 sound must be on)' }, '📺 TV'),
+            playHereOn ? h('button', { type: 'button', class: 'primary', onclick: () => playHere(clip), title: 'Play on this device' }, playingClip === clip.name ? '⏸ Stop' : '▶ Play') : null,
+            h('button', { type: 'button', class: playHereOn ? '' : 'primary', onclick: () => socket.send({ t: 'play-clip', name: clip.name }), title: 'Play on the TV screen (its 🔊 sound must be on)' }, playHereOn ? '📺 TV' : '📺 Play'),
             h('button', { type: 'button', class: 'kick', 'aria-label': `Delete ${clip.title}`, title: 'Delete this clip', onclick: async () => {
               if (!confirm(`Delete the clip “${clip.title}”?`)) return;
               try {
@@ -1666,6 +1768,49 @@ function clipsOverlay() {
 let codesOpen = false;
 
 /** A big, easy-to-read list of every team and its rejoin code, for when a phone dies or someone changes device. */
+let hostQrOpen = false;
+
+/** A QR code of this host page's own address, to scan with the host's phone. Shows on the laptop only. */
+function hostQrOverlay(s) {
+  if (TV || !hostQrOpen) return null;
+  const close = () => {
+    hostQrOpen = false;
+    render();
+  };
+  return h(
+    'div',
+    { class: 'codes-overlay', role: 'dialog', 'aria-label': 'Host on your phone', onclick: (e) => e.target === e.currentTarget && close() },
+    h(
+      'div',
+      { class: 'codes-card join-card' },
+      h('h2', {}, 'Host from your phone'),
+      h('img', { class: 'qr', src: `/host-qr.svg?key=${encodeURIComponent(key)}&v=${s.qrVersion ?? 0}`, alt: 'QR code for the host page' }),
+      h('p', { class: 'muted' }, 'Scan this with your phone camera. ', s.openHost ? '' : 'The code contains the host key, so keep it to yourself. '),
+      h('p', { class: 'muted' }, s.network?.mode === 'tunnel' && s.network.state === 'up' ? 'It uses the internet link, so it works on any network.' : 'It uses this laptop’s Wi-Fi address, so the phone must be on the same Wi-Fi.'),
+      h('button', { type: 'button', onclick: close }, 'Close'),
+    ),
+  );
+}
+
+/** The join QR code, put up over the host and TV screens on request (for latecomers) and taken down again. */
+function joinOverlay(s) {
+  if (!s.showJoin || s.phase === 'lobby' || s.phase === 'idle') return null;
+  const close = () => socket.send({ t: 'show-join', shown: false });
+  return h(
+    'div',
+    { class: 'codes-overlay join-overlay', role: 'dialog', 'aria-label': 'Join the quiz', onclick: (e) => !TV && e.target === e.currentTarget && close() },
+    h(
+      'div',
+      { class: 'codes-card join-card' },
+      h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }),
+      h('h1', {}, 'Scan to join'),
+      h('p', { class: 'big' }, joinText(s)),
+      h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
+      TV ? null : h('button', { type: 'button', onclick: close }, 'Hide QR code'),
+    ),
+  );
+}
+
 function codesOverlay(s) {
   if (TV || !codesOpen) return null;
   const close = () => {

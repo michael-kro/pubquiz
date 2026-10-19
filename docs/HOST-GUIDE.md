@@ -33,9 +33,11 @@ A question also closes on its own when time runs out or every connected team has
 
 **TV screen:** the host screen has a **TV screen ↗** button. Open that link on the TV or projector and run the quiz from your phone or laptop. The TV shows the question, countdown, answer count, leaderboard (with points gained and places moved), a round break after each round, and a podium at the end. It never shows an answer before the reveal, and has no controls. The 🔇 button turns on sound effects.
 
+**Ending a round early:** press **⏭ End round** (next to Skip question, in the **⋯ More** menu, and after a reveal) to skip what is left of the current round and show its leaderboard. The question on screen, if it hasn't been revealed, and the rest of the round score nothing for anyone; questions already revealed keep their points. Ending the last round finishes the quiz. It asks first.
+
 **Running the night:** during a question the host can **Pause** (the clock stops for every team, and resuming gives back exactly the time left; **P** also works), add **+10 s**, or **Skip question** (nobody scores on it). Teams with equal scores are separated by their quicker total answer time.
 
-**From a phone:** start with `--host-pin <pin>` (6 or more characters), open `/host` on the host's phone and type the PIN. The phone remembers it. Wrong guesses are limited, but if the quiz is on the internet link, choose a long PIN.
+**From a phone:** start with `--host-pin <pin>` (6 or more characters), open `/host` on the host's phone and type the PIN. The phone remembers it. Wrong guesses are limited, but if the quiz is on the internet link, choose a long PIN. The host screen reshapes itself on a phone: a slim header, the question and answers, and a bar of big buttons along the bottom (Next, Break, More). The QR code, Clips and End round are under More.
 
 **Branding:** press **Branding** on the quizzes screen to set your venue's name, tagline, accent and background colours, and logo. They show on the team phones (join, lobby and final screens), the host screen and the TV. Text colours are worked out for you so everything stays readable, and the panel warns if the accent is hard to see. Use a logo with a transparent background. To brand a single quiz file, point `--branding <folder>` at a folder holding `branding.json` and `logo.png` (see `venues/my-venue/branding` for a real one).
 

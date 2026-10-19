@@ -21,7 +21,7 @@ Targets: `macos-arm64`, `macos-x64`, `linux-x64`, `linux-arm64`, `windows-x64`. 
 **Docker:**
 
 ```sh
-docker compose up -d
+docker compose up -d               # uses ~/PubQuiz (PUBQUIZ_LIBRARY=/other/folder to change it)
 docker compose logs pubquiz        # prints the host link
 ```
 

@@ -8,7 +8,7 @@ Pick one:
 
 - **A downloaded file** (no other software needed): `pubquiz-macos-arm64` (Apple silicon Mac), `pubquiz-macos-x64` (Intel Mac), `pubquiz-windows-x64.exe`, `pubquiz-linux-x64` or `pubquiz-linux-arm64`. Build them with `npm run build:binaries` (see the README).
 - **From the source folder**, if you have Node.js 22.18 or newer: `npm install`, then `npm start`.
-- **Docker**: `docker compose up -d`, then `docker compose logs pubquiz` for the host link.
+- **Docker**: `docker compose up -d`, then `docker compose logs pubquiz` for the host link. It uses your `~/PubQuiz` folder, the same one the downloaded program uses. (Or the ready-made image: see the README.)
 
 These files are not signed (Apple charges $99 a year for a developer account and Windows certificates cost money too, so this free project hasn't paid for them), so your computer may warn about them the first time. Nothing is wrong with the files: it just can't vouch for who made them. Docker and running from the source folder need no warning.
 

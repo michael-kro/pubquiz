@@ -1,24 +1,51 @@
 # docker compose up -d     then     docker compose logs pubquiz     for the host link.
+# With HTTPS on port 443 (a certificate for your own name, see docs/HTTPS.md):  docker compose --profile https up -d
 services:
   pubquiz:
     # Build from this folder, or use the published image instead: image: ghcr.io/michael-kro/pubquiz:latest
     build: .
+    # On Linux, set PUBQUIZ_UID and PUBQUIZ_GID to your own ids (id -u, id -g) in a .env file so files in ~/PubQuiz stay yours.
+    user: "${PUBQUIZ_UID:-1000}:${PUBQUIZ_GID:-1000}"
     ports:
-      - "3000:3000"
+      - "${PUBQUIZ_PORT:-3000}:3000"
     volumes:
-      # Quizzes, saved games and results. A named volume (not a folder) so the container can always write to it.
-      # Get files out with: docker compose cp pubquiz:/data/quizzes ./quizzes-backup
+      # Your quizzes, clips, branding and saved games are the SAME folder the downloaded program uses (~/PubQuiz),
+      # so the quiz you built in either one is there in the other. Run only one of them at a time.
+      # Make it first if it does not exist (mkdir -p ~/PubQuiz). Another folder: PUBQUIZ_LIBRARY=/path docker compose up -d
+      - ${PUBQUIZ_LIBRARY:-${HOME}/PubQuiz}:/data/quizzes
+      # The app's own settings and the downloaded internet-link helper. A named volume so the container can always write to it.
       - pubquiz-data:/data
     environment:
       # Sign in to /host with a PIN, e.g. from a phone (6 or more characters). Leave empty to use the host link.
       PUBQUIZ_HOST_PIN: ""
+      # Testing only, leave at 0: 1 lets anyone who can reach the address open /host and /screen without the key.
+      # 1: ask is.gd for a short address for the internet link (sends that address to is.gd). The host link is never sent.
+      PUBQUIZ_SHORT_LINKS: "${PUBQUIZ_SHORT_LINKS:-0}"
+      PUBQUIZ_OPEN_HOST: "${PUBQUIZ_OPEN_HOST:-0}"
       # No internet at the venue? Set PUBQUIZ_LAN to 1 and PUBQUIZ_PUBLIC_HOST to this computer's
       # address on the venue Wi-Fi (e.g. 192.168.1.20), so the QR code points at the right place.
       PUBQUIZ_LAN: "0"
       PUBQUIZ_PUBLIC_HOST: ""
-      # Already have a public address for this (a VPS, Tailscale Funnel)? Put it here instead.
+      # Already have a public address for this (your own name over HTTPS, a VPS, Tailscale Funnel)? Put it here instead.
       PUBQUIZ_PUBLIC_URL: ""
+    restart: unless-stopped
+
+  # Optional: HTTPS on port 443 in front of the quiz. Start it with:  docker compose --profile https up -d
+  caddy:
+    profiles: ["https"]
+    image: caddy:2
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    environment:
+      QUIZ_DOMAIN: ${QUIZ_DOMAIN:-quiz.internal}
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      - pubquiz
     restart: unless-stopped
 
 volumes:
   pubquiz-data:
+  caddy-data:

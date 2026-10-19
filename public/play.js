@@ -659,6 +659,73 @@ function myAnswerLabel(s) {
   return s.myChoice != null ? `${LETTERS[s.myChoice]}: ${s.myAnswerText}` : s.myAnswerText;
 }
 
+// Ordering questions: moving an item slides the others into place instead of jumping.
+function rowRects() {
+  const rects = new Map();
+  for (const li of document.querySelectorAll('.reorder-item')) rects.set(li.dataset.item, li.getBoundingClientRect().top);
+  return rects;
+}
+
+function glide(before) {
+  for (const li of document.querySelectorAll('.reorder-item')) {
+    const was = before.get(li.dataset.item);
+    if (was === undefined) continue;
+    const delta = was - li.getBoundingClientRect().top;
+    if (!delta) continue;
+    li.style.transition = 'none';
+    li.style.transform = `translateY(${delta}px)`;
+    requestAnimationFrame(() => {
+      li.style.transition = 'transform 0.18s ease-out';
+      li.style.transform = '';
+    });
+  }
+}
+
+function moveItem(from, to) {
+  if (to < 0 || to >= draftOrder.length || from === to) return;
+  const before = rowRects();
+  const next = [...draftOrder];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  draftOrder = next;
+  render();
+  glide(before);
+  // Keep the pressed arrow under the finger so repeated taps keep moving the same item.
+  const moved = document.querySelector(`.reorder-item[data-item="${item}"]`);
+  moved?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+/** Dragging by the handle: the row follows the finger, and drops into the slot it is over. */
+function startDrag(event, position) {
+  event.preventDefault();
+  const handle = event.currentTarget;
+  const row = handle.closest('.reorder-item');
+  const rows = [...document.querySelectorAll('.reorder-item')];
+  const startY = event.clientY;
+  const heights = rows.map((r) => r.getBoundingClientRect());
+  let target = position;
+  handle.setPointerCapture?.(event.pointerId);
+  row.classList.add('dragging');
+  const onMove = (e) => {
+    const dy = e.clientY - startY;
+    row.style.transform = `translateY(${dy}px)`;
+    const centre = heights[position].top + heights[position].height / 2 + dy;
+    target = heights.findIndex((r) => centre < r.top + r.height);
+    if (target < 0) target = rows.length - 1;
+  };
+  const onUp = () => {
+    handle.removeEventListener('pointermove', onMove);
+    handle.removeEventListener('pointerup', onUp);
+    handle.removeEventListener('pointercancel', onUp);
+    row.classList.remove('dragging');
+    row.style.transform = '';
+    moveItem(position, target);
+  };
+  handle.addEventListener('pointermove', onMove);
+  handle.addEventListener('pointerup', onUp);
+  handle.addEventListener('pointercancel', onUp);
+}
+
 function answerInput(s, q, locked) {
   switch (q.type) {
     case 'multiple-choice': {
@@ -766,63 +833,33 @@ function answerInput(s, q, locked) {
     }
 
     case 'ordering': {
-      if (locked) return null;
-      const remaining = q.items.map((_, i) => i).filter((i) => !draftOrder.includes(i));
+      // Every item is already on the list. The team moves them into the right order (first at the top) and locks it in.
+      if (draftOrder.length !== q.items.length) draftOrder = q.items.map((_, i) => i);
+      const last = q.items.length - 1;
       return h(
         'div',
-        { class: 'ordering' },
-        h('p', { class: 'muted small' }, 'Tap the items in order, first to last. Tap a placed item to take it back.'),
+        { class: `ordering reorder${locked ? ' locked' : ''}` },
+        locked ? null : h('p', { class: 'muted small center' }, 'Put the items in order, first at the top. Use the arrows, or drag the handle.'),
         h(
           'ol',
-          { class: 'placed' },
-          q.items.map((_, slot) => {
-            const item = draftOrder[slot];
-            return item == null
-              ? h('li', { class: 'slot empty' }, h('span', { class: 'slot-number' }, slot + 1))
-              : h(
-                  'li',
-                  { class: 'slot' },
-                  h(
-                    'button',
-                    {
-                      class: 'placed-item',
-                      'aria-label': `Position ${slot + 1}: ${q.items[item]}. Tap to remove.`,
-                      onclick: () => {
-                        draftOrder = draftOrder.filter((i) => i !== item);
-                        render();
-                      },
-                    },
-                    h('span', { class: 'slot-number' }, slot + 1),
-                    h('span', {}, q.items[item]),
-                    h('span', { class: 'remove', 'aria-hidden': 'true' }, '×'),
-                  ),
-                );
-          }),
+          { class: 'reorder-list' },
+          draftOrder.map((item, position) =>
+            h(
+              'li',
+              { class: 'reorder-item', 'data-item': String(item) },
+              h('span', { class: 'slot-number' }, position + 1),
+              h('span', { class: 'reorder-text' }, q.items[item]),
+              locked
+                ? null
+                : [
+                    h('button', { type: 'button', class: 'move', 'aria-label': `Move ${q.items[item]} up`, disabled: position === 0, onclick: () => moveItem(position, position - 1) }, '▲'),
+                    h('button', { type: 'button', class: 'move', 'aria-label': `Move ${q.items[item]} down`, disabled: position === last, onclick: () => moveItem(position, position + 1) }, '▼'),
+                    h('span', { class: 'drag-handle', role: 'presentation', title: 'Drag to move', onpointerdown: (e) => startDrag(e, position) }, '⠿'),
+                  ],
+            ),
+          ),
         ),
-        remaining.length
-          ? h(
-              'div',
-              { class: 'pool' },
-              remaining.map((i) =>
-                h(
-                  'button',
-                  {
-                    class: 'pool-item',
-                    onclick: () => {
-                      draftOrder = [...draftOrder, i];
-                      render();
-                    },
-                  },
-                  q.items[i],
-                ),
-              ),
-            )
-          : null,
-        h(
-          'button',
-          { class: 'primary', disabled: draftOrder.length !== q.items.length, onclick: () => sendAnswer(draftOrder) },
-          draftOrder.length === q.items.length ? 'Submit order' : `Place ${q.items.length - draftOrder.length} more`,
-        ),
+        locked ? null : h('button', { class: 'primary', onclick: () => sendAnswer(draftOrder) }, 'Lock in this order'),
       );
     }
   }

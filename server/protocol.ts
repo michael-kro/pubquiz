@@ -26,11 +26,13 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('resume') }),
   z.object({ t: z.literal('extend'), seconds: z.number().min(1).max(120).optional() }),
   z.object({ t: z.literal('skip') }),
+  z.object({ t: z.literal('end-round') }),
   z.object({ t: z.literal('leaderboard') }),
   z.object({ t: z.literal('break'), minutes: z.number().min(1).max(60).optional() }),
   z.object({ t: z.literal('end-break') }),
   z.object({ t: z.literal('set-answer'), value: z.union([z.number(), z.string().max(4)]) }),
   z.object({ t: z.literal('tv-teams'), visible: z.boolean() }),
+  z.object({ t: z.literal('show-join'), shown: z.boolean() }),
   z.object({ t: z.literal('read-out'), on: z.boolean() }),
   z.object({ t: z.literal('rotate-key') }),
   z.object({ t: z.literal('lock-joining'), locked: z.boolean() }),
@@ -202,6 +204,10 @@ export interface HostView {
   lanJoinUrl: string;
   /** Changes whenever the QR code does, so the page reloads the image. */
   qrVersion: number;
+  /** Short is.gd addresses for the internet link, when the host switched that on. */
+  shortLinks?: { join?: string; tv?: string };
+  /** The testing switch is on: the host and TV pages open without the key. */
+  openHost?: boolean;
   network: NetworkStatus;
   /** `code` is blank on the TV screen: anyone with a team's code can take over its phone. */
   teams: { id: string; name: string; code: string; photo?: string; score: number; connected: boolean; answered: boolean }[];
@@ -213,6 +219,8 @@ export interface HostView {
   question?: QuestionView & { answerText: string; answer?: number; info?: string; answerEdited?: boolean; editable?: boolean; editValue?: number | string; hostText?: string };
   /** Show the team list on the TV. The host can hide it. */
   tvShowTeams: boolean;
+  /** The host has put the join QR code up on the host and TV screens. */
+  showJoin: boolean;
   /** What it costs to play ('' if nothing). */
   entryFee: string;
   /** New teams wait for the host to admit them. */
@@ -229,6 +237,8 @@ export interface HostView {
   allowEmptyStart: boolean;
   /** The Start button works: a team has joined, or an empty start is allowed. */
   canStart: boolean;
+  /** The host can end the current round early. */
+  canEndRound: boolean;
   /** Read-out mode: the timer starts as soon as the last multiple-choice answer is shown. */
   startOnLastAnswer: boolean;
   /** Questions end as soon as every team has answered (otherwise the clock always runs down). */
@@ -269,6 +279,8 @@ export interface HostIdleView {
   /** The quiz library and editor are available. */
   library: boolean;
   network: NetworkStatus;
+  /** The testing switch is on: the host and TV pages open without the key. */
+  openHost?: boolean;
 }
 
 export type ServerMessage =

@@ -184,6 +184,8 @@ export class Game {
   private readonly answerEdits = new Map<number, number | string>();
   /** Show the team list on the TV screen. The host can hide it. */
   tvShowTeams = true;
+  /** The host has put the join QR code up on the screens (not saved: it is a moment-to-moment thing). */
+  showJoin = false;
   /** Multiple choice: announce the answers one by one before the timer starts. */
   readOut = false;
   /** Close a question once every team has answered, rather than always counting down. */
@@ -477,6 +479,11 @@ export class Game {
     if (this.phase !== 'reading') return fail('The timer is not waiting to start.');
     this.beginPlay();
     return { ok: true, value: null };
+  }
+
+  setShowJoin(shown: boolean): void {
+    this.showJoin = shown;
+    this.changed();
   }
 
   setTvShowTeams(visible: boolean): void {
@@ -899,6 +906,35 @@ export class Game {
     return { ok: true, value: null };
   }
 
+  /** A round can be ended while one of its questions is on screen, unless it is the last one and already revealed. */
+  canEndRound(): boolean {
+    if (this.breakState || this.questionIndex < 0) return false;
+    if (!['wagering', 'reading', 'open', 'closed', 'reveal'].includes(this.phase)) return false;
+    return !(this.phase === 'reveal' && this.isLastInRound(this.questionIndex));
+  }
+
+  /**
+   * Ends the current round early: the question on screen (if it has not been revealed) and every question
+   * still to come in the round are skipped, and the round's leaderboard shows.
+   */
+  endRound(): Result<null> {
+    if (!this.canEndRound()) return fail('A round can be ended while one of its questions is on screen.');
+    const current = this.quiz.questions[this.questionIndex]!;
+    let last = this.questionIndex;
+    while (this.quiz.questions[last + 1]?.roundIndex === current.roundIndex) last++;
+    const first = this.phase === 'reveal' ? this.questionIndex + 1 : this.questionIndex;
+    for (let i = first; i <= last; i++) this.skipped.add(i);
+    clearTimeout(this.buzzTimer);
+    this.buzzTimer = undefined;
+    clearTimeout(this.timer);
+    this.timer = undefined;
+    this.pausedAt = undefined;
+    this.questionIndex = last;
+    this.phase = 'leaderboard';
+    this.changed();
+    return { ok: true, value: null };
+  }
+
   /** Throws the current question away (it scores nothing for anyone) and moves straight on. */
   skip(): Result<null> {
     if (this.phase !== 'open' && this.phase !== 'closed' && this.phase !== 'wagering' && this.phase !== 'reading') return fail('Only a question that has not been revealed can be skipped.');
@@ -1107,12 +1143,29 @@ export class Game {
       return { correct: marked.correct, points, detail: bet === 0 ? 'No wager' : `Wagered ${bet}: ${marked.correct ? '+' : '-'}${bet}` };
     }
     if (!marked.correct) return marked;
+    // Rank scoring: a bonus for being among the quickest right answers (10, then 9, 8, … by default).
+    const rank = this.rankBonusFor(questionIndex, team.id);
+    const withRank = rank ? { ...marked, points: marked.points + rank.points, detail: [marked.detail, rank.label].filter(Boolean).join(' · ') } : marked;
     const bonus = this.fastBonusFor(questionIndex, team.id);
-    if (!bonus) return marked;
-    return { ...marked, points: marked.points + bonus.points, detail: [marked.detail, bonus.label].filter(Boolean).join(' · ') };
+    if (!bonus) return withRank;
+    return { ...withRank, points: withRank.points + bonus.points, detail: [withRank.detail, bonus.label].filter(Boolean).join(' · ') };
   }
 
   /** What a team earns for being among the quickest correct answers to a question, if anything. */
+  /** Rank scoring: the bonus a right answer earns for how many teams were quicker. */
+  private rankBonusFor(questionIndex: number, teamId: string): { points: number; label: string } | undefined {
+    const q = this.effectiveQuestion(questionIndex);
+    if (!q || q.mode !== 'rank' || q.wager || q.type === 'nearest' || q.type === 'buzzer') return undefined;
+    const place = this.fastestOrder(questionIndex).indexOf(teamId);
+    if (place < 0) return undefined;
+    const points = (this.quiz.rankBonus ?? 10) - place;
+    if (points <= 0) return undefined;
+    const n = place + 1;
+    const suffix = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[n % 10] ?? 'th';
+    const ordinal = place === 0 ? 'fastest' : `${n}${suffix} fastest`;
+    return { points, label: `${q.points} for the right answer + ${points} for the ${ordinal} answer` };
+  }
+
   private fastBonusFor(questionIndex: number, teamId: string): { points: number; label: string; place: number } | undefined {
     const q = this.quiz.questions[questionIndex]!;
     if (q.type === 'nearest' || q.type === 'buzzer') return undefined; // Closest wins / the host judges: being quick adds nothing.
@@ -1642,6 +1695,7 @@ export class Game {
       maxTeams: this.maxTeams,
       photosEnabled: this.photosEnabled,
       tvShowTeams: this.tvShowTeams,
+      showJoin: this.showJoin,
       entryFee: this.entryFee,
       requireAdmission: this.requireAdmission,
       pendingTeams: [...this.pending.values()].map((t) => ({ id: t.id, name: t.name, code: t.code, connected: t.connected })),
@@ -1651,6 +1705,7 @@ export class Game {
       lockOnStart: this.lockOnStart,
       allowEmptyStart: this.allowEmptyStart,
       canStart: this.canStart(),
+      canEndRound: this.canEndRound(),
       closeEarly: this.closeEarly,
       reading: this.phase === 'reading' && question?.type === 'multiple-choice' ? { shown: this.readShown, total: question.options.length } : undefined,
       skipsLeaderboardNext: this.questionIndex >= 0 && this.skipsLeaderboardNext,

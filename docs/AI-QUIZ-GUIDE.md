@@ -21,7 +21,7 @@ prizes: [A round of drinks, Bar tab, Chocolate]   # optional, up to 3: 1st, 2nd,
 facts:                              # optional: fun facts for the break screen (max 200 characters each)
   - Honey never spoils.
 scoring:                            # optional
-  mode: speed                       # speed (default) | flat | first
+  mode: rank                        # rank (default: 10 for a right answer + 10, 9, 8… for the fastest) | speed | flat | first
   leaderboard: round                # round (default) | question
 rounds:                             # required, at least one
   - name: General knowledge         # required
