@@ -332,7 +332,7 @@ function networkPill(network) {
 /** Shown across the top while the testing switch is on: nobody needs the key to run this quiz. */
 function openHostWarning(s) {
   if (TV || !s.openHost) return null;
-  return h('div', { class: 'open-host-warning', role: 'alert' }, h('strong', {}, '⚠ No host key is needed right now.'), ' Anyone who can reach this address can run the quiz. Testing only: restart without the open-host switch for a real quiz.');
+  return h('div', { class: 'open-host-warning', role: 'alert' }, h('strong', {}, '⚠ Testing mode: the host key is switched off.'), ' Anyone who opens this web address can control the quiz. Restart the app normally before a real quiz.');
 }
 
 /** Warning with a way out when the internet link is down, or a way back when the host chose local Wi-Fi. */
