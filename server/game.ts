@@ -736,7 +736,7 @@ export class Game {
       case 'buzzer':
         return fail('Press the buzzer.');
       case 'ordering': {
-        const display = this.displayOrders.get(this.questionIndex)!;
+        const display = this.displayOrderFor(this.questionIndex, ORDERING_ITEMS);
         const valid =
           Array.isArray(value) &&
           value.length === ORDERING_ITEMS &&
@@ -1071,6 +1071,17 @@ export class Game {
     this.beginPlay();
   }
 
+  /** The shuffled order an ordering question's items are shown in. Made the first time anything needs it (the question can be on screen,
+   *  being read out, before its clock starts) and then kept, so every screen and the answer check agree. */
+  private displayOrderFor(index: number, length: number): number[] {
+    let order = this.displayOrders.get(index);
+    if (!order) {
+      order = shuffledOrder(length);
+      this.displayOrders.set(index, order);
+    }
+    return order;
+  }
+
   /** Starts the clock on the current question. */
   private beginPlay(): void {
     const index = this.questionIndex;
@@ -1078,9 +1089,7 @@ export class Game {
     this.phase = 'open';
     this.openedAt = this.now();
     this.endsAt = this.openedAt + question.seconds * 1000;
-    if (question.type === 'ordering' && !this.displayOrders.has(index)) {
-      this.displayOrders.set(index, shuffledOrder(question.items.length));
-    }
+    if (question.type === 'ordering') this.displayOrderFor(index, question.items.length);
     for (const team of this.teams.values()) this.markSent(team);
     this.startTimer();
     this.changed();
@@ -1482,7 +1491,7 @@ export class Game {
       revealAudio: this.phase === 'reveal' ? q.revealAudioUrl : undefined,
       revealCaption: this.phase === 'reveal' && q.revealAudioUrl ? q.revealCaption : undefined,
       options: q.type === 'multiple-choice' ? (this.phase === 'reading' ? q.options.slice(0, this.readShown) : q.options) : undefined,
-      items: q.type === 'ordering' ? this.displayOrders.get(this.questionIndex)!.map((i) => q.items[i]!) : undefined,
+      items: q.type === 'ordering' ? this.displayOrderFor(this.questionIndex, q.items.length).map((i) => q.items[i]!) : undefined,
       seconds: q.seconds,
       remainingMs: this.phase === 'open' ? Math.max(0, this.endsAt - (this.pausedAt ?? this.now())) : undefined,
       paused: this.phase === 'open' && this.pausedAt !== undefined ? true : undefined,

@@ -337,3 +337,24 @@ rounds:
   plain.dispose();
   assert.throws(() => parseQuiz('title: T\nrounds:\n  - name: R\n    questions:\n      - { type: letter, text: Q, answer: A, uncover: true }\n'), /uncover/);
 });
+
+test('an ordering question can be read out before its timer starts (the shuffled order exists from the start and stays put)', () => {
+  const quiz = parseQuiz(`
+title: Ord
+readOut: true
+rounds:
+  - name: R
+    questions:
+      - { type: ordering, text: Put in order, items: [one, two, three, four, five] }
+`);
+  const game = new Game(quiz);
+  game.join('Ann');
+  game.advance();
+  assert.equal(game.hostView().phase, 'reading');
+  const before = game.hostView().question!.items;
+  assert.equal(before!.length, 5);
+  assert.doesNotThrow(() => game.teamView(game.hostView().teams[0]!.id));
+  game.startTimerNow();
+  assert.deepEqual(game.hostView().question!.items, before, 'the order does not change when the timer starts');
+  game.dispose();
+});
