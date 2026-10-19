@@ -985,3 +985,8 @@ body.phone .phone-actions .break-menu { top: auto; bottom: calc(100% + 8px); }
 .open-host-warning { position: sticky; top: 0; z-index: 40; padding: 8px 16px; text-align: center; font-size: 0.9rem; background: #c0392b; color: #fff; }
 body.phone .open-host-warning { font-size: 0.8rem; padding: 6px 12px; }
 .short-links { margin: 0 0 12px; font-size: 0.9rem; }
+.copy-link { padding: 3px 10px !important; font-size: 0.8rem; font-weight: 600; vertical-align: middle; white-space: nowrap; }
+.clips-list .clip-tap { flex: 1; text-align: left !important; display: block; width: 100%; font-weight: 600; overflow-wrap: anywhere; padding: 12px 14px; min-height: 48px; background: var(--accent) !important; color: var(--accent-text); border-radius: 8px; }
+.host-badge { flex: none; padding: 4px 10px; border-radius: 999px; background: var(--accent); color: var(--accent-text); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; white-space: nowrap; }
+body.host:not(.tv) { border-top: 4px solid var(--accent); }
+body.phone .host-badge { padding: 3px 8px; font-size: 0.7rem; }
