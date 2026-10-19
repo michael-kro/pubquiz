@@ -11,6 +11,7 @@ import { chooseLibraryDir } from './settings.ts';
 import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
 import { createQuizServer, type QuizServer, type SessionOptions } from './server.ts';
 import { hashQuiz, readSession } from './session.ts';
+import { shortLinksFor } from './shortlink.ts';
 import { cloudflaredProvider, ensureCloudflared, ngrokProvider, TunnelManager, type NetworkStatus } from './tunnel.ts';
 
 const DEFAULT_LIBRARY = join(homedir(), 'PubQuiz');
@@ -28,6 +29,7 @@ Options:
   -p, --port <n>         Port to listen on (default 3000)
       --lan              Local Wi-Fi only: no internet link
       --tunnel <name>    Internet link to use: cloudflare (default) or ngrok
+      --short-links      Ask is.gd for a short address for the internet link (it is sent to is.gd; the host link never is)
       --public-url <url> Use your own public address instead (e.g. a VPS or Tailscale Funnel)
       --public-host <h>  Address to put in the local join link (default: this laptop's Wi-Fi address)
       --quizzes <dir>    Where the quiz library lives (default ${DEFAULT_LIBRARY}; or set PUBQUIZ_HOME,
@@ -105,6 +107,7 @@ async function main(): Promise<void> {
       'host-pin': { type: 'string' },
       'host-local-only': { type: 'boolean', default: false },
       'open-host': { type: 'boolean', default: false },
+      'short-links': { type: 'boolean', default: false },
       'new-key': { type: 'boolean', default: false },
       'no-name-filter': { type: 'boolean', default: false },
       'no-photos': { type: 'boolean', default: false },
@@ -224,9 +227,19 @@ Press Ctrl+C to stop.
       },
       onStatus(status: NetworkStatus) {
         quizServer.setNetwork(status);
+        if (status.state !== 'up') quizServer.setShortLinks(undefined);
         if (status.state === lastState && status.state !== 'down') return;
         lastState = status.state;
-        if (status.state === 'up') console.log(`Internet link ready: ${status.publicUrl}`);
+        if (status.state === 'up') {
+          console.log(`Internet link ready: ${status.publicUrl}`);
+          if (values['short-links'] && status.publicUrl) {
+            void shortLinksFor(status.publicUrl, Boolean(values['open-host'])).then((links) => {
+              quizServer.setShortLinks(links);
+              if (links.join) console.log(`Short link for teams: ${links.join}${links.tv ? `   TV: ${links.tv}` : ''}`);
+              else console.log('Could not make a short link (the full address still works).');
+            });
+          }
+        }
         if (status.state === 'down') console.log(`Internet link problem: ${status.message}`);
       },
     });

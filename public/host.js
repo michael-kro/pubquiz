@@ -295,7 +295,7 @@ function render() {
     return;
   }
   if (state.phase === 'idle') {
-    keepFocus(() => draw(openHostWarning(state), libraryView(state), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : null));
+    keepFocus(() => draw(openHostWarning(state), libraryView(state), hostQrOverlay(state), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : null));
     return;
   }
   keepFocus(() => draw(
@@ -304,11 +304,12 @@ function render() {
       'div',
       { class: `host-layout${TV ? ' no-side' : ''}` },
       topBar(state),
-      h('section', { class: 'stage' }, TV ? null : networkBanner(state), stage(state)),
+      h('section', { class: 'stage' }, TV ? null : networkBanner(state), TV ? null : shortLinksNote(state), stage(state)),
       TV ? null : teamsPanel(state),
     ),
     codesOverlay(state),
     joinOverlay(state),
+    hostQrOverlay(state),
     clipsOverlay(),
     settingsOverlay(),
     notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '',
@@ -327,6 +328,18 @@ const NETWORK_LABELS = {
 function networkPill(network) {
   const key = network.mode === 'lan' ? 'lan' : network.state;
   return h('span', { class: `network-pill ${key}`, title: network.message ?? '' }, NETWORK_LABELS[key]);
+}
+
+/** The address to show people: the short link if there is one, else the full one, without the https://. */
+function joinText(s) {
+  return (s.shortLinks?.join ?? s.joinUrl).replace(/^https?:\/\//, '');
+}
+
+/** The short links on the host screen, for reading out or typing into the TV. */
+function shortLinksNote(s) {
+  if (TV || !s.shortLinks) return null;
+  const { join, tv } = s.shortLinks;
+  return h('p', { class: 'short-links muted' }, '🔗 Short links: ', join ? ['teams ', h('strong', {}, join.replace(/^https?:\/\//, ''))] : null, join && tv ? ' · ' : null, tv ? ['TV page ', h('strong', {}, tv.replace(/^https?:\/\//, ''))] : null);
 }
 
 /** Shown across the top while the testing switch is on: nobody needs the key to run this quiz. */
@@ -488,6 +501,7 @@ function libraryView(s) {
       h('button', { type: 'button', onclick: openClips, title: 'Play sound clips whenever you like' }, '🎵 Clips'),
       h('a', { class: 'button', href: '#branding' }, 'Branding'),
       h('button', { type: 'button', onclick: openSettings, title: 'Where your quizzes are kept' }, '⚙ Settings'),
+      isPhone() ? null : h('button', { type: 'button', onclick: () => { hostQrOpen = true; render(); }, title: 'A QR code to open this host page on your phone' }, '📲 Host on my phone'),
       h(
         'label',
         { class: 'button' },
@@ -756,7 +770,7 @@ function topBar(s) {
       { class: 'host-bar' },
       brandLogo('brand-logo small'),
       h('span', { class: 'quiz-title' }, s.quizTitle),
-      h('span', { class: 'join-hint' }, 'Join: ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)),
+      h('span', { class: 'join-hint' }, 'Join: ', h('strong', {}, joinText(s)), ' · Room ', h('strong', {}, s.roomCode)),
       soundButton(),
     );
   }
@@ -792,7 +806,7 @@ function topBar(s) {
       'div',
       { class: 'bar-id' },
       h('span', { class: 'quiz-title', title: s.quizTitle }, s.quizTitle),
-      h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Join ', h('strong', {}, s.joinUrl.replace(/^https?:\/\//, '')), ' · Room ', h('strong', {}, s.roomCode)]),
+      h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Join ', h('strong', {}, joinText(s)), ' · Room ', h('strong', {}, s.roomCode)]),
     ),
     networkPill(s.network),
     soundButton(),
@@ -833,7 +847,7 @@ function stage(s) {
           {},
           TV ? brandBlock() : null,
           h('h1', {}, 'Scan to join'),
-          h('p', { class: 'big' }, s.joinUrl.replace(/^https?:\/\//, '')),
+          h('p', { class: 'big' }, joinText(s)),
           h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
           h('p', { class: 'muted' }, 'One phone per team.'),
           TV ? [entryFeeBanner(s), prizeList(s.prizes, true)] : h('div', { class: 'lobby-extras' }, entryFeeEditor(s), prizesEditor(s)),
@@ -1011,7 +1025,7 @@ let moreOpen = false;
 /** Rarely used actions, tucked into a menu so the top bar stays on one line. */
 function moreControl(s) {
   const items = [
-    ...(isPhone() ? [['🎵 Clips', openClips]] : []),
+    ...(isPhone() ? [['🎵 Clips', openClips]] : [['📲 Host on my phone', () => { hostQrOpen = true; }]]),
     ['📱 Show join QR code', () => socket.send({ t: 'show-join', shown: true })],
     ...(s.canEndRound ? [['⏭ End round', () => endRound(s)]] : []),
     ...(s.canEnd ? [[s.phase === 'finished' ? '⏎ Back to quizzes' : '⏹ End quiz', () => endQuiz(s)]] : []),
@@ -1754,6 +1768,30 @@ function clipsOverlay() {
 let codesOpen = false;
 
 /** A big, easy-to-read list of every team and its rejoin code, for when a phone dies or someone changes device. */
+let hostQrOpen = false;
+
+/** A QR code of this host page's own address, to scan with the host's phone. Shows on the laptop only. */
+function hostQrOverlay(s) {
+  if (TV || !hostQrOpen) return null;
+  const close = () => {
+    hostQrOpen = false;
+    render();
+  };
+  return h(
+    'div',
+    { class: 'codes-overlay', role: 'dialog', 'aria-label': 'Host on your phone', onclick: (e) => e.target === e.currentTarget && close() },
+    h(
+      'div',
+      { class: 'codes-card join-card' },
+      h('h2', {}, 'Host from your phone'),
+      h('img', { class: 'qr', src: `/host-qr.svg?key=${encodeURIComponent(key)}&v=${s.qrVersion ?? 0}`, alt: 'QR code for the host page' }),
+      h('p', { class: 'muted' }, 'Scan this with your phone camera. ', s.openHost ? '' : 'The code contains the host key, so keep it to yourself. '),
+      h('p', { class: 'muted' }, s.network?.mode === 'tunnel' && s.network.state === 'up' ? 'It uses the internet link, so it works on any network.' : 'It uses this laptop’s Wi-Fi address, so the phone must be on the same Wi-Fi.'),
+      h('button', { type: 'button', onclick: close }, 'Close'),
+    ),
+  );
+}
+
 /** The join QR code, put up over the host and TV screens on request (for latecomers) and taken down again. */
 function joinOverlay(s) {
   if (!s.showJoin || s.phase === 'lobby' || s.phase === 'idle') return null;
@@ -1766,7 +1804,7 @@ function joinOverlay(s) {
       { class: 'codes-card join-card' },
       h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }),
       h('h1', {}, 'Scan to join'),
-      h('p', { class: 'big' }, s.joinUrl.replace(/^https?:\/\//, '')),
+      h('p', { class: 'big' }, joinText(s)),
       h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
       TV ? null : h('button', { type: 'button', onclick: close }, 'Hide QR code'),
     ),
