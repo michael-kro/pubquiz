@@ -104,6 +104,7 @@ async function main(): Promise<void> {
       quizzes: { type: 'string' },
       'host-pin': { type: 'string' },
       'host-local-only': { type: 'boolean', default: false },
+      'open-host': { type: 'boolean', default: false },
       'new-key': { type: 'boolean', default: false },
       'no-name-filter': { type: 'boolean', default: false },
       'no-photos': { type: 'boolean', default: false },
@@ -124,6 +125,7 @@ async function main(): Promise<void> {
   const publicUrl = values['public-url']?.replace(/\/+$/, '');
   if (publicUrl && !/^https?:\/\//.test(publicUrl)) fail('--public-url must start with https:// (or http://).');
 
+  if (values['open-host']) console.log('WARNING: --open-host is on. Anyone who can reach this address can run the quiz without a key. Use it for testing only.');
   const hostPin = values['host-pin'];
   if (hostPin !== undefined && hostPin.trim().length < 6) {
     fail('--host-pin needs at least 6 characters. The quiz can be reached from the internet, so a short PIN could be guessed.');
@@ -156,6 +158,7 @@ async function main(): Promise<void> {
       hostKey: library ? await libraryHostKey(library.dir, values['new-key']) : values['new-key'] ? randomBytes(18).toString('base64url') : undefined,
       hostPin: hostPin?.trim(),
       hostLocalOnly: values['host-local-only'],
+      openHost: values['open-host'],
       onHostKeyChange: library ? (key: string) => void writeFile(join(library.dir, '.host-key'), key, { mode: 0o600 }) : undefined,
       branding,
       nameFilter: !values['no-name-filter'],

@@ -18,6 +18,8 @@ services:
     environment:
       # Sign in to /host with a PIN, e.g. from a phone (6 or more characters). Leave empty to use the host link.
       PUBQUIZ_HOST_PIN: ""
+      # Testing only, leave at 0: 1 lets anyone who can reach the address open /host and /screen without the key.
+      PUBQUIZ_OPEN_HOST: "${PUBQUIZ_OPEN_HOST:-0}"
       # No internet at the venue? Set PUBQUIZ_LAN to 1 and PUBQUIZ_PUBLIC_HOST to this computer's
       # address on the venue Wi-Fi (e.g. 192.168.1.20), so the QR code points at the right place.
       PUBQUIZ_LAN: "0"
