@@ -335,11 +335,47 @@ function joinText(s) {
   return (s.shortLinks?.join ?? s.joinUrl).replace(/^https?:\/\//, '');
 }
 
+/** Copies text to the clipboard. Plain http addresses (the laptop's Wi-Fi address) have no clipboard API, so fall back to a hidden text box. */
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const box = h('textarea', { value: text, readonly: true, style: 'position:fixed;left:-9999px;top:0' });
+    document.body.append(box);
+    box.select();
+    let ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch {
+      ok = false;
+    }
+    box.remove();
+    return ok;
+  }
+}
+
+/** A small button that copies `getText()` and says so for a moment. Host screen only. */
+function copyButton(getText, label = 'Copy link') {
+  if (TV) return null;
+  const button = h('button', {
+    type: 'button',
+    class: 'copy-link',
+    title: 'Copy to the clipboard',
+    onclick: async () => {
+      const ok = await copyText(getText());
+      button.textContent = ok ? '✓ Copied' : 'Press Ctrl+C';
+      setTimeout(() => { button.textContent = `📋 ${label}`; }, 1500);
+    },
+  }, `📋 ${label}`);
+  return button;
+}
+
 /** The short links on the host screen, for reading out or typing into the TV. */
 function shortLinksNote(s) {
   if (TV || !s.shortLinks) return null;
   const { join, tv } = s.shortLinks;
-  return h('p', { class: 'short-links muted' }, '🔗 Short links: ', join ? ['teams ', h('strong', {}, join.replace(/^https?:\/\//, ''))] : null, join && tv ? ' · ' : null, tv ? ['TV page ', h('strong', {}, tv.replace(/^https?:\/\//, ''))] : null);
+  return h('p', { class: 'short-links muted' }, '🔗 Short links: ', join ? ['teams ', h('strong', {}, join.replace(/^https?:\/\//, '')), ' ', copyButton(() => join)] : null, join && tv ? ' · ' : null, tv ? ['TV page ', h('strong', {}, tv.replace(/^https?:\/\//, '')), ' ', copyButton(() => tv)] : null);
 }
 
 /** Shown across the top while the testing switch is on: nobody needs the key to run this quiz. */
@@ -806,7 +842,7 @@ function topBar(s) {
       'div',
       { class: 'bar-id' },
       h('span', { class: 'quiz-title', title: s.quizTitle }, s.quizTitle),
-      h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Join ', h('strong', {}, joinText(s)), ' · Room ', h('strong', {}, s.roomCode)]),
+      h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Join ', h('strong', {}, joinText(s)), ' ', copyButton(() => s.shortLinks?.join ?? s.joinUrl, 'Copy'), ' · Room ', h('strong', {}, s.roomCode)]),
     ),
     networkPill(s.network),
     soundButton(),
@@ -847,7 +883,7 @@ function stage(s) {
           {},
           TV ? brandBlock() : null,
           h('h1', {}, 'Scan to join'),
-          h('p', { class: 'big' }, joinText(s)),
+          h('p', { class: 'big' }, joinText(s), TV ? null : [' ', copyButton(() => s.shortLinks?.join ?? s.joinUrl)]),
           h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
           h('p', { class: 'muted' }, 'One phone per team.'),
           TV ? [entryFeeBanner(s), prizeList(s.prizes, true)] : h('div', { class: 'lobby-extras' }, entryFeeEditor(s), prizesEditor(s)),
@@ -1026,6 +1062,7 @@ let moreOpen = false;
 function moreControl(s) {
   const items = [
     ...(isPhone() ? [['🎵 Clips', openClips]] : [['📲 Host on my phone', () => { hostQrOpen = true; }]]),
+    ...(isPhone() ? [['📋 Copy join link', async () => showNotice((await copyText(s.shortLinks?.join ?? s.joinUrl)) ? 'Join link copied.' : 'Could not copy the link.')]] : []),
     ['📱 Show join QR code', () => socket.send({ t: 'show-join', shown: true })],
     ...(s.canEndRound ? [['⏭ End round', () => endRound(s)]] : []),
     ...(s.canEnd ? [[s.phase === 'finished' ? '⏎ Back to quizzes' : '⏹ End quiz', () => endQuiz(s)]] : []),
@@ -1805,6 +1842,7 @@ function joinOverlay(s) {
       h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }),
       h('h1', {}, 'Scan to join'),
       h('p', { class: 'big' }, joinText(s)),
+      copyButton(() => s.shortLinks?.join ?? s.joinUrl),
       h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
       TV ? null : h('button', { type: 'button', onclick: close }, 'Hide QR code'),
     ),
