@@ -7,7 +7,7 @@ Teams don't need HTTPS for the quiz to work. It removes the "Not secure" label a
 ## Try it on your laptop
 
 1. **Pick a name and point it at your laptop.** `quiz.internal` is a good private name (ICANN reserved `.internal` for private use). Add it to your hosts file, using your laptop's address on the Wi-Fi (or `127.0.0.1` to use it on this laptop only):
-   - Mac/Linux: `sudo sh -c 'echo "192.168.0.144 quiz.internal" >> /etc/hosts'`
+   - Mac/Linux: `sudo sh -c 'echo "192.168.1.20 quiz.internal" >> /etc/hosts'`
    - Windows (Notepad as administrator): add the same line to `C:\Windows\System32\drivers\etc\hosts`
 2. **Start the quiz and the proxy:**
    ```sh

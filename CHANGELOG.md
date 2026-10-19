@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.2 — 2026-10-19
+
 - **Host from your phone, by QR:** "📲 Host on my phone" (on the quiz library screen and under More) shows a QR code of the host page. It uses the internet link when there is one, otherwise the laptop's Wi-Fi address.
 - **Short links (optional):** `--short-links` (Docker: `PUBQUIZ_SHORT_LINKS=1`) asks is.gd for a short address for the internet link and shows it on the host screen and the TV lobby. Only keyless addresses are ever sent; the host link never is.
 - **Clips: TV-only on a phone remote.** The clips list on a phone shows just a "📺 Play" button (the sound comes from the TV page). A "Show play on this device" tick brings the other button back; it is remembered per device.
