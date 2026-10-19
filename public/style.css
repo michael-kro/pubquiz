@@ -982,3 +982,5 @@ body.phone .phone-actions { position: fixed; left: 0; right: 0; bottom: 0; z-ind
 body.phone .phone-actions .primary.next { flex: 1; min-height: 52px; font-size: 1.05rem; order: 9; }
 body.phone .phone-actions button { min-height: 52px; white-space: nowrap; }
 body.phone .phone-actions .break-menu { top: auto; bottom: calc(100% + 8px); }
+.open-host-warning { position: sticky; top: 0; z-index: 40; padding: 8px 16px; text-align: center; font-size: 0.9rem; background: #c0392b; color: #fff; }
+body.phone .open-host-warning { font-size: 0.8rem; padding: 6px 12px; }

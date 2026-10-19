@@ -205,7 +205,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   }
 
   function hostView(): HostView | HostIdleView {
-    if (!active) return { phase: 'idle', library: Boolean(options.library), network };
+    if (!active) return { phase: 'idle', library: Boolean(options.library), network, ...(options.openHost ? { openHost: true } : {}) };
     return {
       ...active.game.hostView(),
       roomCode: active.roomCode,
@@ -213,6 +213,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       lanJoinUrl: lanUrl(),
       qrVersion,
       network,
+      ...(options.openHost ? { openHost: true } : {}),
       canEnd: Boolean(options.library),
       screenKey,
       wifi: options.wifi,

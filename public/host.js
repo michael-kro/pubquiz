@@ -295,10 +295,11 @@ function render() {
     return;
   }
   if (state.phase === 'idle') {
-    keepFocus(() => draw(libraryView(state), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : null));
+    keepFocus(() => draw(openHostWarning(state), libraryView(state), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : null));
     return;
   }
   keepFocus(() => draw(
+    openHostWarning(state),
     h(
       'div',
       { class: `host-layout${TV ? ' no-side' : ''}` },
@@ -326,6 +327,12 @@ const NETWORK_LABELS = {
 function networkPill(network) {
   const key = network.mode === 'lan' ? 'lan' : network.state;
   return h('span', { class: `network-pill ${key}`, title: network.message ?? '' }, NETWORK_LABELS[key]);
+}
+
+/** Shown across the top while the testing switch is on: nobody needs the key to run this quiz. */
+function openHostWarning(s) {
+  if (TV || !s.openHost) return null;
+  return h('div', { class: 'open-host-warning', role: 'alert' }, h('strong', {}, '⚠ No host key is needed right now.'), ' Anyone who can reach this address can run the quiz. Testing only: restart without the open-host switch for a real quiz.');
 }
 
 /** Warning with a way out when the internet link is down, or a way back when the host chose local Wi-Fi. */

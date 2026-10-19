@@ -204,6 +204,8 @@ export interface HostView {
   lanJoinUrl: string;
   /** Changes whenever the QR code does, so the page reloads the image. */
   qrVersion: number;
+  /** The testing switch is on: the host and TV pages open without the key. */
+  openHost?: boolean;
   network: NetworkStatus;
   /** `code` is blank on the TV screen: anyone with a team's code can take over its phone. */
   teams: { id: string; name: string; code: string; photo?: string; score: number; connected: boolean; answered: boolean }[];
@@ -275,6 +277,8 @@ export interface HostIdleView {
   /** The quiz library and editor are available. */
   library: boolean;
   network: NetworkStatus;
+  /** The testing switch is on: the host and TV pages open without the key. */
+  openHost?: boolean;
 }
 
 export type ServerMessage =

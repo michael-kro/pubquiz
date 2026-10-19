@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { parseQuiz } from '../server/quiz.ts';
 import { createQuizServer } from '../server/server.ts';
+import { Client } from './client.ts';
 
 const QUIZ = `
 title: Open
@@ -39,4 +40,16 @@ test('openHost still respects --host-local-only', async () => {
   const server = await createQuizServer({ openHost: true, hostLocalOnly: true, quiz: parseQuiz(QUIZ), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
   assert.equal((await login(server.port, { pin: '' })).data.key, server.hostKey, 'the laptop itself is allowed');
   await server.close();
+});
+
+test('the host view says the testing switch is on (so the page can warn), and says nothing otherwise', async () => {
+  for (const openHost of [true, false]) {
+    const server = await createQuizServer({ openHost, quiz: parseQuiz(QUIZ), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
+    const host = await Client.connect(server.port);
+    host.send({ t: 'host', key: server.hostKey });
+    const view = await host.state('lobby');
+    assert.equal(view.openHost, openHost ? true : undefined);
+    await host.close();
+    await server.close();
+  }
 });
