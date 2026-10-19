@@ -1657,11 +1657,32 @@ async function uploadClips(files) {
   await loadClips();
 }
 
+const CLIPS_HERE_STORAGE = 'pubquiz.clips-play-here';
+/** Whether the clips list offers "play on this device". Saved per device; a phone remote has it off until asked, since the sound should come from the TV. */
+function clipsPlayHere() {
+  try {
+    const saved = localStorage.getItem(CLIPS_HERE_STORAGE);
+    if (saved !== null) return saved === '1';
+  } catch {
+    // Fall through to the default.
+  }
+  return !isPhone();
+}
+function setClipsPlayHere(on) {
+  try {
+    localStorage.setItem(CLIPS_HERE_STORAGE, on ? '1' : '0');
+  } catch {
+    // The choice just lasts until the page is reloaded.
+  }
+  if (!on) soundboard.pause();
+}
+
 /** The soundboard panel: search, play here or on the TV, add and delete clips. */
 function clipsOverlay() {
   if (TV || !clipsOpen) return null;
   const needle = clipFilter.trim().toLowerCase();
   const shown = (clipList ?? []).filter((c) => !needle || c.title.toLowerCase().includes(needle));
+  const playHereOn = clipsPlayHere();
   return h(
     'div',
     { class: 'codes-overlay clips-overlay', role: 'dialog', 'aria-label': 'Clips', onclick: (e) => e.target === e.currentTarget && closeClips() },
@@ -1682,6 +1703,12 @@ function clipsOverlay() {
         h('input', { type: 'search', class: 'library-search', 'data-keep': 'clip-search', placeholder: `Search ${(clipList ?? []).length} clips`, 'aria-label': 'Search clips', value: clipFilter, oninput: (e) => { clipFilter = e.target.value; render(); } }),
         h('label', { class: 'button' }, '+ Add clips', h('input', { type: 'file', accept: 'audio/mpeg,audio/mp4,audio/aac,audio/ogg,audio/wav,.mp3,.m4a,.aac,.ogg,.opus,.wav', multiple: true, hidden: true, onchange: (e) => e.target.files.length && uploadClips([...e.target.files]) })),
       ),
+      h(
+        'label',
+        { class: 'check', title: 'Off: clips only play on the TV screen. On: each clip also has a button that plays it on this device.' },
+        h('input', { type: 'checkbox', checked: playHereOn, onchange: (e) => { setClipsPlayHere(e.target.checked); render(); } }),
+        ' Show “play on this device”',
+      ),
       clipBusy ? h('p', { class: 'muted' }, clipBusy) : null,
       clipList === null ? h('p', { class: 'muted' }, 'Loading…') : null,
       clipList && clipList.length === 0 ? h('p', { class: 'muted' }, 'No clips yet. Add mp3, m4a, ogg or wav files (up to 20 MB each) and play them whenever you like.') : null,
@@ -1694,8 +1721,8 @@ function clipsOverlay() {
             'li',
             { class: playingClip === clip.name ? 'playing' : '' },
             h('span', { class: 'clip-name' }, clip.title),
-            h('button', { type: 'button', class: 'primary', onclick: () => playHere(clip), title: 'Play on this device' }, playingClip === clip.name ? '⏸ Stop' : '▶ Play'),
-            h('button', { type: 'button', onclick: () => socket.send({ t: 'play-clip', name: clip.name }), title: 'Play on the TV screen (its 🔊 sound must be on)' }, '📺 TV'),
+            playHereOn ? h('button', { type: 'button', class: 'primary', onclick: () => playHere(clip), title: 'Play on this device' }, playingClip === clip.name ? '⏸ Stop' : '▶ Play') : null,
+            h('button', { type: 'button', class: playHereOn ? '' : 'primary', onclick: () => socket.send({ t: 'play-clip', name: clip.name }), title: 'Play on the TV screen (its 🔊 sound must be on)' }, playHereOn ? '📺 TV' : '📺 Play'),
             h('button', { type: 'button', class: 'kick', 'aria-label': `Delete ${clip.title}`, title: 'Delete this clip', onclick: async () => {
               if (!confirm(`Delete the clip “${clip.title}”?`)) return;
               try {
