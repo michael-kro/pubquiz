@@ -531,6 +531,7 @@ function libraryView(s) {
       'header',
       { class: 'library-bar' },
       brandLogo('brand-logo small'),
+      hostBadge(),
       h('h1', {}, 'Your quizzes'),
       networkPill(s.network),
       h('span', { class: 'spacer' }),
@@ -799,6 +800,11 @@ function soundButton() {
   );
 }
 
+/** A label so the host's controls are never mistaken for the TV screen. */
+function hostBadge() {
+  return h('span', { class: 'host-badge', title: 'This is the host screen: the controls. The TV screen is a separate page.' }, '🎛 HOST');
+}
+
 function topBar(s) {
   if (TV) {
     return h(
@@ -817,6 +823,7 @@ function topBar(s) {
       h(
         'header',
         { class: 'host-bar' },
+        hostBadge(),
         h('div', { class: 'bar-id' }, h('span', { class: 'quiz-title', title: s.quizTitle }, s.quizTitle), h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Room ', h('strong', {}, s.roomCode)])),
         networkPill(s.network),
         soundButton(),
@@ -838,6 +845,7 @@ function topBar(s) {
     s.canEnd
       ? h('button', { type: 'button', class: 'logo-home', title: 'Back to your quizzes', 'aria-label': 'Back to your quizzes', onclick: () => endQuiz(s) }, brandLogo('brand-logo small'))
       : brandLogo('brand-logo small'),
+    hostBadge(),
     h(
       'div',
       { class: 'bar-id' },
