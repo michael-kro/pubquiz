@@ -10,7 +10,7 @@ See [examples/sample-quiz.yaml](../examples/sample-quiz.yaml), which has every q
 | `multiple-choice` | 2–6 coloured buttons | `options`, and `answer`: the right option's position counting from 0 |
 | `picture` | The picture and a text box | `image` and `accept`: the answers to accept |
 | `music` | A text box (you play the track) | `accept` |
-| `ordering` | 5 items already on a list, shuffled, to move into order (▲▼ arrows, or drag the handle) | `items`, listed in the correct order |
+| `ordering` | 5 items already on a list, shuffled, to move into order (drag them by any part of the row) | `items`, listed in the correct order |
 | `letter` | An A–Z keypad: tap the answer's first letter | `answer`, e.g. `John Lennon` (letter J). Skip "The"; people go first name first. |
 | `buzzer` | One huge BUZZ button | `answer` (for you to judge with), optionally `penalty` |
 | `number` | A box to type a number | `answer`, and optionally `tolerance` (give or take) |

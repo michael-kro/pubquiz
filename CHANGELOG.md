@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Ordering is drag and drop only:** teams drag any row into place and the others slide out of the way; the ▲▼ arrows are gone. (Keyboard: focus a row and use the up and down arrow keys.)
 - **Fix:** the final results (and any leaderboard) on a team's phone no longer scroll sideways when team names are long; the list shrinks to fit and names are cut short.
 - **Fix:** an ordering question that is asked before its timer starts no longer crashes the server (it showed up once "ask the question first" became the default).
 - **New defaults:** "Teams wait to be admitted (paid)" and "Ask the question before the timer starts" are ticked by default. Untick either on the host screen, or set `readOut: false` in a quiz.
