@@ -1746,6 +1746,8 @@ function clipsOverlay() {
   const needle = clipFilter.trim().toLowerCase();
   const shown = (clipList ?? []).filter((c) => !needle || c.title.toLowerCase().includes(needle));
   const playHereOn = clipsPlayHere();
+  // On a phone remote (play-here off) the clip's name is itself the button that plays it on the TV.
+  const tapToPlay = isPhone() && !playHereOn;
   return h(
     'div',
     { class: 'codes-overlay clips-overlay', role: 'dialog', 'aria-label': 'Clips', onclick: (e) => e.target === e.currentTarget && closeClips() },
@@ -1783,9 +1785,11 @@ function clipsOverlay() {
           h(
             'li',
             { class: playingClip === clip.name ? 'playing' : '' },
-            h('span', { class: 'clip-name' }, clip.title),
+            tapToPlay
+              ? h('button', { type: 'button', class: 'clip-tap', title: 'Play on the TV screen (its 🔊 sound must be on)', onclick: () => socket.send({ t: 'play-clip', name: clip.name }) }, clip.title)
+              : h('span', { class: 'clip-name' }, clip.title),
             playHereOn ? h('button', { type: 'button', class: 'primary', onclick: () => playHere(clip), title: 'Play on this device' }, playingClip === clip.name ? '⏸ Stop' : '▶ Play') : null,
-            h('button', { type: 'button', class: playHereOn ? '' : 'primary', onclick: () => socket.send({ t: 'play-clip', name: clip.name }), title: 'Play on the TV screen (its 🔊 sound must be on)' }, playHereOn ? '📺 TV' : '📺 Play'),
+            tapToPlay ? null : h('button', { type: 'button', class: playHereOn ? '' : 'primary', onclick: () => socket.send({ t: 'play-clip', name: clip.name }), title: 'Play on the TV screen (its 🔊 sound must be on)' }, playHereOn ? '📺 TV' : '📺 Play'),
             isPhone() ? null : h('button', { type: 'button', class: 'kick', 'aria-label': `Delete ${clip.title}`, title: 'Delete this clip', onclick: async () => {
               if (!confirm(`Delete the clip “${clip.title}”?`)) return;
               try {

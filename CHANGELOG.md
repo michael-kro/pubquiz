@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Clips on a phone:** tap a clip's name to play it on the TV (no separate Play button, no delete button).
 - **Copy buttons:** a "📋 Copy link" button beside the join address (lobby, top bar, short links, join QR screen), and "Copy join link" under More on a phone.
 ## 0.1.2 — 2026-10-19
 
