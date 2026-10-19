@@ -658,12 +658,15 @@ function libraryView(s) {
                     : h('button', { class: 'primary', disabled: q.problems > 0, onclick: () => runQuiz(q.id) }, 'Run ▶'),
                   h('a', { class: 'button', href: `#edit/${q.id}` }, 'Edit'),
                   h('button', { onclick: act(() => api('POST', `/quizzes/${q.id}/duplicate`)) }, 'Duplicate'),
-                  h('a', { class: 'button', href: `/api/quizzes/${q.id}/export.zip?key=${encodeURIComponent(key)}` }, 'Export'),
-                  h(
-                    'button',
-                    { class: 'danger', onclick: act(async () => confirm(`Delete "${q.title}"?`) && (await api('DELETE', `/quizzes/${q.id}`))) },
-                    'Delete',
-                  ),
+                  // On a phone the card keeps to running and editing; exporting and deleting are laptop jobs.
+                  isPhone() ? null : h('a', { class: 'button', href: `/api/quizzes/${q.id}/export.zip?key=${encodeURIComponent(key)}` }, 'Export'),
+                  isPhone()
+                    ? null
+                    : h(
+                        'button',
+                        { class: 'danger', onclick: act(async () => confirm(`Delete "${q.title}"?`) && (await api('DELETE', `/quizzes/${q.id}`))) },
+                        'Delete',
+                      ),
                 ),
               ),
             ),
