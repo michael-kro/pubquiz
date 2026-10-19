@@ -173,7 +173,7 @@ input {
 .result.wrong h1 { color: var(--wrong); }
 .points { font-size: 2rem; font-weight: 800; color: var(--accent); }
 
-.standings { list-style: none; padding: 0; margin: 16px 0; display: grid; gap: 6px; }
+.standings { list-style: none; padding: 0; margin: 16px 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
 .standings li {
   display: flex;
   gap: 12px;
@@ -993,3 +993,8 @@ body.phone .host-badge { padding: 3px 8px; font-size: 0.7rem; }
 /* Prizes on a team's phone sit in the middle of the screen. */
 body.play .prizes { text-align: center; }
 body.play .prizes li { justify-content: center; }
+
+/* A phone's standings never need room for movement arrows that aren't there, and long names are cut short rather than widening the page. */
+.standings .movement:empty { display: none; }
+.standings li { min-width: 0; }
+.standings .name { min-width: 0; }
