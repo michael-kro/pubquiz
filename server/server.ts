@@ -77,6 +77,8 @@ export interface ServerOptions {
   libraryFolder?: FolderChoice;
   /** Only let the host controls be used from the machine running the quiz (not the network or the tunnel). */
   hostLocalOnly?: boolean;
+  /** Testing only: /host and /screen open without the key (the page asks for the key itself). Not documented for hosts. */
+  openHost?: boolean;
   /** Called when the host key is changed from the host screen, so it can be saved. */
   onHostKeyChange?(key: string): void;
   /** Name, colours and logo for every page. */
@@ -738,8 +740,8 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
       res.end(JSON.stringify(body));
     };
-    if (req.method === 'GET') return json(200, { pin: Boolean(options.hostPin) });
-    if (req.method !== 'POST' || !options.hostPin) return json(404, { error: 'Not found.' });
+    if (req.method === 'GET') return json(200, { pin: Boolean(options.hostPin) && !options.openHost, open: Boolean(options.openHost) });
+    if (req.method !== 'POST' || !(options.hostPin || options.openHost)) return json(404, { error: 'Not found.' });
     if (!hostAllowed(req)) return json(403, { error: 'The host screen can only be used on the laptop running the quiz.' });
 
     const now = Date.now();
@@ -761,7 +763,8 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     } catch {
       return json(400, { error: 'Expected JSON.' });
     }
-    if (typeof pin === 'string' && keyIs(options.hostPin, pin.trim())) {
+    if (options.openHost && hostAllowed(req)) return json(200, { key: (JSON.parse(body) as { screen?: unknown }).screen === true ? screenKey : hostKey });
+    if (typeof pin === 'string' && options.hostPin && keyIs(options.hostPin, pin.trim())) {
       failures.delete(address);
       return json(200, { key: hostKey });
     }

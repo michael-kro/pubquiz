@@ -149,14 +149,19 @@ function forgetKey() {
 async function start() {
   await loadBranding();
   if (key) return connect();
+  let open = false;
+  try {
+    const login = await (await fetch('/login')).json();
+    open = login.open === true;
+    needPin = login.pin === true;
+  } catch {
+    needPin = false;
+  }
+  // Testing mode: the server hands out the key to anyone, so no link or PIN is needed.
+  if (open) return submitPin('');
   if (TV) {
     fatal = 'Open the TV link from the host screen.';
     return render();
-  }
-  try {
-    needPin = (await (await fetch('/login')).json()).pin === true;
-  } catch {
-    needPin = false;
   }
   if (!needPin) fatal = 'This page needs the host link printed in the terminal when the quiz started.';
   render();
@@ -165,12 +170,12 @@ async function start() {
 async function submitPin(pin) {
   pinError = '';
   try {
-    const res = await fetch('/login', { method: 'POST', body: JSON.stringify({ pin }), headers: { 'content-type': 'application/json' } });
+    const res = await fetch('/login', { method: 'POST', body: JSON.stringify({ pin, screen: TV }), headers: { 'content-type': 'application/json' } });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error ?? 'Could not sign in.');
     key = data.key;
     needPin = false;
-    rememberKey();
+    if (!TV) rememberKey();
     connect();
   } catch (error) {
     pinError = error.message;
