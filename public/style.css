@@ -800,7 +800,7 @@ body.tv .lobby { min-height: 0; padding-top: 2vh; }
 .library-search { flex: 1; min-width: 200px; max-width: 460px; }
 .view-switch { display: inline-flex; border-radius: 10px; overflow: hidden; border: 1px solid var(--surface-2); }
 .view-switch button { border-radius: 0; background: var(--surface) !important; color: var(--muted); }
-.view-switch button.active { background: var(--accent) !important; color: var(--accent-text); }
+.view-switch button.active { background: var(--accent) !important; color: var(--accent-text) !important; }
 .quiz-cards.as-list { grid-template-columns: 1fr; gap: 8px; }
 .quiz-cards.as-list .quiz-card { display: grid; grid-template-columns: minmax(150px, 1fr) 235px 560px; align-items: center; gap: 8px 16px; padding: 10px 16px; }
 .quiz-cards.as-list .quiz-card h2 { margin: 0; font-size: 1.1rem; }
@@ -1004,3 +1004,10 @@ body.play .prizes li { justify-content: center; }
 .reorder-item:focus-visible { outline: 3px solid var(--accent); }
 .reorder.locked .reorder-item { touch-action: auto; cursor: default; }
 .reorder-item.dragging .slot-number { color: var(--accent); }
+
+/* Branding profiles: one tab per venue */
+.profile-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 18px; padding: 12px 14px; border-radius: var(--radius); background: var(--surface); }
+.profile-bar .hint { flex-basis: 100%; margin: 0; }
+.profile-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.venue-switch { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.venue-switch select { max-width: 14em; font: inherit; padding: 8px 10px; border: 0; border-radius: var(--radius); background: var(--surface-2); color: var(--text); }

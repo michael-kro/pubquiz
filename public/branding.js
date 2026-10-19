@@ -15,7 +15,8 @@ export async function mountBranding(container, { api, onExit }) {
     return;
   }
   const editable = info.editable !== false;
-  const form = { name: info.name, tagline: info.tagline, accent: info.accent, background: info.background, showName: info.showName !== false };
+  const formFrom = (i) => ({ name: i.name, tagline: i.tagline, accent: i.accent, background: i.background, showName: i.showName !== false });
+  const form = formFrom(info);
   let status = 'saved';
   let message = '';
   let timer;
@@ -98,6 +99,69 @@ export async function mountBranding(container, { api, onExit }) {
     render();
   }
 
+  /** Switching venues: the active profile is what every page shows, and what this panel edits. */
+  async function switchTo(id) {
+    if (timer) await save();
+    try {
+      info = await api('POST', '/branding/active', { id });
+      Object.assign(form, formFrom(info));
+      setBranding({ ...info, ...form });
+      render();
+    } catch (error) {
+      status = 'failed';
+      message = error.message;
+      paintStatus();
+    }
+  }
+
+  async function addProfile() {
+    const name = prompt('Name of the new venue (for example, The Red Lion):');
+    if (!name || !name.trim()) return;
+    const copy = info.profiles.length > 0 && confirm(`Start "${name.trim()}" as a copy of "${info.profiles.find((p) => p.id === info.active)?.label ?? 'the current venue'}"?\n\nOK copies its colours and logo to start from. Cancel starts from a blank one.`);
+    try {
+      info = await api('POST', '/branding/profiles', { name: name.trim(), copyFrom: copy ? info.active : undefined, activate: true });
+      Object.assign(form, formFrom(info));
+      setBranding({ ...info, ...form });
+      render();
+    } catch (error) {
+      status = 'failed';
+      message = error.message;
+      paintStatus();
+    }
+  }
+
+  async function deleteProfile() {
+    const current = info.profiles.find((p) => p.id === info.active);
+    if (!confirm(`Delete the venue "${current?.label ?? info.active}" and its logo? This cannot be undone.`)) return;
+    try {
+      info = await api('DELETE', `/branding/profiles/${encodeURIComponent(info.active)}`);
+      Object.assign(form, formFrom(info));
+      setBranding({ ...info, ...form });
+      render();
+    } catch (error) {
+      status = 'failed';
+      message = error.message;
+      paintStatus();
+    }
+  }
+
+  function profileBar() {
+    if (!info.profiles) return null;
+    return h(
+      'div',
+      { class: 'profile-bar' },
+      h('span', { class: 'field-label' }, 'Venue'),
+      h(
+        'div',
+        { class: 'profile-tabs', role: 'tablist' },
+        info.profiles.map((p) => h('button', { type: 'button', role: 'tab', 'aria-selected': String(p.id === info.active), class: p.id === info.active ? 'primary' : '', onclick: () => p.id !== info.active && switchTo(p.id) }, p.label)),
+      ),
+      h('button', { type: 'button', onclick: addProfile }, '+ New venue'),
+      info.profiles.length > 1 ? h('button', { type: 'button', class: 'link-button', onclick: deleteProfile }, 'Delete this venue') : null,
+      h('p', { class: 'hint' }, 'The selected venue is the one every screen shows. Switch here before a quiz at a different pub.'),
+    );
+  }
+
   function colourField(label, key) {
     return h(
       'div',
@@ -170,6 +234,7 @@ export async function mountBranding(container, { api, onExit }) {
           h('span', { class: 'spacer' }),
           h('span', { class: 'save-status', role: 'status' }),
         ),
+        profileBar(),
         editable ? null : h('p', { class: 'problem' }, 'This branding comes from a folder given on the command line, so it can only be changed by editing the files there.'),
         h(
           'div',

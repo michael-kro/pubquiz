@@ -9,7 +9,7 @@ import { handleApi } from './api.ts';
 import { readPublicFile } from './assets.ts';
 import { Game, type Team } from './game.ts';
 import type { Library } from './library.ts';
-import type { BrandingStore } from './branding.ts';
+import type { BrandingSource } from './branding.ts';
 import { ClipError, ClipStore, MAX_CLIP_BYTES } from './clips.ts';
 import { changeLibraryDir, defaultLibraryDir, SettingsError, type FolderChoice } from './settings.ts';
 import { clientAddress, isLocalRequest, TokenBucket, WindowCounter } from './limits.ts';
@@ -83,7 +83,7 @@ export interface ServerOptions {
   /** Called when the host key is changed from the host screen, so it can be saved. */
   onHostKeyChange?(key: string): void;
   /** Name, colours and logo for every page. */
-  branding?: BrandingStore;
+  branding?: BrandingSource;
   /** The Wi-Fi network teams can join, shown as a QR code beside the join code (for a travel router or hotspot). */
   wifi?: { ssid: string; password?: string };
   /** Let teams add a photo (the host can still switch it off). Default on. */
