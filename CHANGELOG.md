@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Clips: TV-only on a phone remote.** The clips list on a phone shows just a "📺 Play" button (the sound comes from the TV page). A "Show play on this device" tick brings the other button back; it is remembered per device.
 - **Host from your phone:** on a narrow screen the host page becomes a remote: slim header, the question and answers, and large buttons in a bar at the bottom within thumb reach. Sign in with the host link or a `--host-pin` (`PUBQUIZ_HOST_PIN` in Docker).
 - **Join QR code mid-quiz:** More → "Show join QR code" puts the QR code and room code over the host and TV screens for latecomers; "Hide QR code" takes it down.
 - **Rank scoring is the new default:** a right answer is worth 10, plus a bonus for the fastest right answers: 10 for the quickest team, 9 for the next, 8, and so on down to nothing (`scoring: { mode: rank, rankBonus: 10 }`). The reveal tells each team what it got. Quizzes can still choose `speed`, `flat` or `first`, per quiz or per round.
