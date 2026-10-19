@@ -990,3 +990,6 @@ body.phone .open-host-warning { font-size: 0.8rem; padding: 6px 12px; }
 .host-badge { flex: none; padding: 4px 10px; border-radius: 999px; background: var(--accent); color: var(--accent-text); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; white-space: nowrap; }
 body.host:not(.tv) { border-top: 4px solid var(--accent); }
 body.phone .host-badge { padding: 3px 8px; font-size: 0.7rem; }
+/* Prizes on a team's phone sit in the middle of the screen. */
+body.play .prizes { text-align: center; }
+body.play .prizes li { justify-content: center; }
