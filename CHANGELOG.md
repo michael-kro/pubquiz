@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Fix:** the final results (and any leaderboard) on a team's phone no longer scroll sideways when team names are long; the list shrinks to fit and names are cut short.
+- **Fix:** an ordering question that is asked before its timer starts no longer crashes the server (it showed up once "ask the question first" became the default).
 - **New defaults:** "Teams wait to be admitted (paid)" and "Ask the question before the timer starts" are ticked by default. Untick either on the host screen, or set `readOut: false` in a quiz.
 - **Host screen is labelled:** a yellow "🎛 HOST" badge and a yellow strip across the top, and the browser tab says "HOST"; the TV tab says "TV screen". So the controls are never mistaken for the TV.
 - **Clips on a phone:** tap a clip's name to play it on the TV (no separate Play button, no delete button).
