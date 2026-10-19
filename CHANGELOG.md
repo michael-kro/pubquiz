@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **New defaults:** "Teams wait to be admitted (paid)" and "Ask the question before the timer starts" are ticked by default. Untick either on the host screen, or set `readOut: false` in a quiz.
 - **Host screen is labelled:** a yellow "🎛 HOST" badge and a yellow strip across the top, and the browser tab says "HOST"; the TV tab says "TV screen". So the controls are never mistaken for the TV.
 - **Clips on a phone:** tap a clip's name to play it on the TV (no separate Play button, no delete button).
 - **Copy buttons:** a "📋 Copy link" button beside the join address (lobby, top bar, short links, join QR screen), and "Copy join link" under More on a phone.
