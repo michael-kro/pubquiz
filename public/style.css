@@ -531,6 +531,9 @@ body.tv .lobby { min-height: 0; padding-top: 2vh; }
 .brand-block { text-align: center; margin: 0 0 16px; }
 .brand-name { font-size: 1.6rem; font-weight: 800; margin: 0; }
 .brand-tagline { color: var(--muted); margin: 4px 0 0; }
+/* No name written under the logo: the tagline sits snug beneath it. */
+.brand-name:empty { display: none; }
+.brand-logo.big + .brand-tagline, .brand-name:empty + .brand-tagline { margin-top: -2px; }
 .lobby .brand-block { text-align: left; }
 .lobby .brand-logo.big { margin-left: 0; }
 
