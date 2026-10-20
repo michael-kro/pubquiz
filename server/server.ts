@@ -230,9 +230,21 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     const view = hostView();
     if (view.phase === 'idle') return view;
     const revealed = ['reveal', 'leaderboard', 'finished'].includes(view.phase);
+    // With questions kept off the TV, it shows nothing of the question until the answer is revealed. (A music clip still plays.)
+    const keepOff = !view.tvShowQuestions && !revealed;
     return {
       ...view,
-      question: view.question && !revealed ? { ...view.question, answerText: '', answer: undefined, info: undefined, hostText: undefined } : view.question,
+      question: view.question && !revealed
+        ? {
+            ...view.question,
+            answerText: '',
+            answer: undefined,
+            info: undefined,
+            hostText: undefined,
+            ...(keepOff ? { hidden: true, text: '', image: undefined, options: undefined, items: undefined, category: undefined, uncover: undefined } : {}),
+          }
+        : view.question,
+      distribution: keepOff ? undefined : view.distribution,
       review: revealed ? view.review : undefined,
       // A list of guesses with how far off each was gives the answer away.
       guesses: revealed ? view.guesses : undefined,
@@ -618,6 +630,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
       case 'show-join':
         if (hostOnly()) game?.setShowJoin(msg.shown);
+        return;
+
+      case 'tv-questions':
+        if (hostOnly()) game?.setTvShowQuestions(msg.visible);
         return;
 
       case 'tv-teams':

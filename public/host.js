@@ -993,6 +993,19 @@ function stage(s) {
     case 'closed':
     case 'reveal': {
       const reveal = s.phase === 'reveal';
+      // The host keeps questions off the TV: it shows the countdown, and the question again only with the answer.
+      if (TV && q.hidden && !reveal) {
+        return h(
+          'div',
+          { class: 'question-stage question-hidden' },
+          h('div', { class: 'question-top' }, questionMeta(q), s.phase === 'open' ? h('span', { class: 'countdown big', 'data-countdown': true }) : h('span', { class: 'phase-label' }, s.phase === 'closed' ? "Time's up" : '')),
+          q.paused ? h('p', { class: 'paused-banner', role: 'status' }, '⏸ Paused') : null,
+          q.type === 'music' && !q.audio ? h('p', { class: 'music-badge' }, '🎵 Music round: listen up') : null,
+          h('h1', { class: 'hidden-question-title' }, s.phase === 'closed' ? 'Answers are in' : 'Look at your phone'),
+          h('p', { class: 'muted center big' }, `Question ${q.index + 1} of ${q.total}`),
+          answerProgress(s),
+        );
+      }
       return h(
         'div',
         { class: 'question-stage' },
@@ -2040,6 +2053,14 @@ function teamsPanel(s) {
           { class: 'check photos-toggle', title: 'Off: the timer always counts down to zero, even when every team has answered' },
           h('input', { type: 'checkbox', checked: s.closeEarly, onchange: (e) => socket.send({ t: 'close-early', on: e.target.checked }) }),
           ' Close early when all have answered',
+        ),
+    TV
+      ? null
+      : h(
+          'label',
+          { class: 'check photos-toggle', title: 'Off: the TV shows the countdown but not the question, so a delay between the TV and the phones cannot help anyone. The answer still shows on the TV.' },
+          h('input', { type: 'checkbox', checked: s.tvShowQuestions, onchange: (e) => socket.send({ t: 'tv-questions', visible: e.target.checked }) }),
+          ' Show questions on the TV',
         ),
     TV
       ? null

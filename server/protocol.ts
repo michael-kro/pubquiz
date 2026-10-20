@@ -32,6 +32,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('end-break') }),
   z.object({ t: z.literal('set-answer'), value: z.union([z.number(), z.string().max(4)]) }),
   z.object({ t: z.literal('tv-teams'), visible: z.boolean() }),
+  z.object({ t: z.literal('tv-questions'), visible: z.boolean() }),
   z.object({ t: z.literal('show-join'), shown: z.boolean() }),
   z.object({ t: z.literal('read-out'), on: z.boolean() }),
   z.object({ t: z.literal('rotate-key') }),
@@ -100,6 +101,8 @@ export interface QuestionView {
   roundQuestions: number;
   type: QuestionType;
   text: string;
+  /** TV only: the question is being kept off the screen, so text, picture and options are blank. */
+  hidden?: boolean;
   image?: string;
   /** A sound clip for the host and TV screens to play (never sent to phones). */
   audio?: string;
@@ -219,6 +222,8 @@ export interface HostView {
   question?: QuestionView & { answerText: string; answer?: number; info?: string; answerEdited?: boolean; editable?: boolean; editValue?: number | string; hostText?: string };
   /** Show the team list on the TV. The host can hide it. */
   tvShowTeams: boolean;
+  /** The TV shows each question while it is asked. Off, it shows only the answer. */
+  tvShowQuestions: boolean;
   /** The host has put the join QR code up on the host and TV screens. */
   showJoin: boolean;
   /** What it costs to play ('' if nothing). */

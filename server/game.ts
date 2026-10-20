@@ -90,6 +90,7 @@ export interface GameSnapshot {
   break?: { startedAt: number; durationMs?: number; facts: string[] };
   wagers?: [number, [string, number][]][];
   tvShowTeams?: boolean;
+  tvShowQuestions?: boolean;
   readOut?: boolean;
   startOnLastAnswer?: boolean;
   joiningLocked?: boolean;
@@ -119,6 +120,7 @@ export interface GameOptions {
   closeEarly?: boolean;
   /** Show the team list on the TV screen (default on here; the server turns it off). */
   tvShowTeams?: boolean;
+  tvShowQuestions?: boolean;
   /** Let the quiz start with no teams in it (default on here; the server turns it off, so the host waits for players). */
   allowEmptyStart?: boolean;
   /** Pressing Start quiz stops new teams joining (default off here; the server turns it on). */
@@ -189,6 +191,8 @@ export class Game {
   private readonly answerEdits = new Map<number, number | string>();
   /** Show the team list on the TV screen. The host can hide it. */
   tvShowTeams = true;
+  /** The TV shows each question as it is asked. Off: it only shows the answer, so nobody gains from a delay between the TV and the phones. */
+  tvShowQuestions = true;
   /** The host has put the join QR code up on the screens (not saved: it is a moment-to-moment thing). */
   showJoin = false;
   /** Multiple choice: announce the answers one by one before the timer starts. */
@@ -244,6 +248,7 @@ export class Game {
     this.prizes = [0, 1, 2].map((i) => quiz.prizes?.[i] ?? '');
     this.entryFee = quiz.entryFee ?? '';
     this.tvShowTeams = options.tvShowTeams ?? true;
+    this.tvShowQuestions = options.tvShowQuestions ?? true;
     this.allowEmptyStart = options.allowEmptyStart ?? true;
   }
 
@@ -488,6 +493,11 @@ export class Game {
 
   setShowJoin(shown: boolean): void {
     this.showJoin = shown;
+    this.changed();
+  }
+
+  setTvShowQuestions(visible: boolean): void {
+    this.tvShowQuestions = visible;
     this.changed();
   }
 
@@ -982,6 +992,7 @@ export class Game {
       break: this.breakState,
       wagers: [...this.wagers].map(([index, bets]) => [index, [...bets]] as [number, [string, number][]]),
       tvShowTeams: this.tvShowTeams,
+      tvShowQuestions: this.tvShowQuestions,
       readOut: this.readOut,
       startOnLastAnswer: this.startOnLastAnswer,
       joiningLocked: this.joiningLocked,
@@ -1018,6 +1029,7 @@ export class Game {
     game.breakState = snapshot.break;
     for (const [index, bets] of snapshot.wagers ?? []) game.wagers.set(index, new Map(bets));
     game.tvShowTeams = snapshot.tvShowTeams ?? game.tvShowTeams;
+    game.tvShowQuestions = snapshot.tvShowQuestions ?? game.tvShowQuestions;
     game.readOut = snapshot.readOut ?? quiz.readOut ?? READ_OUT_DEFAULT;
     game.readShown = snapshot.readShown ?? 0;
     game.joiningLocked = snapshot.joiningLocked ?? false;
@@ -1709,6 +1721,7 @@ export class Game {
       maxTeams: this.maxTeams,
       photosEnabled: this.photosEnabled,
       tvShowTeams: this.tvShowTeams,
+      tvShowQuestions: this.tvShowQuestions,
       showJoin: this.showJoin,
       entryFee: this.entryFee,
       requireAdmission: this.requireAdmission,

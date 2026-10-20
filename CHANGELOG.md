@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Option to keep questions off the TV:** "Show questions on the TV" (Options panel, ticked by default). Unticked, the TV shows the countdown and "Look at your phone" while a question is open, and the question again only when the answer is revealed. Nothing of the question is sent to the TV in the meantime.
 - **Quizzes screen on a phone:** each quiz shows Run, Edit and Duplicate only; Export and Delete are left for the laptop.
 - **Escape closes pop-ups:** on the host screen, Escape closes whichever pop-up is open (host QR code, clips, settings, team codes, the join QR on the screens, the More and Break menus).
 - **Branding profiles (venues):** keep a branding setup per pub and switch between them from a drop-down on the quizzes screen or the tabs in the Branding panel. An existing branding setup becomes the "default" profile automatically. Fixes the Tiles/List toggle being unreadable on light backgrounds.
