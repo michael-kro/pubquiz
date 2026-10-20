@@ -33,6 +33,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('set-answer'), value: z.union([z.number(), z.string().max(4)]) }),
   z.object({ t: z.literal('tv-teams'), visible: z.boolean() }),
   z.object({ t: z.literal('tv-questions'), visible: z.boolean() }),
+  z.object({ t: z.literal('head-start'), teamId: z.string().max(100), seconds: z.number().min(0).max(30) }),
   z.object({ t: z.literal('show-join'), shown: z.boolean() }),
   z.object({ t: z.literal('read-out'), on: z.boolean() }),
   z.object({ t: z.literal('rotate-key') }),
@@ -213,7 +214,7 @@ export interface HostView {
   openHost?: boolean;
   network: NetworkStatus;
   /** `code` is blank on the TV screen: anyone with a team's code can take over its phone. */
-  teams: { id: string; name: string; code: string; photo?: string; score: number; connected: boolean; answered: boolean }[];
+  teams: { id: string; name: string; code: string; photo?: string; score: number; connected: boolean; answered: boolean; headStart: number }[];
   photosEnabled: boolean;
   /** After the reveal, the next press goes straight to the next question (the full leaderboard is skipped). */
   skipsLeaderboardNext: boolean;

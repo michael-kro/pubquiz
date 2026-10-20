@@ -1017,3 +1017,5 @@ body.play .prizes li { justify-content: center; }
 .question-hidden { display: grid; gap: 14px; justify-items: center; text-align: center; padding-top: 6vh; }
 .question-hidden .question-top { width: 100%; }
 .hidden-question-title { font-size: clamp(2.2rem, 6vw, 4.5rem); margin: 4vh 0 0; }
+.head-start-input { width: 5.5em; padding: 6px 8px; text-align: right; }
+.head-start-badge { font-size: 0.75rem; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--accent); color: var(--accent-text); white-space: nowrap; }

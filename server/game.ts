@@ -8,6 +8,8 @@ import { scoreAnswer } from './scoring.ts';
 /** The usual limit on teams, and what the quiz is tested with. The host can change it (up to ABSOLUTE_MAX_TEAMS). */
 /** Teams wait to be admitted (the host ticks them once paid) and the host asks each question before the timer starts, unless the host says otherwise.
  *  (The tests set these to "off" so their long-standing flows still apply.) */
+/** The most a team can be given as a head start. */
+const MAX_HEAD_START_SECONDS = 30;
 const ADMISSION_DEFAULT = process.env['PUBQUIZ_ADMISSION_DEFAULT'] !== 'off';
 const READ_OUT_DEFAULT = process.env['PUBQUIZ_READOUT_DEFAULT'] !== 'off';
 
@@ -91,6 +93,7 @@ export interface GameSnapshot {
   wagers?: [number, [string, number][]][];
   tvShowTeams?: boolean;
   tvShowQuestions?: boolean;
+  headStarts?: [string, number][];
   readOut?: boolean;
   startOnLastAnswer?: boolean;
   joiningLocked?: boolean;
@@ -193,6 +196,8 @@ export class Game {
   tvShowTeams = true;
   /** The TV shows each question as it is asked. Off: it only shows the answer, so nobody gains from a delay between the TV and the phones. */
   tvShowQuestions = true;
+  /** Per team: milliseconds taken off its answer times when working out who was fastest, so a slower player (a young child, say) can still win the speed points. */
+  private readonly headStartMs = new Map<string, number>();
   /** The host has put the join QR code up on the screens (not saved: it is a moment-to-moment thing). */
   showJoin = false;
   /** Multiple choice: announce the answers one by one before the timer starts. */
@@ -496,6 +501,16 @@ export class Game {
     this.changed();
   }
 
+  /** Gives a team a head start of this many seconds (0 clears it). It applies to answers given from now on. */
+  setHeadStart(teamId: string, seconds: number): Result<null> {
+    if (!this.teams.has(teamId)) return fail('There is no team like that.');
+    if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < 0 || seconds > MAX_HEAD_START_SECONDS) return fail(`A head start is between 0 and ${MAX_HEAD_START_SECONDS} seconds.`);
+    if (seconds === 0) this.headStartMs.delete(teamId);
+    else this.headStartMs.set(teamId, Math.round(seconds * 1000));
+    this.changed();
+    return { ok: true, value: null };
+  }
+
   setTvShowQuestions(visible: boolean): void {
     this.tvShowQuestions = visible;
     this.changed();
@@ -547,7 +562,7 @@ export class Game {
     if (!stored.ok) return stored;
     const timing = this.measure(teamId, latencyMs, clientElapsedMs);
     if (timing.late) return fail("Too late, time's up.");
-    team.answers.set(this.questionIndex, { value: stored.value, answerMs: timing.answerMs });
+    team.answers.set(this.questionIndex, { value: stored.value, answerMs: Math.max(0, timing.answerMs - (this.headStartMs.get(teamId) ?? 0)) });
 
     if (this.everyoneAnswered()) this.closeQuestion();
     else this.changed();
@@ -993,6 +1008,7 @@ export class Game {
       wagers: [...this.wagers].map(([index, bets]) => [index, [...bets]] as [number, [string, number][]]),
       tvShowTeams: this.tvShowTeams,
       tvShowQuestions: this.tvShowQuestions,
+      headStarts: [...this.headStartMs],
       readOut: this.readOut,
       startOnLastAnswer: this.startOnLastAnswer,
       joiningLocked: this.joiningLocked,
@@ -1030,6 +1046,7 @@ export class Game {
     for (const [index, bets] of snapshot.wagers ?? []) game.wagers.set(index, new Map(bets));
     game.tvShowTeams = snapshot.tvShowTeams ?? game.tvShowTeams;
     game.tvShowQuestions = snapshot.tvShowQuestions ?? game.tvShowQuestions;
+    for (const [id, ms] of snapshot.headStarts ?? []) if (game.teams.has(id)) game.headStartMs.set(id, ms);
     game.readOut = snapshot.readOut ?? quiz.readOut ?? READ_OUT_DEFAULT;
     game.readShown = snapshot.readShown ?? 0;
     game.joiningLocked = snapshot.joiningLocked ?? false;
@@ -1744,6 +1761,7 @@ export class Game {
         score: scores.get(t.id) ?? 0,
         connected: t.connected,
         answered: t.answers.has(this.questionIndex),
+        headStart: (this.headStartMs.get(t.id) ?? 0) / 1000,
       })),
       wagering:
         this.phase === 'wagering'

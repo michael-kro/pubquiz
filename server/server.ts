@@ -632,6 +632,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (hostOnly()) game?.setShowJoin(msg.shown);
         return;
 
+      case 'head-start': {
+        if (!hostOnly()) return;
+        const result = game?.setHeadStart(msg.teamId, msg.seconds);
+        if (result && !result.ok) send(conn, { t: 'error', message: result.error });
+        return;
+      }
+
       case 'tv-questions':
         if (hostOnly()) game?.setTvShowQuestions(msg.visible);
         return;

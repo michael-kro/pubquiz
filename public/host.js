@@ -223,6 +223,7 @@ function advance() {
 /** Escape closes whichever pop-up is open, the one on top first. Returns whether there was one. */
 function closeTopPopup() {
   if (hostQrOpen) hostQrOpen = false;
+  else if (headStartOpen) headStartOpen = false;
   else if (clipsOpen) clipsOpen = false;
   else if (settingsOpen) settingsOpen = false;
   else if (codesOpen) codesOpen = false;
@@ -347,6 +348,7 @@ function render() {
     codesOverlay(state),
     joinOverlay(state),
     hostQrOverlay(state),
+    headStartOverlay(state),
     clipsOverlay(),
     settingsOverlay(),
     notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '',
@@ -1922,6 +1924,46 @@ function joinOverlay(s) {
   );
 }
 
+let headStartOpen = false;
+
+/** Head starts: seconds taken off a team's answer time, so a slower player (a young child, say) can still win the speed points. */
+function headStartOverlay(s) {
+  if (TV || !headStartOpen) return null;
+  const close = () => {
+    headStartOpen = false;
+    render();
+  };
+  const teams = [...s.teams].sort((a, b) => a.name.localeCompare(b.name));
+  const set = (team, value) => socket.send({ t: 'head-start', teamId: team.id, seconds: Math.max(0, Math.min(30, Number(value) || 0)) });
+  return h(
+    'div',
+    { class: 'codes-overlay', role: 'dialog', 'aria-label': 'Head starts', onclick: (e) => e.target === e.currentTarget && close() },
+    h(
+      'div',
+      { class: 'codes-card' },
+      h('div', { class: 'codes-head' }, h('h2', {}, '⏱ Head starts'), h('button', { type: 'button', onclick: close }, 'Close')),
+      h('p', { class: 'muted' }, 'A head start is taken off a team’s answer time when working out who was fastest, so a slower player can still win the speed points. Giving one team 5 seconds has the same effect as adding 5 seconds to every other team. It applies to answers given from now on, and the team still has only the normal time to answer.'),
+      teams.length === 0 ? h('p', { class: 'muted' }, 'No teams yet.') : null,
+      h(
+        'ul',
+        { class: 'codes-list head-start-list' },
+        teams.map((t) =>
+          h(
+            'li',
+            { class: t.connected ? '' : 'offline' },
+            h('span', { class: 'dot' }),
+            avatar(t.name, t.photo, 36),
+            h('span', { class: 'codes-name' }, t.name),
+            h('input', { type: 'number', min: '0', max: '30', step: '0.5', inputmode: 'decimal', class: 'head-start-input', 'data-keep': `hs-${t.id}`, 'aria-label': `Head start for ${t.name}, in seconds`, value: String(t.headStart || 0), onchange: (e) => set(t, e.target.value) }),
+            h('span', { class: 'muted' }, 's'),
+          ),
+        ),
+      ),
+      teams.some((t) => t.headStart > 0) ? h('button', { type: 'button', onclick: () => teams.forEach((t) => t.headStart > 0 && set(t, 0)) }, 'Clear all head starts') : null,
+    ),
+  );
+}
+
 function codesOverlay(s) {
   if (TV || !codesOpen) return null;
   const close = () => {
@@ -1967,6 +2009,7 @@ function teamsPanel(s) {
           h('span', { class: 'name' }, team.name),
           !TV && team.photo ? h('button', { class: 'remove-photo', title: `Remove ${team.name}'s photo`, 'aria-label': `Remove ${team.name}'s photo`, onclick: () => confirm(`Remove ${team.name}'s photo?`) && socket.send({ t: 'remove-photo', teamId: team.id }) }, '🚫') : null,
           !TV && team.code ? h('span', { class: 'team-code-small', title: 'Team code: lets this team carry on from another phone' }, team.code) : null,
+          !TV && team.headStart > 0 ? h('span', { class: 'head-start-badge', title: `${team.name} has a ${team.headStart} second head start` }, `⏱ ${team.headStart}s`) : null,
           s.phase === 'open' && team.answered ? h('span', { class: 'tick', 'aria-label': 'answered' }, '✓') : null,
           h('span', { class: 'score' }, team.score),
           TV ? null : h(
@@ -2070,6 +2113,7 @@ function teamsPanel(s) {
           h('input', { type: 'checkbox', checked: s.photosEnabled, onchange: (e) => socket.send({ t: 'photos', enabled: e.target.checked }) }),
           ' Team photos',
         ),
+    TV ? null : h('button', { type: 'button', class: 'codes-button', onclick: () => { headStartOpen = true; render(); }, title: 'Take seconds off a slower player’s answer time, so they can still win the speed points' }, '⏱ Head starts'),
     TV ? null : h('button', { type: 'button', class: 'codes-button', onclick: () => { codesOpen = true; render(); } }, '🔑 Team codes'),
   );
 }
