@@ -1,8 +1,9 @@
 # Development
 
-TypeScript run directly by Node (no build step); the browser pages in `public/` are plain JavaScript modules.
+TypeScript run directly by Node (no build step); the browser pages in `public/` are plain JavaScript modules. Needs Node.js 22.18 or newer.
 
 ```sh
+git clone https://github.com/michael-kro/pubquiz.git && cd pubquiz
 npm install
 npm start                                # the quiz library and editor
 npm start -- examples/sample-quiz.yaml   # one quiz file straight away
