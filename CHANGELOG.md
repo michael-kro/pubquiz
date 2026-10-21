@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Local HTTPS removed:** the optional Caddy service (`docker compose --profile https`), its config and the HTTPS guide are gone. The internet link already gives phones and the TV a real HTTPS certificate, and the local certificate only ever worked on the laptop that trusted it.
+
 - **Travel router guidance removed:** the router setup guide and the router-box research note are gone, and the troubleshooting guide no longer suggests a travel router (the internet link works from 4G or any Wi-Fi; a phone hotspot or the venue Wi-Fi remain the offline options).
 ## 0.1.3 — 2026-10-21
 
