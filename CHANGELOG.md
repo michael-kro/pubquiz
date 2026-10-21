@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.1.3 — 2026-10-21
+
+- **Release process:** a release every two weeks, feature and fix branches off `develop`, hotfix branches off `main`; written up in the README and `docs/RELEASING.md`, with a pull request template and a reminder issue opened on each freeze Friday.
 - **Dynamic scanning (OWASP ZAP):** a passive scan on every pull request and an active one nightly, run against a throwaway copy of the app. Error pages, `/status.json` and `/healthz` now carry the same security headers as the pages, and every response has a Permissions-Policy and cross-origin opener and resource policies.
 - **Security scanning in CI:** Semgrep (with the app's own rules), CodeQL, hadolint and Trivy run on every push and pull request and weekly. The Docker image is built in two stages and no longer ships npm (fewer packages, smaller, and three scanner findings gone). A new test makes every WebSocket message type be classified as host-only or open. GitHub Actions are pinned to commit hashes.
 - **Continuous integration:** every push and pull request now runs typecheck and tests on Node 22.18 and 24, the load test, `npm audit`, a secret scan and a workflow lint; Dependabot keeps dependencies, actions and the Docker base image up to date. Plans for what comes next are in `docs/plans/`.

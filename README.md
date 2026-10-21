@@ -64,3 +64,17 @@ Back that folder up and you have everything. To use a different folder (a Dropbo
 - [Host guide](docs/HOST-GUIDE.md): everything the host screen can do.
 - [HTTPS](docs/HTTPS.md): your own name on port 443 with a certificate.
 - [Development](docs/DEVELOPMENT.md): building from source, the single-file programs, tests and how timing stays fair.
+
+## Releases and contributing
+
+**A new version every two weeks, on a Monday** (the first is 2 November 2026). The Friday before is a freeze: only fixes go in, so the weekend is for testing on a real phone and TV. Anything not ready waits for the next release.
+
+| Branch | For | Made from | Merges into |
+|---|---|---|---|
+| `main` | What has been released, always tagged | | |
+| `develop` | The next release, always green | | |
+| `feature/<name>` | New functionality | `develop` | `develop` |
+| `fix/<name>` | A bug fix that can wait for the next release | `develop` | `develop` |
+| `hotfix/<name>` | An urgent fix to a released version (a crash, a wrong score, a security problem) | `main` | `main`, then back into `develop` |
+
+Every change is a pull request that passes the tests and the security scans, adds a line to [CHANGELOG.md](CHANGELOG.md), and (for a fix) comes with a test that fails without it. A hotfix gets a patch release straight away (`0.2.1`) and does not wait for the schedule. The full process, the release-day checklist and the hotfix steps are in [docs/RELEASING.md](docs/RELEASING.md).
