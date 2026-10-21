@@ -38,7 +38,7 @@ Checked locally before pushing: the steps run clean in Node 22.18 and 24 contain
 - **Release job — DONE:** the image is published with an SBOM and build provenance in the registry, plus a signed GitHub attestation (`gh attestation verify`). (The downloadable programs were dropped, so there is nothing else to build.)
 - **Container and runtime — DONE:** read-only container, all capabilities dropped, no privilege escalation; `npm ci --ignore-scripts` in the build; Node runs with `--disallow-code-generation-from-strings`; WebSocket upgrades from other websites are refused.
 - **Keys out of URLs — DONE:** host and TV links carry the key in the fragment; clips, QR codes, results and exports are fetched with the key in a header; a key in a query string is ignored.
-- **Still to do:** fuzzing of the HTTP uploads (zip import, photos, clips).
+- **HTTP upload fuzzing — DONE:** `test/slow/fuzz-http.test.ts` sends malformed, mislabelled, oversized and escaping files (and lying content-lengths and junk JSON) to the import, pictures, audio, clips, logo and photo uploads, with and without the key.
 
 ## Keeping noise down
 
