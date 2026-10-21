@@ -52,7 +52,7 @@ See [VENUE-TROUBLESHOOTING.md](VENUE-TROUBLESHOOTING.md).
 - `--host-pin <6+ characters>`: the host link also needs the PIN.
 - `--host-local-only`: the host screen, host API, results download and PIN login only work on the laptop running the quiz. Requests through the internet tunnel or from another device on the Wi-Fi are refused. Teams and the TV screen are unaffected. (You can't run the quiz from a tablet in this mode.)
 - `--new-key`: make a new host key at start-up. In the host screen, **🔑 New key** does it mid-quiz: the old host link and TV link stop working at once, and the TV needs opening again from the **TV screen** button.
-- On shared public Wi-Fi, prefer the internet link (HTTPS) or your own router: in local mode the key travels over plain HTTP.
+- On shared public Wi-Fi, prefer the internet link (HTTPS): in local mode the key travels over plain HTTP.
 
 ## Entry fee, admitting teams, prizes
 

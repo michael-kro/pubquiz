@@ -22,7 +22,7 @@ That is a whole quiz night. Everything else is optional.
 
 **From source** (Node.js 22.18 or newer, no Docker): `git clone https://github.com/michael-kro/pubquiz.git`, then in that folder `npm install` and `npm start`. Your browser opens the host screen.
 
-**More ways to run it with Docker.** From a copy of the source: `docker compose up -d`, then `docker compose logs pubquiz` (it uses `~/PubQuiz` too). For HTTPS on port 443 with your own name, see [docs/HTTPS.md](docs/HTTPS.md). For venue Wi-Fi with no internet, add `-e PUBQUIZ_LAN=1 -e PUBQUIZ_PUBLIC_HOST=<your laptop's address>`.
+**More ways to run it with Docker.** From a copy of the source: `docker compose up -d`, then `docker compose logs pubquiz` (it uses `~/PubQuiz` too). For venue Wi-Fi with no internet, add `-e PUBQUIZ_LAN=1 -e PUBQUIZ_PUBLIC_HOST=<your laptop's address>`.
 
 **Why there is no download to double-click:** a program that runs on any computer without a warning has to be signed with a paid developer certificate (Apple charges $99 a year; Windows certificates cost too), and this is a free project. Docker and the source need no warning at all.
 
@@ -44,14 +44,13 @@ Back that folder up and you have everything. To use a different folder (a Dropbo
 
 ## If something goes wrong
 
-- Teams can't connect, or the venue Wi-Fi is awkward: [docs/VENUE-TROUBLESHOOTING.md](docs/VENUE-TROUBLESHOOTING.md) (a small travel router is the reliable fix: [docs/ROUTER-SETUP.md](docs/ROUTER-SETUP.md)).
+- Teams can't connect, or the venue Wi-Fi is awkward: [docs/VENUE-TROUBLESHOOTING.md](docs/VENUE-TROUBLESHOOTING.md) (the internet link works from 4G or any Wi-Fi, so teams don't need the venue's network).
 - Phones that lose signal rejoin by themselves, and a laptop crash or restart picks the quiz up where it stopped: just start the program again and press **Resume ▶**.
 
 ## More
 
 - [Getting started](docs/GETTING-STARTED.md): a longer walk-through of a first night.
 - [Host guide](docs/HOST-GUIDE.md): everything the host screen can do.
-- [HTTPS](docs/HTTPS.md): your own name on port 443 with a certificate.
 - [Development](docs/DEVELOPMENT.md): building from source, Docker, tests and how timing stays fair.
 
 ## Releases and contributing

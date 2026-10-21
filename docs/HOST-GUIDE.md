@@ -70,7 +70,7 @@ Options:
 | `--public-host <address>` | Override the laptop address in the local join link |
 | `--no-open` | Don't open the host screen automatically |
 | `--fresh` | Start over instead of resuming an unfinished quiz |
-| `--wifi-ssid <name>` `--wifi-password <pw>` | Show a second QR code on the host and TV lobby for joining a Wi-Fi network (see [docs/ROUTER-SETUP.md](docs/ROUTER-SETUP.md)) |
+| `--wifi-ssid <name>` `--wifi-password <pw>` | Show a second QR code on the host and TV lobby for joining a Wi-Fi network (a hotspot, say) |
 | `--host-pin <pin>` | Sign in to `/host` by PIN, e.g. from a phone |
 | `--branding <folder>` | Name, colours and logo for every page |
 | `--no-photos`, `--no-name-filter` | Switch off team photos, or the swearing filter |

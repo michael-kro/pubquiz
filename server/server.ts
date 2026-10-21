@@ -90,7 +90,7 @@ export interface ServerOptions {
   onHostKeyChange?(key: string): void;
   /** Name, colours and logo for every page. */
   branding?: BrandingSource;
-  /** The Wi-Fi network teams can join, shown as a QR code beside the join code (for a travel router or hotspot). */
+  /** The Wi-Fi network teams can join, shown as a QR code beside the join code (for a hotspot). */
   wifi?: { ssid: string; password?: string };
   /** Let teams add a photo (the host can still switch it off). Default on. */
   photos?: boolean;

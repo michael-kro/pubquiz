@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Turns a track list into a music round the host plays from their own Spotify/Apple Music:
+// Turns a track list into a music round the host plays from their own music app:
 //   node scripts/music-round.ts tracks.txt <out-folder> "<title>"
 // One track per line: "Artist - Title" (an optional "| hint" is shown to the host). Teams answer the
 // artist (or title); the host cues the track from the quiz screen. No audio is stored or streamed.
