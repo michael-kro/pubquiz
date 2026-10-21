@@ -135,11 +135,13 @@ test('HTTP upload fuzzing: malformed, mislabelled and oversized files to every u
   const outcomes: Outcome[] = [];
   const statuses: Record<string, Record<number, number>> = {};
   const keyBefore = server.hostKey;
-  const SECRETS = [server.hostKey, server.screenKey, root];
+  const MUST_NOT_APPEAR: [string, string][] = [[server.hostKey, 'the host key'], [server.screenKey, 'the TV key'], [root, 'a path']];
 
-  /** Mostly the host key; sometimes none, or the TV's key where the host's belongs. */
-  const hostHeaders = (): Record<string, string> => (gen.chance(0.85) ? { 'x-host-key': server.hostKey } : gen.chance(0.5) ? {} : { 'x-host-key': server.screenKey });
-  const isAuthorised = (headers: Record<string, string>) => headers['x-host-key'] === server.hostKey;
+  /** Mostly the host key; sometimes none, or the TV's key where the host's belongs. Marked so `send` knows what to expect. */
+  const RIGHT = Symbol('the right credential');
+  type Headers = Record<string, string> & { [RIGHT]?: true };
+  const hostHeaders = (): Headers => (gen.chance(0.85) ? { 'x-host-key': server.hostKey, [RIGHT]: true } : gen.chance(0.5) ? {} : { 'x-host-key': server.screenKey });
+  const isAuthorised = (headers: Headers) => headers[RIGHT] === true;
 
   /** A request written by hand, so the content-length can lie: shorter, longer, absurd or negative. */
   const rawRequest = (method: string, path: string, headers: Record<string, string>, body: Buffer, declared: number) =>
@@ -164,7 +166,7 @@ test('HTTP upload fuzzing: malformed, mislabelled and oversized files to every u
     });
 
   /** Sends one request and records how it went. */
-  const send = async (target: string, method: string, path: string, headers: Record<string, string>, body?: Buffer, authorised = isAuthorised(headers)): Promise<Outcome> => {
+  const send = async (target: string, method: string, path: string, headers: Headers, body?: Buffer, authorised = isAuthorised(headers)): Promise<Outcome> => {
     let outcome: Outcome;
     try {
       if (body && gen.chance(0.1)) {
@@ -182,7 +184,7 @@ test('HTTP upload fuzzing: malformed, mislabelled and oversized files to every u
     outcomes.push(outcome);
     (statuses[outcome.target] ??= {})[outcome.status] = (statuses[outcome.target]![outcome.status] ?? 0) + 1;
     assert.notEqual(outcome.status, 500, `${target} ${path}: an unhandled error: ${outcome.body}`);
-    for (const secret of SECRETS) assert.ok(!outcome.body.includes(secret), `${target} ${path}: the response leaks ${secret === root ? 'a path' : 'a key'}`);
+    for (const [text, what] of MUST_NOT_APPEAR) assert.ok(!outcome.body.includes(text), `${target} ${path}: the response leaks ${what}`);
     if (!authorised) assert.ok(outcome.status < 200 || outcome.status >= 300, `${target} ${path}: said yes (${outcome.status}) without the right credential`);
     return outcome;
   };
