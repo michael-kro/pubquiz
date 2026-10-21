@@ -26,7 +26,7 @@ Phones and the TV won't trust that authority, and a hosts-file entry only works 
 
 ## For the venue
 
-- **DNS on the router.** Add a record that points your name at the laptop's address, in the router's DNS settings (on a GL.iNet or OpenWrt router: static DNS / hostname, or dnsmasq `address=/quiz.internal/192.168.8.x`). Give the laptop a fixed address on that router so the record stays right.
+- **DNS on the router.** Add a record that points your name at the laptop's address, in the router's DNS settings. Give the laptop a fixed address on that router so the record stays right.
 - **Only then** tell the quiz to use the name in the QR code: set `PUBQUIZ_PUBLIC_URL: "https://quiz.internal"` in `compose.yaml` (or start the program with `--public-url https://quiz.internal`). Before the router has the record, phones can't find the name and joining would fail, so leave it empty until then.
 - **A padlock on guests' phones** needs a real domain you own, for example `quiz.yourdomain.com`, with its A record pointing at the laptop's address on the venue Wi-Fi. In `docker/Caddyfile`, delete the `tls internal` line and Caddy fetches a real Let's Encrypt certificate itself. Because the address is a private one, Let's Encrypt can't reach it to check, so use the DNS challenge: build Caddy with your DNS provider's plugin and add `tls { dns <provider> {env.API_TOKEN} }`. Typing the full `https://` address, or scanning the QR code, avoids the browser treating it as a search.
 - **Keep the host console private.** The quiz still answers on port 3000 over HTTP. Start it with `--host-local-only` so the host screen only works on the laptop itself (open `http://localhost:3000/host` there). Teams use the HTTPS address.

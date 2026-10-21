@@ -44,7 +44,7 @@ Back that folder up and you have everything. To use a different folder (a Dropbo
 
 ## If something goes wrong
 
-- Teams can't connect, or the venue Wi-Fi is awkward: [docs/VENUE-TROUBLESHOOTING.md](docs/VENUE-TROUBLESHOOTING.md) (a small travel router is the reliable fix: [docs/ROUTER-SETUP.md](docs/ROUTER-SETUP.md)).
+- Teams can't connect, or the venue Wi-Fi is awkward: [docs/VENUE-TROUBLESHOOTING.md](docs/VENUE-TROUBLESHOOTING.md) (the internet link works from 4G or any Wi-Fi, so teams don't need the venue's network).
 - Phones that lose signal rejoin by themselves, and a laptop crash or restart picks the quiz up where it stopped: just start the program again and press **Resume ▶**.
 
 ## More
