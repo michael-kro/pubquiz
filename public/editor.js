@@ -100,7 +100,7 @@ async function prepareImage(file) {
  * Mounts the editor for quiz `id` into `container`.
  * `api(method, path, body)` calls the host API; `onExit()` goes back to the library; `onRun()` after a quiz starts.
  */
-export async function mountEditor(container, { id, hostKey, api, onExit, onRun }) {
+export async function mountEditor(container, { id, api, blobUrlFor, downloadWithKey, notice, onExit, onRun }) {
   const loaded = await api('GET', `/quizzes/${id}`);
   const model = toModel(loaded.draft);
   if (model.rounds.length === 0) model.rounds.push({ key: newKey(), name: 'Round 1', questions: [blankQuestion()] });
@@ -112,8 +112,27 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
   let runProblems = [];
   let dragKey = null;
 
-  const imageUrl = (path) =>
-    /^https?:\/\//i.test(path) ? path : `/api/quizzes/${encodeURIComponent(id)}/images/${encodeURIComponent(path.replace(/^images\//, ''))}?key=${encodeURIComponent(hostKey)}`;
+  // This quiz's pictures and clips are fetched with the key in a header and shown from blob URLs, so the key never sits
+  // in an address. A preview shows blank until its file arrives, then the editor redraws.
+  const mediaBlobs = new Map();
+  const mediaPending = new Set();
+  const mediaUrl = (kind, path) => {
+    if (/^https?:\/\//i.test(path)) return path;
+    const apiPath = `/api/quizzes/${encodeURIComponent(id)}/${kind}/${encodeURIComponent(path.replace(kind === 'images' ? /^images\// : /^audio\//, ''))}`;
+    if (mediaBlobs.has(apiPath)) return mediaBlobs.get(apiPath);
+    if (!mediaPending.has(apiPath)) {
+      mediaPending.add(apiPath);
+      blobUrlFor(apiPath)
+        .then((url) => {
+          mediaBlobs.set(apiPath, url);
+          render();
+        })
+        .catch(() => {})
+        .finally(() => mediaPending.delete(apiPath));
+    }
+    return '';
+  };
+  const imageUrl = (path) => mediaUrl('images', path);
 
   function find(key) {
     for (const [r, round] of model.rounds.entries()) {
@@ -293,6 +312,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
   }
 
   async function uploadImage(question, file) {
+    mediaBlobs.clear(); // a replaced file must not show its old preview
     const status = container.querySelector('[data-problem="image"]');
     if (status) status.textContent = 'Uploading…';
     try {
@@ -400,10 +420,10 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
     changed({ structure: true });
   }
 
-  const audioUrl = (path) =>
-    /^https?:\/\//i.test(path) ? path : `/api/quizzes/${encodeURIComponent(id)}/audio/${encodeURIComponent(path.replace(/^audio\//, ''))}?key=${encodeURIComponent(hostKey)}`;
+  const audioUrl = (path) => mediaUrl('audio', path);
 
   async function uploadAudio(question, file) {
+    mediaBlobs.clear();
     const status = container.querySelector('[data-problem="audio"]');
     if (status) status.textContent = 'Uploading…';
     try {
@@ -416,6 +436,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
   }
 
   async function uploadRevealClip(question, file) {
+    mediaBlobs.clear();
     try {
       const result = await api('POST', `/quizzes/${id}/audio?name=${encodeURIComponent(file.name)}`, file);
       question.revealAudio = result.path;
@@ -1021,7 +1042,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           h('span', { class: 'problem-count' }),
           h('span', { class: 'save-status', role: 'status' }),
           h('button', { type: 'button', onclick: openBank }, '📚 Question bank'),
-          h('a', { class: 'button', href: `/api/quizzes/${id}/export.zip?key=${encodeURIComponent(hostKey)}`, onclick: () => flush() }, 'Export'),
+          h('button', { type: 'button', onclick: async () => { await flush(); downloadWithKey(`/api/quizzes/${id}/export.zip`, `${id}.zip`).catch((error) => notice?.(error.message)); } }, 'Export'),
           h('button', { type: 'button', class: 'primary', onclick: run }, 'Run quiz ▶'),
         ),
         h('ul', { class: 'editor-problems', hidden: true }),

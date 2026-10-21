@@ -278,7 +278,7 @@ export interface HostView {
   preloadImage?: string;
   /** The host can end this quiz and go back to the library. */
   canEnd: boolean;
-  /** Key for the read-only TV screen at /screen?key=…, safe to put on a TV. */
+  /** Key for the read-only TV screen at /screen#key=…, safe to put on a TV. */
   screenKey: string;
 }
 
@@ -298,7 +298,7 @@ export type ServerMessage =
   | { t: 'joined'; token: string; teamName: string }
   | { t: 'rejoin-failed' }
   | { t: 'host-key'; key: string }
-  | { t: 'play-clip'; url: string; title: string }
+  | { t: 'play-clip'; name: string; title: string }
   | { t: 'stop-clips' }
   | { t: 'error'; message: string }
   | { t: 'kicked' }

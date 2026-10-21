@@ -33,7 +33,7 @@ npm run try                              # a throwaway library and settings on p
 - Each phone times its own answer from when the question appears; the server checks that against what it saw and uses its own figure if the phone's does not fit. A slow connection is not penalised, and a doctored page cannot claim an instant answer.
 - Connections are rate-limited and dropped if they flood; wrong room codes, team codes and host PINs are limited per address.
 - Team names lose invisible and text-flipping characters, and swearing is blocked.
-- Every response carries a content security policy, no referrer, no framing and a permissions policy, so the host key in the host link cannot leak. Keys and PINs are compared in constant time.
+- Keys never travel in a request address: links carry them in the fragment (`#key=…`), which stays in the browser, and the pages fetch clips, QR codes, results and exports with the key in a header (`x-host-key`, `x-screen-key`). A key in a query string is ignored. Every response carries a content security policy, no referrer, no framing and a permissions policy. Keys and PINs are compared in constant time.
 
 ## Docker
 
