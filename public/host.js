@@ -114,7 +114,7 @@ function connect() {
     },
     onMessage(message) {
       if (message.t === 'state') {
-        if (message.view.phase === 'idle' && state?.phase !== 'idle' && message.view.library) void loadLibrary();
+        if (!TV && message.view.phase === 'idle' && state?.phase !== 'idle' && message.view.library) void loadLibrary();
         playSoundsFor(state, message.view);
         state = message.view;
         setDeadline(state.question?.remainingMs, state.question?.paused);
@@ -541,7 +541,8 @@ function libraryTools(total) {
         render();
       },
     }),
-    h(
+    // A phone has room for one column either way, so there is nothing to switch between.
+    isPhone() ? null : h(
       'div',
       { class: 'view-switch', role: 'group', 'aria-label': 'How to show the quizzes' },
       h('button', { type: 'button', class: libraryMode === 'tiles' ? 'active' : '', 'aria-pressed': String(libraryMode === 'tiles'), title: 'Tiles', onclick: () => setLibraryMode('tiles') }, '▦ Tiles'),
@@ -638,7 +639,7 @@ function libraryView(s) {
             shown.length === 0 ? h('p', { class: 'muted' }, `No quizzes match “${libraryFilter.trim()}”.`) : null,
             h(
             'ul',
-            { class: `quiz-cards${libraryMode === 'list' ? ' as-list' : ''}` },
+            { class: `quiz-cards${libraryMode === 'list' && !isPhone() ? ' as-list' : ''}` },
             shown.map((q) =>
               h(
                 'li',
@@ -876,7 +877,7 @@ function topBar(s) {
         'header',
         { class: 'host-bar phone-head' },
         h('div', { class: 'phone-head-row' }, hostBadge(), h('span', { class: 'quiz-title', title: s.quizTitle }, s.quizTitle), soundButton()),
-        h('div', { class: 'phone-head-row' }, h('span', { class: 'join-hint' }, s.joiningLocked ? [h('strong', { title: 'Closed to new teams' }, '🔒 Closed'), ' · '] : null, 'Room ', h('strong', {}, s.roomCode)), networkPill(s.network, true)),
+        h('div', { class: 'phone-head-row' }, networkPill(s.network, true), s.joiningLocked ? h('span', { class: 'join-hint' }, h('strong', { title: 'Closed to new teams' }, '🔒 Closed to new teams')) : null),
       ),
       h(
         'div',
@@ -941,7 +942,7 @@ function stage(s) {
           TV ? brandBlock() : null,
           h('h1', {}, 'Scan to join'),
           h('p', { class: 'big' }, joinText(s), TV ? null : [' ', copyButton(() => s.shortLinks?.join ?? s.joinUrl)]),
-          h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
+          h('p', { class: 'room-code-line' }, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
           h('p', { class: 'muted' }, 'One phone per team.'),
           TV ? [entryFeeBanner(s), prizeList(s.prizes, true)] : h('div', { class: 'lobby-extras' }, entryFeeEditor(s), prizesEditor(s)),
           TV

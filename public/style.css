@@ -1024,7 +1024,7 @@ body.play .prizes li { justify-content: center; }
 body.phone .phone-head { flex-direction: column; align-items: stretch; gap: 4px; padding: 8px 14px; }
 body.phone .phone-head-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 body.phone .phone-head-row:first-child .quiz-title { flex: 1; min-width: 0; font-size: 1.1rem; }
-body.phone .phone-head-row:last-child { justify-content: space-between; font-size: 0.85rem; color: var(--muted); }
+body.phone .phone-head-row:last-child { justify-content: flex-start; gap: 10px; font-size: 0.85rem; color: var(--muted); }
 body.phone .phone-head .sound-toggle { padding: 6px 10px; }
 body.phone .phone-actions { gap: 8px; }
 body.phone .phone-actions > * { min-width: 0; }
@@ -1044,3 +1044,18 @@ body.phone .fastest .gained { order: 3; }
 /* The answer box is shorter on a phone: the answer, and the "tap an option to change it" hint, without the second reminder line. */
 body.phone .answer-review { padding: 10px 14px; gap: 4px 10px; }
 body.phone .answer-review .answer-review-note { display: none; }
+
+/* A laptop-sized screen: a little less padding in the host's top bar so every button fits on the one line. */
+@media (max-width: 1400px) and (min-width: 981px) {
+  .host-bar { gap: 8px; padding: 10px 14px; }
+  .host-bar button, .host-bar .button { padding: 8px 10px; }
+  .host-bar .primary.next { padding: 10px 16px; }
+  .bar-id { min-width: 70px; }
+}
+
+/* On a phone the More and Break menus are a sheet across the bottom, above the buttons, so they can never run off the edge. */
+body.phone .phone-actions .break-menu { position: fixed; left: 12px; right: 12px; bottom: calc(84px + env(safe-area-inset-bottom)); top: auto; min-width: 0; z-index: 35; }
+body.phone .phone-actions .break-menu button { min-height: 48px; font-size: 1rem; }
+/* The host's phone is a remote: no room code (teams just scan or open the link), and a smaller QR code so the start controls sit higher. */
+body.phone .room-code-line { display: none; }
+body.phone .lobby .qr, body.phone:not(.tv) .lobby .qr { width: min(52vw, 220px); }
