@@ -37,6 +37,11 @@ let token = readToken();
 let state = null;
 let ended = null; // Message shown when this device is done (kicked or replaced).
 let joinError = '';
+
+/** This page's own view of its device, sent with a join so the server's phones-only check can let a tablet in desktop mode through. */
+function onPhone() {
+  return navigator.maxTouchPoints > 0 || matchMedia('(pointer: coarse)').matches;
+}
 let notice = '';
 let noticeTimer;
 let lastRenderKey = '';
@@ -82,7 +87,7 @@ function writeToken(value) {
 
 const socket = connectSocket({
   onOpen() {
-    if (token) socket.send({ t: 'rejoin', token });
+    if (token) socket.send({ t: 'rejoin', token, phone: onPhone() });
     else if (pendingJoin) socket.send(pendingJoin);
     pendingJoin = null;
     render();
@@ -267,7 +272,7 @@ function rejoinForm() {
   const submit = (event) => {
     event.preventDefault();
     joinError = '';
-    submitWhenConnected({ t: 'rejoin', code: form.code });
+    submitWhenConnected({ t: 'rejoin', code: form.code, phone: onPhone() });
     lastRenderKey = '';
     render();
   };
@@ -385,7 +390,7 @@ function joinForm() {
   const submit = (event) => {
     event.preventDefault();
     joinError = '';
-    submitWhenConnected({ t: 'join', room: form.room, name: form.name });
+    submitWhenConnected({ t: 'join', room: form.room, name: form.name, phone: onPhone() });
     lastRenderKey = '';
     render();
   };

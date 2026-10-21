@@ -223,7 +223,7 @@ test('a whole quiz on every screen: host on a laptop and a phone, the TV and a t
       await check('lobby-before-join');
       for (const name of ['Dragons', 'Wizards', 'Pirates', 'Robots', 'Ninjas', 'Pandas']) {
         const w = await connect();
-        w.send(JSON.stringify({ t: 'join', name }));
+        w.send(JSON.stringify({ t: 'join', name, phone: true })); // a bot has no browser; it says it is a phone, as the real team page does
         bots.push(w);
       }
       await team.page.locator('input').first().fill('Tour Team');

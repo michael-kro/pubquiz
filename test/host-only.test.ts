@@ -38,6 +38,7 @@ const HOST_ONLY_SAMPLES: Record<string, object> = {
   'admit-all': {},
   'set-entry-fee': { fee: '£5 per person' },
   'require-admission': { on: true },
+  'phones-only': { on: true },
   'set-prizes': { prizes: ['a', 'b', 'c'] },
   'lock-on-start': { on: true },
   'start-on-last': { on: true },
