@@ -1036,34 +1036,58 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
           // The quiz is gone or broken: the session cannot carry on.
         }
         practice.finish(session);
+        practice.forgetReview(learner, session.quizId);
         await practiceStore.save(learner);
         return undefined;
       };
+      /** Ends a session properly: its summary is kept and the review boxes move on. */
+      const close = (session: practice.PracticeSession, quiz: Quiz) => {
+        practice.finish(session, quiz);
+        practice.updateReview(learner, session, quiz);
+      };
       const answerView = async () => {
         const live = await currentWithQuiz();
-        return json(200, { name: learner.name, current: live ? practice.view(live.session, live.quiz) : null, history: historyOf() });
+        return json(200, { name: learner.name, current: live ? practice.view(live.session, live.quiz) : null, history: historyOf(), due: practice.dueReview(learner) });
       };
 
       if (parts.length === 2 && method === 'GET') return void (await answerView()), true;
+      if (parts[2] === 'progress' && parts.length === 3 && method === 'GET') return void json(200, { name: learner.name, ...practice.progress(learner) }), true;
+      if (parts[2] === 'export.csv' && parts.length === 3 && method === 'GET') {
+        res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${learner.name.replace(/[^\w .-]/g, '_')} practice.csv"`, 'cache-control': 'no-store' });
+        res.end('﻿' + practice.learnerCsv(learner));
+        return true;
+      }
 
       if (parts[2] === 'sessions' && parts.length === 3 && method === 'POST') {
         const body = await readJsonBody(req);
         const quizId = typeof body['quizId'] === 'string' ? body['quizId'] : '';
         const { hash, quiz } = await practiceQuiz(quizId);
         const count = Number(body['count']);
-        const only = Array.isArray(body['only']) ? body['only'].filter((i): i is number => Number.isInteger(i) && i >= 0 && i < quiz.questions.length) : undefined;
-        for (const s of learner.sessions) if (!s.finishedAt) practice.finish(s); // one at a time; a half-done one stays in the history
-        learner.sessions.push(startSession(quiz, quizId, hash, { mode: body['mode'] === 'test' ? 'test' : 'learn', shuffle: body['shuffle'] === true, ...(Number.isInteger(count) && count > 0 ? { count } : {}), ...(only?.length ? { only } : {}) }));
+        let only = Array.isArray(body['only']) ? body['only'].filter((i): i is number => Number.isInteger(i) && i >= 0 && i < quiz.questions.length) : undefined;
+        let kind: practice.PracticeOptions['kind'];
+        if (body['review'] === true) {
+          // What is due for another look in this quiz, provided the quiz is still the one those questions came from.
+          only = practice.dueReview(learner).find((g) => g.quizId === quizId)?.indices.filter((i) => i < quiz.questions.length) ?? [];
+          if (!only.length) throw new PracticeError('Nothing in this quiz is due for review right now.');
+          kind = 'review';
+        }
+        const minutes = body['timeLimitMinutes'] === undefined ? undefined : Number(body['timeLimitMinutes']);
+        for (const s of learner.sessions) if (!s.finishedAt) close(s, s.quizId === quizId ? quiz : (await practiceQuiz(s.quizId).catch(() => undefined))?.quiz ?? quiz); // one at a time; a half-done one stays in the history
+        learner.sessions.push(startSession(quiz, quizId, hash, { mode: body['mode'] === 'test' ? 'test' : 'learn', shuffle: body['shuffle'] === true, ...(Number.isInteger(count) && count > 0 ? { count } : {}), ...(only?.length ? { only } : {}), ...(minutes !== undefined ? { timeLimitMinutes: minutes } : {}), ...(kind ? { kind } : {}) }));
         await practiceStore.save(learner);
         return void (await answerView()), true;
       }
 
-      if (parts[2] === 'sessions' && parts[3] && parts[4] === 'results' && method === 'GET') {
+      if (parts[2] === 'sessions' && parts[3] && (parts[4] === 'results' || parts[4] === 'export.csv') && method === 'GET') {
         const session = learner.sessions.find((s) => s.id === parts[3]);
         if (!session?.finishedAt) return void json(404, { error: 'No such finished session.' }), true;
         const { hash, quiz } = await practiceQuiz(session.quizId);
         if (hash !== session.quizHash) return void json(409, { error: 'The quiz has changed since this session, so its questions cannot be shown.' }), true;
-        return void json(200, practice.results(session, quiz)), true;
+        const r = practice.results(session, quiz);
+        if (parts[4] === 'results') return void json(200, r), true;
+        res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${learner.name.replace(/[^\w .-]/g, '_')} - ${r.quizTitle.replace(/[^\w .-]/g, '_')}.csv"`, 'cache-control': 'no-store' });
+        res.end('﻿' + practice.resultsCsv(learner, r));
+        return true;
       }
 
       if (parts[2] === 'current' && parts[3] && method === 'POST') {
@@ -1071,6 +1095,12 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (!live) return void json(404, { error: 'Nothing is in progress. Start a quiz.' }), true;
         const { session, quiz } = live;
         const body = await readJsonBody(req);
+        // Exam simulation: once the clock has run out, whatever the learner was about to do, the paper is taken in.
+        if (practice.timeUp(session) && parts[3] !== 'abandon') {
+          close(session, quiz);
+          await practiceStore.save(learner);
+          return void json(200, { timeUp: true, results: practice.results(session, quiz) }), true;
+        }
         switch (parts[3]) {
           case 'answer': practice.answer(session, quiz, body['value'] as never); break;
           case 'next': practice.move(session, 1); break;
@@ -1078,7 +1108,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
           case 'skip': practice.skip(session); break;
           case 'flag': practice.toggleFlag(session); break;
           case 'reveal': return void json(200, practice.revealForSelfMarking(session, quiz)), true;
-          case 'finish': practice.finish(session); await practiceStore.save(learner); return void json(200, practice.results(session, quiz)), true;
+          case 'finish': close(session, quiz); await practiceStore.save(learner); return void json(200, practice.results(session, quiz)), true;
           case 'abandon': learner.sessions = learner.sessions.filter((s) => s !== session); break;
           default: return void json(404, { error: 'Not found.' }), true;
         }

@@ -1065,8 +1065,9 @@ body.phone .lobby .qr-pair { gap: 16px; }
 body.phone .lobby .qr-pair .qr, body.phone:not(.tv) .lobby .qr-pair .qr { width: min(40vw, 160px); }
 
 /* Practice mode: one learner, a calm page that works on a phone, a tablet or a laptop. */
-body.practice { padding-bottom: 32px; }
-.pr-shell { max-width: 760px; padding: 20px 16px; }
+body.practice { padding: 0; }
+/* Bottom room goes inside the page box (which is min-height 100dvh), so a short screen never has a scrollbar. */
+.pr-shell { max-width: 760px; padding: 20px 16px 40px; }
 .pr-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
 .pr-who { min-width: 0; overflow-wrap: anywhere; }
 .pr-meta { font-variant-numeric: tabular-nums; }
@@ -1121,9 +1122,43 @@ body.practice { padding-bottom: 32px; }
 .pr-review li.wrong .mark { color: var(--wrong); }
 .pr-review-q { font-weight: 600; }
 body.practice .reorder-item .move { font-size: 0.9rem; }
-@media (min-width: 700px) { .pr-shell { padding: 28px 24px; } .pr-card { padding: 26px; } }
+@media (min-width: 700px) { .pr-shell { padding: 28px 24px 48px; } .pr-card { padding: 26px; } }
 .pr-options input[type='radio'], .pr-options input[type='checkbox'] { width: auto; flex: none; margin: 0; }
 .pr-choice input { margin-top: 0.35em; }
 .practice-card .qr { width: min(36vh, 260px); }
 .practice-card .copy-link { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; max-width: 100%; }
 .practice-card .copy-link code { overflow-wrap: anywhere; font-size: 0.85rem; text-align: left; }
+/* Practice stage 2: review boxes, exam countdown, progress, print. */
+.pr-due-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
+.pr-due-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.pr-countdown { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent); }
+.pr-countdown.urgent { color: var(--wrong); animation: pr-pulse 1s ease-in-out infinite; }
+@keyframes pr-pulse { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .pr-countdown.urgent { animation: none; } }
+.pr-time-limit { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 600; }
+.pr-time-limit select { font: inherit; padding: 6px 10px; border-radius: 8px; background: var(--surface-2); color: var(--text); border: 0; }
+.pr-timed-out { color: var(--wrong); font-weight: 600; }
+.pr-tools { margin: 10px 0 0; }
+.pr-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; text-align: center; }
+.pr-stat { display: grid; gap: 2px; }
+.pr-stat strong { font-size: 1.8rem; }
+.pr-topics .track.weak .fill, .pr-attempts .track .fill { background: var(--accent); }
+.pr-topics .track.weak .fill { background: var(--wrong); }
+.pr-hardest { padding-left: 22px; display: grid; gap: 6px; }
+.pr-hardest-q { font-weight: 600; }
+.pr-progress-page h2 { margin: 22px 0 8px; }
+@media print {
+  body.practice { background: #fff; color: #000; }
+  .pr-actions, .pr-tools, .pr-top button, .pr-flag, .notice, .pr-due button { display: none !important; }
+  .pr-card, .pr-review li, .pr-history li { background: #fff; border: 1px solid #ccc; break-inside: avoid; color: #000; }
+  .pr-pct { color: #000; }
+  .track { border: 1px solid #999; }
+}
+.practice-learners { width: 100%; max-width: 520px; text-align: left; border-top: 1px solid var(--surface-2); padding-top: 10px; }
+.practice-learners h3 { margin: 4px 0 8px; }
+.practice-learners .codes-head { padding: 0; margin-bottom: 6px; }
+.practice-attempts { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 4px; max-height: 220px; overflow: auto; }
+.practice-attempts li { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; padding: 4px 8px; border-radius: 8px; background: var(--surface-2); }
+.practice-attempts .link-button { padding: 0; font-weight: 700; }
+.pr-attempts .pr-bar { grid-template-columns: minmax(160px, 2fr) 1fr auto; }
+.pr-attempts .pr-bar-name { white-space: normal; }

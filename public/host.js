@@ -1947,15 +1947,57 @@ let hostQrOpen = false;
 // Practice mode: a separate page with its own key, for one learner at a time. The host hands over the link or the QR code.
 let practiceOpen = false;
 let practiceLink = '';
+let practiceLearners = [];
+let practiceProgress = null; // { name, attempts, topics, hardest, due, … } for the learner being looked at
 
 async function openPractice() {
   try {
     practiceLink = (await api('GET', '/practice/link')).url;
+    practiceLearners = await api('GET', '/practice/learners');
+    practiceProgress = null;
     practiceOpen = true;
   } catch (error) {
     showNotice(error.message);
   }
   render();
+}
+
+/** The parent's or teacher's view: how a learner is getting on, from their saved attempts. */
+async function showLearner(name) {
+  try {
+    practiceProgress = await api('GET', `/practice/learners/${encodeURIComponent(name)}/progress`);
+  } catch (error) {
+    showNotice(error.message);
+  }
+  render();
+}
+
+function learnerProgressPanel() {
+  if (practiceProgress) {
+    const p = practiceProgress;
+    const when = (iso) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    return h(
+      'div',
+      { class: 'practice-learners' },
+      h('div', { class: 'codes-head' }, h('h3', {}, `📈 ${p.name}`), h('button', { type: 'button', onclick: () => { practiceProgress = null; render(); } }, '‹ All learners')),
+      p.attempts.length === 0
+        ? h('p', { class: 'muted' }, 'No finished attempts yet.')
+        : [
+            h('p', {}, `${p.attempts.length} ${p.attempts.length === 1 ? 'attempt' : 'attempts'} · ${p.answered} questions · ${p.percent}% right overall${p.reviewing ? ` · ${p.reviewing} to keep an eye on` : ''}`),
+            p.topics.length ? h('p', { class: 'muted small' }, 'Weakest topics: ', p.topics.slice(0, 4).map((t) => `${t.round} ${t.percent}%`).join(' · ')) : null,
+            h('ul', { class: 'practice-attempts' }, p.attempts.slice(-8).reverse().map((a) => h('li', {}, h('span', {}, `${when(a.finishedAt)} · ${a.quizTitle} · ${a.kind ?? a.mode}`), h('strong', {}, `${a.right}/${a.total}`)))),
+            p.hardest.length ? h('p', { class: 'muted small' }, 'Missed most: ', p.hardest.slice(0, 3).map((x) => `“${x.text}” (${x.misses})`).join(' · ')) : null,
+            h('button', { type: 'button', onclick: () => downloadWithKey(`/api/practice/learners/${encodeURIComponent(p.name)}/export.csv`, `${p.name}.csv`).catch((error) => showNotice(error.message)) }, '⬇ CSV of every attempt'),
+          ],
+    );
+  }
+  if (!practiceLearners.length) return h('p', { class: 'muted small' }, 'Nobody has practised yet. Once someone has, their attempts show up here.');
+  return h(
+    'div',
+    { class: 'practice-learners' },
+    h('h3', {}, 'Learners'),
+    h('ul', { class: 'practice-attempts' }, practiceLearners.map((l) => h('li', {}, h('button', { type: 'button', class: 'link-button', onclick: () => showLearner(l.name) }, l.name), h('span', { class: 'muted small' }, `${l.sessions} ${l.sessions === 1 ? 'attempt' : 'attempts'}${l.lastAt ? ` · last ${new Date(l.lastAt).toLocaleDateString()}` : ''}`)))),
+  );
 }
 
 function practiceOverlay() {
@@ -1983,6 +2025,7 @@ function practiceOverlay() {
       h('img', { class: 'qr', src: imageWithKey('/practice-qr.svg'), alt: 'QR code for the practice page' }),
       h('p', { class: 'copy-link' }, h('code', {}, practiceLink), ' ', h('button', { type: 'button', onclick: copy }, '📋 Copy link')),
       h('p', { class: 'muted small' }, 'The link has its own key: anyone with it can practise any quiz in your library and see the answers, so give it to learners, not teams. Changing the host key changes it too.'),
+      learnerProgressPanel(),
       h('div', { class: 'card-actions' }, h('a', { class: 'button primary', href: practiceLink, target: '_blank', rel: 'noopener' }, 'Open practice here'), h('button', { type: 'button', onclick: close }, 'Close')),
     ),
   );
