@@ -11,3 +11,6 @@ dist/
 *.crt
 *.pem
 *.key
+# Browser tour output
+test-results/
+playwright-report/

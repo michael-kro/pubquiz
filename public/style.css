@@ -1059,3 +1059,6 @@ body.phone .phone-actions .break-menu button { min-height: 48px; font-size: 1rem
 /* The host's phone is a remote: no room code (teams just scan or open the link), and a smaller QR code so the start controls sit higher. */
 body.phone .room-code-line { display: none; }
 body.phone .lobby .qr, body.phone:not(.tv) .lobby .qr { width: min(52vw, 220px); }
+/* With a Wi-Fi code as well, the two codes share the width side by side; they must never push the page wider than the phone. */
+body.phone .lobby .qr-pair { gap: 16px; }
+body.phone .lobby .qr-pair .qr, body.phone:not(.tv) .lobby .qr-pair .qr { width: min(40vw, 160px); }
