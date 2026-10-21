@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Licence:** the project is under the MIT licence. See `LICENSE`.
+
 ## 0.1.3 — 2026-10-21
 
 - **No more downloadable programs:** the five single-file programs (Mac, Windows, Linux) are gone. They were unsigned, so every user got an operating system warning, and they carried a second copy of the pages to maintain. Run the Docker image or the source instead; the README quick start is now built on Docker. Removed `npm run build:binaries`, the build script, the embedded-files code and the `bun` dependency.

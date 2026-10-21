@@ -18,6 +18,7 @@
     "check": "npm run typecheck && npm test",
     "docker:build": "docker build -t pubquiz ."
   },
+  "license": "MIT",
   "engines": {
     "node": ">=22.18"
   },

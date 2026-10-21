@@ -67,3 +67,8 @@ Back that folder up and you have everything. To use a different folder (a Dropbo
 | `hotfix/<name>` | An urgent fix to a released version (a crash, a wrong score, a security problem) | `main` | `main`, then back into `develop` |
 
 Every change is a pull request that passes the tests and the security scans, adds a line to [CHANGELOG.md](CHANGELOG.md), and (for a fix) comes with a test that fails without it. A hotfix gets a patch release straight away (`0.2.1`) and does not wait for the schedule. The full process, the release-day checklist and the hotfix steps are in [docs/RELEASING.md](docs/RELEASING.md).
+
+## Licence
+
+[MIT](LICENSE): use it, change it, share it, run quizzes with it, free of charge. The one condition is that copies keep the copyright notice in the licence file. The libraries it uses keep their own (permissive) licences. Logos, badges, sound clips and photos that *you* add to your own library stay yours or their owners', and are not part of this project.
+
