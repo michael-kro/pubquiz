@@ -33,7 +33,8 @@ Checked locally before pushing: the steps run clean in Node 22.18 and 24 contain
 ## Stage 4: nightly and release
 
 - **ZAP full (active) scan** nightly against the container, plus **nuclei** for misconfigurations and missing security headers.
-- **WebSocket fuzz test:** ZAP handles the game's WebSocket messages poorly, so a small harness sends malformed, oversized and out-of-order messages as each role (nobody, team, TV, host) and checks the server stays up and leaks nothing.
+- **WebSocket fuzz test — DONE** (`test/slow/fuzz-ws.test.ts`, runs with the load test in CI): a seeded harness sends malformed, oversized, binary, flooding, out-of-order and wrong-role messages as a stranger, a team, the TV and the host, and checks the server stays up, no setting changes, no answer reaches a phone or the TV before the reveal, and the quiz can still be played to the end.
+- **Base image security fixes — DONE:** the Dockerfile applies Debian's updates at build time (`apt-get upgrade`), the release build always pulls the newest base image, and Dependabot no longer proposes Node major versions.
 - **Release job:** build the programs on each operating system, with checksums, an SBOM and signed provenance, and scan the image before publishing it.
 
 ## Keeping noise down

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **WebSocket fuzz test:** a seeded test hammers the server as a stranger, a team, the TV and the host with junk, oversized and binary frames, floods, out-of-order and wrong-role messages, and checks it stays up, changes nothing it should not, leaks no answer early, and can still finish a quiz. It runs with the load test in CI.
+- **Docker image:** Debian security fixes are applied at build time and the release build always starts from the newest base image, so a stale base can no longer fail the vulnerability scan or ship. Dependabot no longer proposes Node major versions.
 ## 0.1.4 — 2026-10-21
 
 - **Docs:** rewritten to be short: the README is the quick start, the host guide now holds everything a host needs (including hosting from a phone, how phones connect and troubleshooting), and the getting-started and venue-troubleshooting pages are folded into them.
