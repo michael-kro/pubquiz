@@ -1,0 +1,74 @@
+# Dynamic scanning with OWASP ZAP against the running app (stage 3 of docs/plans/ci-and-security.md).
+# Every pull request gets a quick passive scan; a deeper active scan runs nightly. The active scan attacks the app,
+# so it only ever runs against a throwaway copy started inside the job, never against anything real.
+name: DAST
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+    inputs:
+      scan:
+        description: 'Which scan to run'
+        type: choice
+        options: [baseline, full]
+        default: baseline
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dast-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+env:
+  ZAP_IMAGE: ghcr.io/zaproxy/zaproxy:stable
+
+jobs:
+  baseline:
+    name: ZAP baseline scan
+    if: github.event_name != 'schedule' && (github.event_name != 'workflow_dispatch' || inputs.scan == 'baseline')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Start the app on a throwaway library
+        run: bash scripts/ci-start-app.sh
+      - name: ZAP baseline (passive) scan, as the signed-in host
+        run: bash scripts/ci-zap.sh baseline
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: zap-baseline
+          path: ${{ runner.temp }}/zap
+          if-no-files-found: ignore
+      - name: App log
+        if: always()
+        run: docker logs pubquiz 2>&1 | tail -50
+
+  full:
+    name: ZAP full (active) scan
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.scan == 'full')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Start the app on a throwaway library
+        run: bash scripts/ci-start-app.sh
+      - name: ZAP full (active) scan, as the signed-in host
+        run: bash scripts/ci-zap.sh full
+      - name: Keep the reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: zap-full
+          path: ${{ runner.temp }}/zap
+          if-no-files-found: ignore
+      - name: App log
+        if: always()
+        run: docker logs pubquiz 2>&1 | tail -50

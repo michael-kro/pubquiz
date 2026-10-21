@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Dynamic scanning (OWASP ZAP):** a passive scan on every pull request and an active one nightly, run against a throwaway copy of the app. Error pages, `/status.json` and `/healthz` now carry the same security headers as the pages, and every response has a Permissions-Policy and cross-origin opener and resource policies.
 - **Security scanning in CI:** Semgrep (with the app's own rules), CodeQL, hadolint and Trivy run on every push and pull request and weekly. The Docker image is built in two stages and no longer ships npm (fewer packages, smaller, and three scanner findings gone). A new test makes every WebSocket message type be classified as host-only or open. GitHub Actions are pinned to commit hashes.
 - **Continuous integration:** every push and pull request now runs typecheck and tests on Node 22.18 and 24, the load test, `npm audit`, a secret scan and a workflow lint; Dependabot keeps dependencies, actions and the Docker base image up to date. Plans for what comes next are in `docs/plans/`.
 - **Fixes from a full screen tour (host on a phone and a laptop, the TV and a team phone, every question type):** the host top bar fits on a 1280px-wide laptop; the More and Break menus on a phone are a sheet above the buttons instead of running off the edge; the TV page no longer makes two requests it is not allowed to; the host phone drops the room code and the Tiles/List switch.

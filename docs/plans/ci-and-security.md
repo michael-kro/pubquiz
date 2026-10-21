@@ -23,10 +23,12 @@ Checked locally before pushing: the steps run clean in Node 22.18 and 24 contain
 - **hadolint** and **Trivy** on the Dockerfile and the built image. The image is now built in two stages and ships without npm, which removed three high-severity findings that came from npm's own bundled packages (not the app's). It builds, runs healthy and starts its internet link as before.
 - GitHub Actions are pinned to commit hashes (Dependabot keeps them current, with a one-week wait before new releases), and the scans also run weekly.
 
-## Stage 3: browser tests and a quick DAST
+## Stage 3: dynamic scanning (DAST) — DAST DONE (`dast.yml`), browser tests still to do
 
-- Turn the screen tour (a script that plays a whole quiz while watching the host on a phone and a laptop, the TV and a team phone) into a Playwright test: it fails on JavaScript errors or sideways scrolling, and keeps the screenshots as artefacts.
-- **OWASP ZAP baseline scan** (passive, about 2 minutes) on every pull request. Start the app from a sample library and give ZAP the host key as a header so it can scan `/host` and `/api`.
+- **OWASP ZAP baseline scan** (passive, a few minutes) on every pull request and push to `develop` or `main`. The job builds the image, starts it on a throwaway library with a random host key (`scripts/ci-start-app.sh`), and scans it signed in as the host (`scripts/ci-zap.sh`: the key goes on every request as the `x-host-key` header, and ZAP's browser spider explores the host page and the API). Findings are tuned in `.zap/rules.tsv`: missing security headers fail the build, a few informational or deliberate ones are ignored with the reason written beside them. The HTML and JSON reports are kept as an artifact.
+- **ZAP full (active) scan** nightly and on demand (Actions tab, "DAST", choose `full`). It attacks the throwaway copy only.
+- What the first scans found and fixed: error pages and `/status.json` and `/healthz` had no security headers or content type; the page headers lacked Permissions-Policy and the cross-origin opener and resource policies. They now have them, and a test covers it.
+- **Still to do:** turn the screen tour (a script that plays a whole quiz while watching the host on a phone and a laptop, the TV and a team phone) into a Playwright test that fails on JavaScript errors or sideways scrolling, and keeps the screenshots as artifacts.
 
 ## Stage 4: nightly and release
 
