@@ -48,7 +48,8 @@ async function readJson(req: IncomingMessage): Promise<unknown> {
 /** Handles /api/… requests. Returns false if the path isn't an API route. */
 export async function handleApi(req: IncomingMessage, res: ServerResponse, url: URL, ctx: ApiContext): Promise<boolean> {
   if (!url.pathname.startsWith('/api/')) return false;
-  const key = (req.headers['x-host-key'] as string | undefined) ?? url.searchParams.get('key') ?? undefined;
+  // The key comes in a header, never in the address, so it cannot end up in a proxy's or anyone's logs.
+  const key = typeof req.headers['x-host-key'] === 'string' ? req.headers['x-host-key'] : undefined;
   if (!ctx.isHost(key, req)) {
     sendJson(res, 401, { error: 'Use the host link printed when the quiz program started.' });
     return true;

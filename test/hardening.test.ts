@@ -81,6 +81,25 @@ test('the game uses the name check, and the host can turn the word filter off', 
   open.dispose();
 });
 
+test('keys travel in headers and in the link fragment, never in a request address', async () => {
+  // A key in a URL passes through any proxy (the internet link included) and can sit in its logs. The host link carries
+  // its key after the #, which browsers keep to themselves, and the pages fetch clips, QR codes and downloads with the
+  // key in a header. A key given in the address is simply not a key.
+  const server = await start();
+  assert.match(server.hostUrl, /\/host#key=/);
+  assert.doesNotMatch(server.hostUrl, /\?key=/);
+  const base = `http://127.0.0.1:${server.port}`;
+  for (const [path, inAddress, inHeader] of [
+    ['/results.csv', 404, 200],
+    ['/host-qr.svg', 401, 200],
+    ['/api/quizzes', 401, undefined],
+  ] as const) {
+    assert.equal((await fetch(`${base}${path}?key=${server.hostKey}`)).status, inAddress, `${path} with the key in the address`);
+    if (inHeader) assert.equal((await fetch(`${base}${path}`, { headers: { 'x-host-key': server.hostKey } })).status, inHeader, `${path} with the key in a header`);
+  }
+  await server.close();
+});
+
 test('an oversized WebSocket frame closes that connection and nothing else', async () => {
   // Found by the fuzz test: without an error listener on each socket, ws's "Max payload size exceeded" was an
   // uncaught exception, so one 5 KB frame from anyone with the join link took the whole server down.

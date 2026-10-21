@@ -424,6 +424,11 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     return a.length === b.length && timingSafeEqual(a, b);
   }
   const isHostKey = (key: string | undefined) => keyIs(hostKey, key);
+  /** The key a request presents, in a header: never in the address, so it cannot end up in a proxy's or anyone's logs. */
+  const presentedKey = (req: IncomingMessage): string | undefined => {
+    const value = req.headers['x-host-key'] ?? req.headers['x-screen-key'];
+    return typeof value === 'string' ? value : undefined;
+  };
   /** With --host-local-only the host controls work only from the laptop running the quiz. */
   const hostAllowed = (req: IncomingMessage) => !options.hostLocalOnly || isLocalRequest(req);
 
@@ -602,7 +607,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (!clips || !(await clips.has(msg.name))) return send(conn, { t: 'error', message: 'That clip is gone.' });
         const title = (await clips.list()).find((c) => c.name === msg.name)?.title ?? msg.name;
         for (const other of connections) {
-          if (other.role === 'screen') send(other, { t: 'play-clip', url: `/clip/${encodeURIComponent(msg.name)}?key=${screenKey}`, title });
+          if (other.role === 'screen') send(other, { t: 'play-clip', name: msg.name, title });
         }
         return;
       }
@@ -848,7 +853,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
       res.end(JSON.stringify(body));
     };
-    const key = (req.headers['x-host-key'] as string | undefined) ?? url.searchParams.get('key') ?? undefined;
+    const key = presentedKey(req);
     const isHost = isHostKey(key) && hostAllowed(req);
     if (!clips) return void json(404, { error: 'Clips are not set up.' }), true;
     try {
@@ -898,8 +903,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
         res.end(JSON.stringify(body));
       };
-      const key = (req.headers['x-host-key'] as string | undefined) ?? url.searchParams.get('key') ?? undefined;
-      if (!(isHostKey(key) && hostAllowed(req))) return json(401, { error: 'Use the host link printed when the quiz program started.' });
+      if (!(isHostKey(presentedKey(req)) && hostAllowed(req))) return json(401, { error: 'Use the host link printed when the quiz program started.' });
       const folder = options.libraryFolder;
       if (!folder) return json(404, { error: 'Settings are not available here.' });
       if (req.method === 'GET') return json(200, { libraryDir: folder.dir, source: folder.source, defaultDir: defaultLibraryDir() });
@@ -1003,7 +1007,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
     if (pathname === '/wifi-qr.svg') {
       // The Wi-Fi password is in the code, so only the host and TV screens (which show it anyway) may fetch it.
-      const key = url.searchParams.get('key') ?? undefined;
+      const key = presentedKey(req);
       if (!options.wifi || !((isHostKey(key) && hostAllowed(req)) || keyIs(screenKey, key))) {
         res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
         return;
@@ -1015,7 +1019,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     }
 
     if (pathname === '/results.csv') {
-      if (!isHostKey(url.searchParams.get('key') ?? undefined) || !hostAllowed(req) || !active) {
+      if (!isHostKey(presentedKey(req)) || !hostAllowed(req) || !active) {
         res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
         return;
       }
@@ -1030,13 +1034,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
     // The host's own link as a QR code, so the host can open the controls on a phone. Host key only.
     if (pathname === '/host-qr.svg') {
-      if (!(isHostKey(url.searchParams.get('key') ?? undefined) && hostAllowed(req))) {
-        res.writeHead(401, { 'content-type': 'text/plain' });
+      if (!(isHostKey(presentedKey(req)) && hostAllowed(req))) {
+        res.writeHead(401, { 'content-type': 'text/plain', ...PAGE_HEADERS });
         res.end('Use the host link.');
         return;
       }
       const base = network.mode === 'tunnel' && network.state === 'up' && network.publicUrl ? network.publicUrl : baseUrl;
-      const svg = await QRCode.toString(`${base}/host${options.openHost ? '' : `?key=${hostKey}`}`, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
+      const svg = await QRCode.toString(`${base}/host${options.openHost ? '' : `#key=${hostKey}`}`, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
       res.writeHead(200, { 'content-type': CONTENT_TYPES['.svg'], 'cache-control': 'no-store' });
       res.end(svg);
       return;
@@ -1186,7 +1190,8 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       return screenKey;
     },
     get hostUrl() {
-      return `http://localhost:${port}/host?key=${hostKey}`;
+      // The key rides after the #: browsers keep that part to themselves, so it never reaches a proxy or a log.
+      return `http://localhost:${port}/host#key=${hostKey}`;
     },
     get joinUrl() {
       return joinUrl;

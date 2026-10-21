@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Keys out of web addresses:** the host and TV links now carry their key after a `#` (`/host#key=…`), which browsers never send to any server, so it cannot end up in Cloudflare's or any proxy's logs. Clips, QR codes, results and exports are fetched with the key in a header; a key in a query string is no longer accepted. Old `?key=` links still open the page once.
 - **WebSocket fuzz test:** a seeded test hammers the server as a stranger, a team, the TV and the host with junk, oversized and binary frames, floods, out-of-order and wrong-role messages, and checks it stays up, changes nothing it should not, leaks no answer early, and can still finish a quiz. It runs with the load test in CI.
 - **Docker image:** Debian security fixes are applied at build time and the release build always starts from the newest base image, so a stale base can no longer fail the vulnerability scan or ship. Dependabot no longer proposes Node major versions.
 

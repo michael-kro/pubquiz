@@ -76,6 +76,7 @@ By default the quiz gets a free public `https://` link from Cloudflare (no accou
 - `--host-pin <6+ characters>` (`PUBQUIZ_HOST_PIN`): open `/host` and type the PIN instead of using the long link, which is handy on a phone. Wrong guesses are limited.
 - **⋯ More → New host key** (or `--new-key`) replaces the key at once; the old host and TV links stop working.
 - `--host-local-only`: the host screen only works on the laptop itself, not over Wi-Fi or the internet link.
+- The host and TV links carry their key after a `#` (`/host#key=…`). Browsers never send that part to any server, so the key cannot end up in a proxy's or a log's records; the page keeps it and takes it out of the address bar. Old `?key=` links still work once.
 - In local mode the host key travels over plain HTTP, so on shared Wi-Fi prefer the internet link.
 
 ## If something goes wrong
