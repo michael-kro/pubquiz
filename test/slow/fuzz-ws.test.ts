@@ -277,7 +277,7 @@ test('WebSocket fuzzing: junk, floods and wrong-role commands from every role; t
     send(control, { t: 'tv-questions', visible: current.view.tvShowQuestions ?? true });
     return (await waitFor(control, from, (m) => m.t === 'state'))['view'] as Record<string, unknown>;
   };
-  const SETTINGS = ['tvShowTeams', 'tvShowQuestions', 'requireAdmission', 'joiningLocked', 'maxTeams', 'entryFee', 'prizes', 'photosEnabled', 'readOut', 'startOnLastAnswer', 'closeEarly', 'allowEmptyStart', 'showJoin', 'lockOnStart'];
+  const SETTINGS = ['tvShowTeams', 'tvShowQuestions', 'requireAdmission', 'phonesOnly', 'joiningLocked', 'maxTeams', 'entryFee', 'prizes', 'photosEnabled', 'readOut', 'startOnLastAnswer', 'closeEarly', 'allowEmptyStart', 'showJoin', 'lockOnStart'];
   const settingsOf = (view: Record<string, unknown>) => Object.fromEntries(SETTINGS.map((k) => [k, view[k]]));
   const alive = async () => {
     const res = await fetch(`http://127.0.0.1:${server.port}/healthz`);

@@ -19,8 +19,9 @@ export class Client {
     });
   }
 
-  static async connect(port: number): Promise<Client> {
-    const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+  /** `headers` lets a test pretend to be a particular browser (a User-Agent, say). */
+  static async connect(port: number, headers?: Record<string, string>): Promise<Client> {
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`, { headers });
     await new Promise((resolve, reject) => {
       ws.once('open', resolve);
       ws.once('error', reject);

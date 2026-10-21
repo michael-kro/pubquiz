@@ -7,6 +7,7 @@ import { parseArgs } from 'node:util';
 process.env['PUBQUIZ_POINTS_UNIT'] ??= '1000';
 process.env['PUBQUIZ_SCORING_DEFAULT'] ??= 'speed';
 process.env['PUBQUIZ_ADMISSION_DEFAULT'] ??= 'off';
+process.env['PUBQUIZ_PHONES_ONLY_DEFAULT'] ??= 'off';
 process.env['PUBQUIZ_READOUT_DEFAULT'] ??= 'off';
 const { runLoad } = await import('../test/helpers/load.ts');
 
