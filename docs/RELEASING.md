@@ -54,7 +54,7 @@ Rules for all of them:
 2. On a branch from `develop` (`chore/release-X.Y.Z`): rename "Unreleased" in `CHANGELOG.md` to the version and date, and set `version` in `package.json` and `package-lock.json`. Merge it into `develop`.
 3. Open a pull request **`develop` into `main`**. CI runs again. Merge it with a merge commit.
 4. Tag the merge `vX.Y.Z` on `main` and push the tag.
-5. Build the programs (`npm run build:binaries`) and create the GitHub release with the changelog text, the five programs and `SHA256SUMS`. Publishing the release starts the Docker image workflow.
+5. Create the GitHub release with the changelog text (`gh release create vX.Y.Z --notes-file …`). Publishing the release starts the Docker image workflow, which is what users download.
 6. When the image workflow finishes, pull `ghcr.io/michael-kro/pubquiz:X.Y.Z` and check it starts and the host page loads.
 7. Merge `main` back into `develop` so the two match (`git checkout develop && git merge main`).
 8. Close the release issue.

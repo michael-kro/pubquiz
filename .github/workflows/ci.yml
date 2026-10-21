@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: npm
-      # No install scripts: the tests do not need the bun binary, and running fewer scripts is safer.
+      # No install scripts: the tests do not need them, and running fewer scripts is safer.
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
       - run: npm run test:fast

@@ -9,14 +9,7 @@
 
 ## Packaging
 
-**Single-file programs** (no Node needed on the host's computer):
-
-```sh
-npm run build:binaries                  # all five into dist/, with dist/SHA256SUMS
-node scripts/build-binaries.mjs linux-x64   # or just the ones you name
-```
-
-Targets: `macos-arm64`, `macos-x64`, `linux-x64`, `linux-arm64`, `windows-x64`. They are 60–90 MB each (they include a JavaScript runtime, [Bun](https://bun.sh)) with the pages and sample quiz baked in. They aren't signed, so macOS and Windows warn on first run (see the getting-started guide). Needs internet the first time, to fetch each platform's runtime.
+The app ships as the Docker image (built for Intel/AMD and Apple-silicon/Raspberry Pi on each release) and as the source. There are no downloadable single-file programs: they could not be signed without a paid developer certificate, so every user got a security warning.
 
 **Docker:**
 
