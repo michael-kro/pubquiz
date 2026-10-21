@@ -81,6 +81,25 @@ test('the game uses the name check, and the host can turn the word filter off', 
   open.dispose();
 });
 
+test('a WebSocket upgrade from another website is refused; the app itself and non-browser clients connect', async () => {
+  const server = await start();
+  const attempt = (headers: Record<string, string>) =>
+    new Promise<'open' | 'refused'>((resolve) => {
+      const ws = new WebSocket(`ws://127.0.0.1:${server.port}/ws`, { headers });
+      ws.once('open', () => {
+        ws.terminate();
+        resolve('open');
+      });
+      ws.once('unexpected-response', () => resolve('refused'));
+      ws.once('error', () => resolve('refused'));
+    });
+  assert.equal(await attempt({ Origin: 'https://evil.example' }), 'refused', 'another site');
+  assert.equal(await attempt({ Origin: `http://127.0.0.1:${server.port}` }), 'open', 'the app page, by the address it was opened on');
+  assert.equal(await attempt({ Origin: 'null' }), 'refused', 'an opaque origin');
+  assert.equal(await attempt({}), 'open', 'a client that is not a browser');
+  await server.close();
+});
+
 test('an oversized WebSocket frame closes that connection and nothing else', async () => {
   // Found by the fuzz test: without an error listener on each socket, ws's "Max payload size exceeded" was an
   // uncaught exception, so one 5 KB frame from anyone with the join link took the whole server down.

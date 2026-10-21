@@ -4,7 +4,8 @@
 FROM node:24-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+# No install scripts: none of the dependencies needs one, and a future compromised package could not run code at build time.
+RUN npm ci --omit=dev --ignore-scripts
 
 # Stage 2: the image that runs.
 FROM node:24-slim
