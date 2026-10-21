@@ -1,5 +1,5 @@
 # Checks that run on every push and pull request: types, tests, dependency audit, secret scan.
-# Stage 1 of docs/plans/ci-and-security.md. Later stages add Semgrep, CodeQL, image scanning and DAST.
+# Semgrep, CodeQL and image scanning are in security.yml; ZAP and nuclei in dast.yml.
 name: CI
 
 on:

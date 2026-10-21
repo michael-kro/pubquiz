@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **nuclei in the nightly scan:** alongside ZAP's active scan, nuclei's misconfiguration and exposure templates now run against the throwaway copy of the app every night, failing on anything of medium severity or above.
 - **Upload fuzz test:** a seeded test throws malformed, mislabelled, oversized and escaping files, zip bombs, lying content-lengths and junk JSON at every upload (quiz import, pictures, audio, clips, logo, team photos), with and without the key, and checks the server never errors, accepts nothing without the key, writes nothing outside its folders and still works afterwards. A client that hangs up mid-upload is no longer logged as an error.
 - **Keys out of web addresses:** the host and TV links now carry their key after a `#` (`/host#key=…`), which browsers never send to any server, so it cannot end up in Cloudflare's or any proxy's logs. Clips, QR codes, results and exports are fetched with the key in a header; a key in a query string is no longer accepted. Old `?key=` links still open the page once.
 - **Hardening:** the container runs read-only with all Linux capabilities dropped and no privilege escalation (compose file and README command); the image build runs no install scripts; Node runs without `eval` (`--disallow-code-generation-from-strings`); WebSocket connections from other websites are refused; and each released image carries an SBOM and signed build provenance.
