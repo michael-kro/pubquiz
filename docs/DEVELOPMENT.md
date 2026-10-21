@@ -47,6 +47,6 @@ Every push and pull request to `main` or `develop` runs:
 
 - `ci.yml`: typecheck and tests on Node 22.18 and 24, the load test and the fuzzers (with one retry), the screen tour (its screenshots are the `screen-tour` artifact of the run), `npm audit`, a secret scan of the whole history (gitleaks) and a workflow lint.
 - `security.yml`: Semgrep with the standard rule packs plus this app's own rules in `semgrep-rules/` (test them with `semgrep --test semgrep-rules/`), CodeQL, and hadolint and Trivy on the image. Also weekly.
-- `dast.yml`: an OWASP ZAP passive scan of the running app, started on a throwaway library with a random key (`scripts/ci-start-app.sh` and `scripts/ci-zap.sh`, tuned in `.zap/rules.tsv`). An active scan runs nightly.
+- `dast.yml`: an OWASP ZAP passive scan of the running app, started on a throwaway library with a random key (`scripts/ci-start-app.sh` and `scripts/ci-zap.sh`, tuned in `.zap/rules.tsv`). Nightly: ZAP's active scan and nuclei's misconfiguration and exposure templates (`scripts/ci-nuclei.sh`, failing on medium severity or above).
 
 Dependabot proposes weekly updates. What is planned but not built is in `docs/plans/`.
