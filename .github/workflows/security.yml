@@ -1,0 +1,88 @@
+# Static scanning: Semgrep (with this app's own rules), CodeQL, and the Docker image (hadolint and Trivy).
+# Stage 2 of docs/plans/ci-and-security.md. Also runs weekly, because new vulnerabilities are published against code that has not changed.
+name: Security
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # The app's own rules have tests too: a rule that stops matching would otherwise go unnoticed.
+      - name: Test the app's rules
+        run: semgrep --test semgrep-rules/
+      # Fails on any finding. The repository is clean today, so any finding is new.
+      - name: Scan
+        run: >-
+          semgrep scan
+          --config semgrep-rules/pubquiz.yml
+          --config p/typescript --config p/javascript --config p/nodejs
+          --config p/owasp-top-ten --config p/secrets
+          --config p/dockerfile --config p/github-actions
+          --metrics=off --error --sarif --output semgrep.sarif .
+      - name: Upload results to GitHub code scanning
+        if: always() && hashFiles('semgrep.sarif') != ''
+        uses: github/codeql-action/upload-sarif@ce5e7eeac396d720fe2d802714996c8ce561e311 # v3.39.0
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: github/codeql-action/init@ce5e7eeac396d720fe2d802714996c8ce561e311 # v3.39.0
+        with:
+          languages: javascript-typescript
+          build-mode: none
+      - uses: github/codeql-action/analyze@ce5e7eeac396d720fe2d802714996c8ce561e311 # v3.39.0
+        with:
+          category: codeql
+
+  docker:
+    name: Docker image (hadolint and Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: hadolint
+        run: docker run --rm -i hadolint/hadolint < Dockerfile
+      - name: Build the image
+        run: docker build --pull -t pubquiz:ci .
+      # High and critical problems that have a fix available fail the build. Trivy also covers the packages the base image brings.
+      - name: Trivy, image
+        run: >-
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock
+          aquasec/trivy:latest image
+          --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 pubquiz:ci
+      # The repository itself: dependencies, secrets, and misconfigurations in the Dockerfile and compose file.
+      - name: Trivy, repository
+        run: >-
+          docker run --rm -v "$PWD:/src" -w /src
+          aquasec/trivy:latest fs
+          --scanners vuln,secret,misconfig --severity HIGH,CRITICAL
+          --skip-dirs node_modules,dist --exit-code 1 .

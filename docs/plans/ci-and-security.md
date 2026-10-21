@@ -15,12 +15,13 @@ Checked locally before pushing: the steps run clean in Node 22.18 and 24 contain
 
 **Still to do for stage 1, on GitHub:** after the first run, turn on branch protection for `develop` and `main` that requires the CI jobs to pass.
 
-## Stage 2: static scanning
+## Stage 2: static scanning — DONE (`security.yml`)
 
-- **Semgrep Community Edition** with the TypeScript, JavaScript, Node, OWASP Top 10 and Dockerfile rule packs. Upload SARIF to GitHub Code Scanning. Fail pull requests only on new high-severity findings.
-- **Custom Semgrep rules for this app:** `innerHTML` in the browser code, file paths built from user input, key comparisons that do not use `timingSafeEqual`, and any new message type that is not guarded by the host check.
-- A plain test that walks every message type in the protocol and checks each host-only one is refused for teams and the TV.
-- **CodeQL** (GitHub's own), **Trivy** on the built image, **hadolint** on the Dockerfile.
+- **Semgrep Community Edition** with the TypeScript, JavaScript, Node, OWASP Top 10, secrets, Dockerfile and GitHub Actions rule packs, plus this app's own rules in `semgrep-rules/pubquiz.yml` (no HTML built from strings in the browser code, no `eval`, and keys, PINs and passwords compared with `timingSafeEqual` rather than `===`). The rules have tests (`semgrep --test semgrep-rules/`) that also run in CI. Results go to GitHub Code Scanning; any finding fails the build, and the repository was clean when this was added.
+- **A guard test** (`test/host-only.test.ts`): every message type in the protocol must be classified as host-only or open, and every host-only one is tried from a team, the TV and a stranger and must change nothing. A new message type fails the test until it is classified. Checked by breaking a guard on purpose.
+- **CodeQL** (GitHub's own) for JavaScript and TypeScript.
+- **hadolint** and **Trivy** on the Dockerfile and the built image. The image is now built in two stages and ships without npm, which removed three high-severity findings that came from npm's own bundled packages (not the app's). It builds, runs healthy and starts its internet link as before.
+- GitHub Actions are pinned to commit hashes (Dependabot keeps them current, with a one-week wait before new releases), and the scans also run weekly.
 
 ## Stage 3: browser tests and a quick DAST
 
