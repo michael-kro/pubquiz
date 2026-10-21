@@ -1,6 +1,6 @@
 # Plan: solo practice mode for test preparation
 
-Status: **planned, not started.** Saved so it can be picked up later.
+Status: **stage 1 built** (2026-10-21): `/practice` with its own key, `server/practice.ts` and `server/marking.ts`, `public/practice.js`, the **🎓 Practice** button and QR code on the host screen, learn and test modes, back/skip/flag, save and carry on, results by round, review and retry-what-I-missed, per-learner history in `practice/` in the library, tests and a pass in the browser tour. Questions that were open were settled with defaults: several learners by name (no PIN), any device (phone, tablet or laptop), no parent view yet. Stages 2 and 3 below are still to do.
 
 ## The idea
 
@@ -49,12 +49,11 @@ What changes from a live quiz: no fastest-answer bonus, no rank or speed scoring
 7. Editor fields and quiz format docs.
 8. Tests: engine unit tests, plus the browser screen tour extended to the practice screens.
 
-## Questions to settle before starting
+## Notes from stage 1
 
-- Who is the learner: one child at home, or several?
-- Which test is it?
-- Which device will they use?
-- Does a parent or teacher want to see progress?
+- "Nearest" questions count only an exact answer as right (there is nobody to be closer than); buzzer questions become "show me the answer, did I have it?", marked by the learner.
+- Explanations come from the existing `info:` field, so no quiz format change was needed. Stage 3's `topic`, `explain` and `hint` fields are still open.
+- A quiz that changes while a session is unfinished ends that session (what was done stays in the history).
 
 ## Risks
 
