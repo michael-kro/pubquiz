@@ -35,7 +35,9 @@ Checked locally before pushing: the steps run clean in Node 22.18 and 24 contain
 - **ZAP full (active) scan** nightly against the container, plus **nuclei** for misconfigurations and missing security headers.
 - **WebSocket fuzz test — DONE** (`test/slow/fuzz-ws.test.ts`, runs with the load test in CI): a seeded harness sends malformed, oversized, binary, flooding, out-of-order and wrong-role messages as a stranger, a team, the TV and the host, and checks the server stays up, no setting changes, no answer reaches a phone or the TV before the reveal, and the quiz can still be played to the end.
 - **Base image security fixes — DONE:** the Dockerfile applies Debian's updates at build time (`apt-get upgrade`), the release build always pulls the newest base image, and Dependabot no longer proposes Node major versions.
-- **Release job:** build the programs on each operating system, with checksums, an SBOM and signed provenance, and scan the image before publishing it.
+- **Release job — DONE:** the image is published with an SBOM and build provenance in the registry, plus a signed GitHub attestation (`gh attestation verify`). (The downloadable programs were dropped, so there is nothing else to build.)
+- **Container and runtime — DONE:** read-only container, all capabilities dropped, no privilege escalation; `npm ci --ignore-scripts` in the build; Node runs with `--disallow-code-generation-from-strings`; WebSocket upgrades from other websites are refused.
+- **Still to do:** the host and TV keys out of URLs (fragment links), and fuzzing of the HTTP uploads (zip import, photos, clips).
 
 ## Keeping noise down
 

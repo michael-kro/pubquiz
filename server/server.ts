@@ -1107,7 +1107,33 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       res.end();
     });
   });
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws', maxPayload: 4096 });
+  // A browser sends the page's origin with the upgrade. It must be this server's own address, by whatever name it
+  // was reached (localhost, the Wi-Fi address, the internet link), so another website open in the same browser
+  // cannot quietly open a connection. Clients that are not browsers send no origin and are judged on their keys.
+  const originAllowed = (origin: string | undefined, hostHeader: string | undefined): boolean => {
+    if (!origin) return true;
+    let originHost: string;
+    try {
+      originHost = new URL(origin).host.toLowerCase();
+    } catch {
+      return false;
+    }
+    const ownHosts = [hostHeader, baseUrl, network.publicUrl].flatMap((value) => {
+      if (!value) return [];
+      try {
+        return [(value.includes('://') ? new URL(value) : new URL(`http://${value}`)).host.toLowerCase()];
+      } catch {
+        return [];
+      }
+    });
+    return ownHosts.includes(originHost);
+  };
+  const wss = new WebSocketServer({
+    server: httpServer,
+    path: '/ws',
+    maxPayload: 4096,
+    verifyClient: (info: { origin: string; req: IncomingMessage }) => originAllowed(info.origin || undefined, info.req.headers.host),
+  });
 
   function ping(conn: Connection): void {
     if (conn.pingSentAt !== undefined && ++conn.missedPings >= MAX_MISSED_PINGS) {

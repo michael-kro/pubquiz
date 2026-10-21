@@ -8,18 +8,26 @@ services:
     ports:
       - "${PUBQUIZ_PORT:-3000}:3000"
     volumes:
-      # Your quizzes, clips, branding and saved games are the SAME folder the downloaded program uses (~/PubQuiz),
-      # so the quiz you built in either one is there in the other. Run only one of them at a time.
-      # Make it first if it does not exist (mkdir -p ~/PubQuiz). Another folder: PUBQUIZ_LIBRARY=/path docker compose up -d
+      # Your quizzes, clips, branding and saved games, in your own folder (~/PubQuiz). Make it first if it does not
+      # exist (mkdir -p ~/PubQuiz). Another folder: PUBQUIZ_LIBRARY=/path docker compose up -d
       - ${PUBQUIZ_LIBRARY:-${HOME}/PubQuiz}:/data/quizzes
       # The app's own settings and the downloaded internet-link helper. A named volume so the container can always write to it.
       - pubquiz-data:/data
+    # The app only ever writes under /data, so the rest of the container is read-only, it keeps no Linux capabilities,
+    # and nothing in it can gain privileges. If something ever got code running inside, it could change nothing.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     environment:
       # Sign in to /host with a PIN, e.g. from a phone (6 or more characters). Leave empty to use the host link.
       PUBQUIZ_HOST_PIN: ""
-      # Testing only, leave at 0: 1 lets anyone who can reach the address open /host and /screen without the key.
       # 1: ask is.gd for a short address for the internet link (sends that address to is.gd). The host link is never sent.
       PUBQUIZ_SHORT_LINKS: "${PUBQUIZ_SHORT_LINKS:-0}"
+      # Testing only, leave at 0: 1 lets anyone who can reach the address open /host and /screen without the key.
       PUBQUIZ_OPEN_HOST: "${PUBQUIZ_OPEN_HOST:-0}"
       # No internet at the venue? Set PUBQUIZ_LAN to 1 and PUBQUIZ_PUBLIC_HOST to this computer's
       # address on the venue Wi-Fi (e.g. 192.168.1.20), so the QR code points at the right place.

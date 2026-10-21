@@ -8,4 +8,5 @@ set -- --no-open --port 3000 --quizzes /data/quizzes "$@"
 [ "$PUBQUIZ_OPEN_HOST" = "1" ] && set -- "$@" --open-host
 [ "$PUBQUIZ_SHORT_LINKS" = "1" ] && set -- "$@" --short-links
 [ "$PUBQUIZ_LAN" = "1" ] && set -- "$@" --lan
-exec node /app/server/main.ts "$@"
+# No eval or new Function at runtime: a whole class of injection bugs becomes an error for that request instead of code running.
+exec node --disallow-code-generation-from-strings /app/server/main.ts "$@"
