@@ -2,10 +2,9 @@
 
 ## Unreleased
 
+- **Docs:** rewritten to be short: the README is the quick start, the host guide now holds everything a host needs (including hosting from a phone, how phones connect and troubleshooting), and the getting-started and venue-troubleshooting pages are folded into them.
 - **Spotify research note removed:** it concluded that Spotify's rules do not allow a quiz integration, so no code was ever written. The music round still plays the host's own audio files.
-
 - **Local HTTPS removed:** the optional Caddy service (`docker compose --profile https`), its config and the HTTPS guide are gone. The internet link already gives phones and the TV a real HTTPS certificate, and the local certificate only ever worked on the laptop that trusted it.
-
 - **Travel router guidance removed:** the router setup guide and the router-box research note are gone, and the troubleshooting guide no longer suggests a travel router (the internet link works from 4G or any Wi-Fi; a phone hotspot or the venue Wi-Fi remain the offline options).
 - **Licence:** the project is under the MIT licence. See `LICENSE`.
 - **Fix:** closing the app straight after a quiz finishes no longer risks leaving the results file half-saved; shutdown now waits for it. (This also fixed a test that failed now and then on slower machines.)
