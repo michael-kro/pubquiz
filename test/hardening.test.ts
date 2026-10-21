@@ -89,14 +89,17 @@ test('keys travel in headers and in the link fragment, never in a request addres
   assert.match(server.hostUrl, /\/host#key=/);
   assert.doesNotMatch(server.hostUrl, /\?key=/);
   const base = `http://127.0.0.1:${server.port}`;
-  for (const [path, inAddress, inHeader] of [
-    ['/results.csv', 404, 200],
-    ['/host-qr.svg', 401, 200],
-    ['/api/quizzes', 401, undefined],
+  // (The library API is covered the same way in library.test.ts; this server has no library.)
+  for (const [path, inAddress] of [
+    ['/results.csv', 404],
+    ['/host-qr.svg', 401],
   ] as const) {
     assert.equal((await fetch(`${base}${path}?key=${server.hostKey}`)).status, inAddress, `${path} with the key in the address`);
-    if (inHeader) assert.equal((await fetch(`${base}${path}`, { headers: { 'x-host-key': server.hostKey } })).status, inHeader, `${path} with the key in a header`);
+    assert.equal((await fetch(`${base}${path}`, { headers: { 'x-host-key': server.hostKey } })).status, 200, `${path} with the key in a header`);
   }
+  await server.close();
+});
+
 test('a WebSocket upgrade from another website is refused; the app itself and non-browser clients connect', async () => {
   const server = await start();
   const attempt = (headers: Record<string, string>) =>

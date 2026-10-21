@@ -47,14 +47,14 @@ const MAX_DROPPED_MESSAGES = 200;
 /** Wrong room codes and wrong team codes an address may try per minute. */
 const MAX_JOIN_GUESSES_PER_MINUTE = 20;
 
-/** Sent with every page: the host key lives in the host page's address, so nothing may leak it as a referrer. */
+/** Sent with every page: the host key arrives in the host page's link, so nothing may leak it as a referrer. `blob:` is for the pictures and clips the pages fetch with the key in a header. */
 const PAGE_HEADERS = {
   'referrer-policy': 'no-referrer',
   'x-content-type-options': 'nosniff',
   'x-frame-options': 'DENY',
   'content-security-policy':
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; " +
-    "connect-src 'self' ws: wss:; media-src 'self' https: http:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",  // No camera, microphone or location for anything on the page, except the same-origin camera (a team's photo).
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; " +
+    "connect-src 'self' ws: wss:; media-src 'self' blob: https: http:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",  // No camera, microphone or location for anything on the page, except the same-origin camera (a team's photo).
   'permissions-policy': 'camera=(self), microphone=(), geolocation=(), payment=(), usb=()',
   'cross-origin-opener-policy': 'same-origin',
   'cross-origin-resource-policy': 'same-origin',
