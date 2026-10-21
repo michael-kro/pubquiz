@@ -16,11 +16,11 @@ npm run try                              # a throwaway library and settings on p
 
 ## Where things are
 
-- `server/game.ts`: the quiz state machine, scoring and per-team views. The server owns all state and timing.
+- `server/game.ts`: the quiz state machine, scoring and per-team views. The server owns all state and timing. `server/marking.ts` is the marking it shares with practice mode (`server/practice.ts`: one learner's session and history, over plain HTTP).
 - `server/server.ts`: HTTP for the pages and QR codes, and the WebSocket protocol (`server/protocol.ts`).
 - `server/quiz.ts`: YAML loading and validation. `server/bank.ts` and `server/facts.ts`: the built-in questions and break-screen facts.
 - `server/branding.ts`, `clips.ts`, `photos.ts`, `session.ts`, `tunnel.ts`: venues, the soundboard, team photos, save and resume, the internet link.
-- `public/host.js` (host screen and TV), `play.js` (team phone), `editor.js`, `branding.js`, `bank-picker.js`, `common.js`.
+- `public/host.js` (host screen and TV), `play.js` (team phone), `practice.js` (practice mode), `editor.js`, `branding.js`, `bank-picker.js`, `common.js`.
 - `test/`: unit tests and end-to-end tests over real WebSockets; `test/slow/` is the load test and the fuzzers; `test/browser/` is the Playwright screen tour.
 - `scripts/`: `check-quiz.ts` and `validate-bank.ts` check files; `loadtest.ts`, `stress.ts` and `sim-rounds.ts` play simulated nights; `music-round.ts` builds a round from a track list; `ci-*.sh` back the scanning workflow.
 
