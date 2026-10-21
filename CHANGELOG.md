@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Host screen on a phone, tidied up:** the title has room, the network status is an emoji, the bottom bar never overflows (Break is an icon, Leaderboard moved under More), the question controls sit in a tidy grid, answer tiles are shorter, and the fastest-answer rows no longer squash the team name.
 - **Head starts:** give a slower player (a young child, say) a head start of up to 30 seconds. It is taken off that team's answer time when working out who was fastest, so they can still win the speed points. Host only, from the Options panel; it also survives a restart.
 - **Option to keep questions off the TV:** "Show questions on the TV" (Options panel, ticked by default). Unticked, the TV shows the countdown and "Look at your phone" while a question is open, and the question again only when the answer is revealed. Nothing of the question is sent to the TV in the meantime.
 - **Quizzes screen on a phone:** each quiz shows Run, Edit and Duplicate only; Export and Delete are left for the laptop.

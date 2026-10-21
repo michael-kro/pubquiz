@@ -1019,3 +1019,28 @@ body.play .prizes li { justify-content: center; }
 .hidden-question-title { font-size: clamp(2.2rem, 6vw, 4.5rem); margin: 4vh 0 0; }
 .head-start-input { width: 5.5em; padding: 6px 8px; text-align: right; }
 .head-start-badge { font-size: 0.75rem; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--accent); color: var(--accent-text); white-space: nowrap; }
+
+/* Phone host, second pass: more room for the title, a bottom bar that never overflows, tighter tiles and button rows. */
+body.phone .phone-head { flex-direction: column; align-items: stretch; gap: 4px; padding: 8px 14px; }
+body.phone .phone-head-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+body.phone .phone-head-row:first-child .quiz-title { flex: 1; min-width: 0; font-size: 1.1rem; }
+body.phone .phone-head-row:last-child { justify-content: space-between; font-size: 0.85rem; color: var(--muted); }
+body.phone .phone-head .sound-toggle { padding: 6px 10px; }
+body.phone .phone-actions { gap: 8px; }
+body.phone .phone-actions > * { min-width: 0; }
+body.phone .phone-actions .primary.next { flex: 1 1 0; padding-left: 10px; padding-right: 10px; }
+body.phone .phone-actions .break-menu-wrap > button, body.phone .phone-actions .more-menu-wrap > button { padding-left: 14px; padding-right: 14px; }
+body.phone .question-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+body.phone .question-controls button { white-space: nowrap; }
+body.phone .options .option { min-height: 0; padding: 12px 14px; font-size: 1.05rem; }
+body.phone .movement { min-width: 0; }
+.mini-board .movement:empty { display: none; }
+.network-pill.compact { padding: 3px 9px; font-size: 1rem; line-height: 1; }
+/* The fastest-answer rows: the details drop under the name on a phone instead of squeezing it to a letter a line. */
+body.phone .fastest li { flex-wrap: wrap; gap: 6px 10px; padding: 8px 12px; font-size: 1.05rem; }
+body.phone .fastest .fastest-name { flex: 1 1 8em; min-width: 0; overflow-wrap: break-word; }
+body.phone .fastest .muted { flex-basis: 100%; padding-left: 62px; font-size: 0.85rem; margin-top: -6px; }
+body.phone .fastest .gained { order: 3; }
+/* The answer box is shorter on a phone: the answer, and the "tap an option to change it" hint, without the second reminder line. */
+body.phone .answer-review { padding: 10px 14px; gap: 4px 10px; }
+body.phone .answer-review .answer-review-note { display: none; }
