@@ -37,7 +37,9 @@ let quizzes = null;
 let overview = null; // { name, current, history }
 let results = null;
 let picking = preselectQuiz; // quiz id whose options are open
-let options = { mode: 'learn', count: 'all', shuffle: false };
+let options = { mode: 'learn', count: 'all', shuffle: false, timeLimit: 'none' };
+let progressData = null;
+let timeUpSent = false; // exam simulation: the page asked for the paper to be taken in
 let busy = false;
 let error = '';
 let notice = '';
@@ -79,6 +81,19 @@ function imageWithKey(path) {
     })
     .catch(() => blobUrls.set(path, ''));
   return '';
+}
+
+/** Fetches a file with the key and saves it, so the key is never part of an address. */
+async function downloadWithKey(path, fallbackName) {
+  const res = await fetch(`/api/practice${path}`, { headers: { 'x-practice-key': key ?? '' } });
+  if (!res.ok) throw new Error(`Could not download (${res.status}).`);
+  const name = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? fallbackName;
+  const url = URL.createObjectURL(await res.blob());
+  const a = h('a', { href: url, download: name });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 function showNotice(text) {
@@ -132,6 +147,16 @@ const doAction = (action, body) =>
   act(async () => {
     const before = overview?.current?.question?.index;
     const data = await api('POST', `/learners/${encodeURIComponent(learner)}/current/${action}`, body ?? {});
+    if (data?.timeUp) {
+      // Exam simulation: the clock ran out before this action.
+      results = data.results;
+      overview = { ...overview, current: null };
+      screen = 'results';
+      showNotice("Time's up! Here is how you did.");
+      await refresh().catch(() => {});
+      screen = 'results';
+      return;
+    }
     if (action === 'finish') {
       results = data;
       overview = { ...overview, current: null };
@@ -152,14 +177,32 @@ const doAction = (action, body) =>
     if (q?.feedback) say(q.feedback.correct ? 'Correct' : `Not quite. The answer was ${q.feedback.answer}`);
   });
 
-const startSession = (quizId, only) =>
+const startSession = (quizId, only, extra = {}) =>
   act(async () => {
     const count = options.count === 'all' ? undefined : Number(options.count);
-    overview = await api('POST', `/learners/${encodeURIComponent(learner)}/sessions`, { quizId, mode: options.mode, shuffle: options.shuffle, ...(count ? { count } : {}), ...(only ? { only } : {}) });
+    const minutes = options.mode === 'test' && options.timeLimit !== 'none' ? Number(options.timeLimit) : undefined;
+    overview = await api('POST', `/learners/${encodeURIComponent(learner)}/sessions`, { quizId, mode: options.mode, shuffle: options.shuffle, ...(count ? { count } : {}), ...(only ? { only } : {}), ...(minutes ? { timeLimitMinutes: minutes } : {}), ...extra });
     fetchedAt = Date.now();
+    timeUpSent = false;
     picking = null;
     resetDrafts();
     screen = 'question';
+  });
+
+/** The questions due for another look in one quiz, as a short learn-mode session. */
+const startReview = (quizId) =>
+  act(async () => {
+    overview = await api('POST', `/learners/${encodeURIComponent(learner)}/sessions`, { quizId, mode: 'learn', review: true });
+    fetchedAt = Date.now();
+    timeUpSent = false;
+    resetDrafts();
+    screen = 'question';
+  });
+
+const openProgress = () =>
+  act(async () => {
+    progressData = await api('GET', `/learners/${encodeURIComponent(learner)}/progress`);
+    screen = 'progress';
   });
 
 const fmtTime = (ms) => {
@@ -211,11 +254,21 @@ function chooseLearner(name) {
 
 function homeScreen() {
   const current = overview?.current;
+  const due = overview?.due ?? [];
   return h(
     'section',
     { class: 'screen pr-shell' },
-    topBar(),
-    current ? h('div', { class: 'pr-card pr-carry-on' }, h('h2', {}, 'Carry on?'), h('p', {}, h('strong', {}, current.quizTitle), ` · question ${current.position + 1} of ${current.total}`), h('div', { class: 'pr-actions' }, h('button', { class: 'primary', onclick: () => { screen = 'question'; render(); } }, 'Carry on ▶'), h('button', { onclick: () => doAction('finish') }, 'Finish now'), h('button', { class: 'danger', onclick: () => confirm('Throw this attempt away?') && doAction('abandon') }, 'Throw it away'))) : null,
+    topBar(h('button', { class: 'link-button', onclick: openProgress }, '📈 My progress')),
+    current ? h('div', { class: 'pr-card pr-carry-on' }, h('h2', {}, 'Carry on?'), h('p', {}, h('strong', {}, current.quizTitle), ` · question ${current.position + 1} of ${current.total}`, current.kind === 'exam' ? ' · exam, the clock is running' : ''), h('div', { class: 'pr-actions' }, h('button', { class: 'primary', onclick: () => { screen = 'question'; render(); } }, 'Carry on ▶'), h('button', { onclick: () => doAction('finish') }, 'Finish now'), h('button', { class: 'danger', onclick: () => confirm('Throw this attempt away?') && doAction('abandon') }, 'Throw it away'))) : null,
+    due.length
+      ? h(
+          'div',
+          { class: 'pr-card pr-due' },
+          h('h2', {}, '🔁 Due for another look'),
+          h('p', { class: 'muted small' }, 'Questions you got wrong come back after a while: a day, then three, then a week, then a fortnight. Get one right each time and it stops coming back.'),
+          h('ul', { class: 'pr-due-list' }, due.map((g) => h('li', {}, h('span', {}, h('strong', {}, g.quizTitle), ` · ${g.indices.length} ${g.indices.length === 1 ? 'question' : 'questions'}`), h('button', { class: 'primary', disabled: busy, onclick: () => startReview(g.quizId) }, 'Review')))),
+        )
+      : null,
     h('h2', {}, 'Pick a quiz'),
     quizzes === null
       ? h('p', { class: 'muted' }, 'Loading…')
@@ -248,7 +301,20 @@ function optionsPanel(q) {
     h('fieldset', {}, h('legend', {}, 'How'), radio('mode', 'learn', 'Learn as I go', 'the answer and why, after each question'), radio('mode', 'test', 'Test myself', 'marked at the end')),
     h('fieldset', {}, h('legend', {}, 'How many'), counts.map((c) => radio('count', c, c === 'all' ? `All ${q.questions}` : c))),
     h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: options.shuffle, onchange: (e) => (options.shuffle = e.target.checked) }), ' Mix the questions up'),
-    h('button', { class: 'primary', disabled: busy, onclick: () => startSession(q.id) }, 'Start ▶'),
+    options.mode === 'test'
+      ? h(
+          'label',
+          { class: 'pr-time-limit' },
+          'Time limit ',
+          h(
+            'select',
+            { onchange: (e) => { options.timeLimit = e.target.value; render(); } },
+            [['none', 'None'], ['10', '10 minutes'], ['20', '20 minutes'], ['30', '30 minutes'], ['45', '45 minutes'], ['60', '1 hour'], ['90', '1½ hours']].map(([value, label]) => h('option', { value, selected: options.timeLimit === value }, label)),
+          ),
+          h('span', { class: 'muted small' }, ' (exam practice: the paper is marked when the time is up)'),
+        )
+      : null,
+    h('button', { class: 'primary', disabled: busy, onclick: () => startSession(q.id) }, options.mode === 'test' && options.timeLimit !== 'none' ? 'Start the exam ▶' : 'Start ▶'),
   );
 }
 
@@ -265,7 +331,7 @@ function historyList() {
           'li',
           {},
           h('button', { class: 'link-button', onclick: () => act(async () => { results = await api('GET', `/learners/${encodeURIComponent(learner)}/sessions/${s.id}/results`); screen = 'results'; }) }, s.quizTitle),
-          h('span', { class: 'muted small' }, ` · ${fmtDate(s.finishedAt)} · ${s.mode === 'test' ? 'test' : 'learn'}`),
+          h('span', { class: 'muted small' }, ` · ${fmtDate(s.finishedAt)} · ${s.kind ?? (s.mode === 'test' ? 'test' : 'learn')}`),
           h('strong', { class: 'pr-score' }, `${s.right}/${s.total}`),
         ),
       ),
@@ -288,7 +354,9 @@ function questionScreen() {
   const answered = Boolean(q.given);
   const feedback = q.feedback;
   const last = v.position === v.total - 1;
-  const timer = h('span', { id: 'pr-timer', class: 'muted small', title: 'Time spent (nothing happens when it runs)' }, fmtTime(v.elapsedMs + (Date.now() - fetchedAt)));
+  const timer = v.deadline
+    ? h('span', { id: 'pr-countdown', class: `pr-countdown${Date.parse(v.deadline) - Date.now() < 60_000 ? ' urgent' : ''}`, title: 'Time left; the paper is marked when it runs out' }, `⏱ ${fmtTime(Date.parse(v.deadline) - Date.now())} left`)
+    : h('span', { id: 'pr-timer', class: 'muted small', title: 'Time spent (nothing happens when it runs)' }, fmtTime(v.elapsedMs + (Date.now() - fetchedAt)));
   return h(
     'section',
     { class: 'screen pr-shell' },
@@ -303,7 +371,7 @@ function questionScreen() {
     h(
       'div',
       { class: 'pr-card pr-question' },
-      h('p', { class: 'pr-round muted small' }, q.round, v.mode === 'test' ? ' · test' : null),
+      h('p', { class: 'pr-round muted small' }, q.round, v.kind === 'review' ? ' · another look' : v.kind === 'exam' ? ' · exam' : v.mode === 'test' ? ' · test' : null),
       h('h2', { class: 'question-text' }, q.text),
       q.imageUrl ? h('img', { class: 'question-image pr-image', src: imageWithKey(q.imageUrl), alt: '' }) : null,
       q.audioUrl ? h('audio', { controls: true, preload: 'none', src: imageWithKey(q.audioUrl) }) : null,
@@ -431,9 +499,11 @@ function resultsScreen() {
     h(
       'div',
       { class: 'pr-card pr-results' },
-      h('p', { class: 'muted' }, r.quizTitle, ' · ', r.mode === 'test' ? 'test' : 'learn', ' · ', fmtTime(r.elapsedMs)),
+      h('p', { class: 'muted' }, r.quizTitle, ' · ', r.kind ?? (r.mode === 'test' ? 'test' : 'learn'), ' · ', fmtTime(r.elapsedMs), ' · ', fmtDate(r.finishedAt)),
       h('p', { class: 'pr-pct' }, `${r.percent}%`),
       h('p', { class: 'big' }, `${r.right} of ${r.total} right. ${grade}`),
+      r.timedOut ? h('p', { class: 'pr-timed-out' }, '⏱ The time ran out; unanswered questions count as missed.') : null,
+      h('p', { class: 'pr-tools' }, h('button', { class: 'link-button', onclick: () => downloadWithKey(`/learners/${encodeURIComponent(learner)}/sessions/${r.id}/export.csv`, 'practice.csv').catch((e) => showNotice(e.message)) }, '⬇ Download as CSV'), ' · ', h('button', { class: 'link-button', onclick: () => window.print() }, '🖨 Print')),
       r.byRound.length > 1
         ? h('ul', { class: 'pr-rounds' }, r.byRound.map((b) => h('li', { class: 'pr-bar' }, h('span', { class: 'pr-bar-name' }, b.round), h('span', { class: 'track' }, h('span', { class: 'fill', style: `width:${b.total ? (100 * b.right) / b.total : 0}%` })), h('span', { class: 'pr-bar-score' }, `${b.right}/${b.total}`))))
         : null,
@@ -463,12 +533,46 @@ function resultsScreen() {
   );
 }
 
+function progressScreen() {
+  const p = progressData;
+  const recent = [...p.attempts].reverse();
+  const bar = (percent, cls = '') => h('span', { class: `track ${cls}` }, h('span', { class: 'fill', style: `width:${percent}%` }));
+  return h(
+    'section',
+    { class: 'screen pr-shell pr-progress-page' },
+    topBar(h('button', { class: 'link-button', onclick: () => { screen = 'home'; render(); } }, '‹ Quizzes')),
+    h('h1', {}, '📈 My progress'),
+    p.attempts.length === 0
+      ? h('p', { class: 'muted' }, 'Nothing yet. Finish a quiz and it shows up here.')
+      : [
+          h(
+            'div',
+            { class: 'pr-card pr-totals' },
+            h('div', { class: 'pr-stat' }, h('strong', {}, String(p.attempts.length)), h('span', { class: 'muted small' }, p.attempts.length === 1 ? 'attempt' : 'attempts')),
+            h('div', { class: 'pr-stat' }, h('strong', {}, String(p.answered)), h('span', { class: 'muted small' }, 'questions')),
+            h('div', { class: 'pr-stat' }, h('strong', {}, `${p.percent}%`), h('span', { class: 'muted small' }, 'right overall')),
+            h('div', { class: 'pr-stat' }, h('strong', {}, String(p.reviewing)), h('span', { class: 'muted small' }, 'to keep an eye on')),
+          ),
+          p.due.length ? h('div', { class: 'pr-card pr-due' }, h('h2', {}, '🔁 Due for another look'), h('ul', { class: 'pr-due-list' }, p.due.map((g) => h('li', {}, h('span', {}, h('strong', {}, g.quizTitle), ` · ${g.indices.length}`), h('button', { class: 'primary', disabled: busy, onclick: () => startReview(g.quizId) }, 'Review'))))) : null,
+          h('h2', {}, 'By topic', h('span', { class: 'muted small' }, ' (weakest first)')),
+          h('ul', { class: 'pr-rounds pr-topics' }, p.topics.map((t) => h('li', { class: 'pr-bar' }, h('span', { class: 'pr-bar-name', title: t.round }, t.round), bar(t.percent, t.percent < 50 ? 'weak' : ''), h('span', { class: 'pr-bar-score' }, `${t.percent}% (${t.right}/${t.total})`)))),
+          ...(p.hardest.length
+            ? [h('h2', {}, 'Tricky ones'), h('ol', { class: 'pr-hardest' }, p.hardest.map((x) => h('li', {}, h('span', { class: 'pr-hardest-q' }, x.text), h('span', { class: 'muted small' }, ` · ${x.quizTitle} · missed ${x.misses} ${x.misses === 1 ? 'time' : 'times'}${Date.parse(x.due) <= Date.now() ? ' · due now' : ` · next on ${new Date(x.due).toLocaleDateString()}`}`))))]
+            : []),
+          h('h2', {}, 'Attempts', h('span', { class: 'muted small' }, ' (latest first)')),
+          h('ul', { class: 'pr-attempts' }, recent.map((a) => h('li', { class: 'pr-bar' }, h('span', { class: 'pr-bar-name' }, h('button', { class: 'link-button', onclick: () => act(async () => { results = await api('GET', `/learners/${encodeURIComponent(learner)}/sessions/${a.id}/results`); screen = 'results'; }) }, a.quizTitle), h('span', { class: 'muted small' }, ` ${fmtDate(a.finishedAt)} · ${a.kind ?? a.mode}`)), bar(a.percent), h('span', { class: 'pr-bar-score' }, `${a.percent}%`)))),
+          h('p', { class: 'pr-tools' }, h('button', { class: 'link-button', onclick: () => downloadWithKey(`/learners/${encodeURIComponent(learner)}/export.csv`, 'practice.csv').catch((e) => showNotice(e.message)) }, '⬇ Download everything as CSV'), ' · ', h('button', { class: 'link-button', onclick: () => window.print() }, '🖨 Print')),
+        ],
+    error ? h('p', { class: 'error', role: 'alert' }, error) : null,
+  );
+}
+
 function lockedScreen() {
   return h('section', { class: 'screen center pr-shell' }, brandBlock(), h('h1', {}, 'This practice link has stopped working'), h('p', { class: 'muted' }, 'Ask the quiz master for a new one: it is under 🎓 Practice on the host screen.'));
 }
 
 function render() {
-  const view = locked ? lockedScreen() : screen === 'learner' ? learnerScreen() : screen === 'question' && overview?.current ? questionScreen() : screen === 'results' && results ? resultsScreen() : homeScreen();
+  const view = locked ? lockedScreen() : screen === 'learner' ? learnerScreen() : screen === 'question' && overview?.current ? questionScreen() : screen === 'results' && results ? resultsScreen() : screen === 'progress' && progressData ? progressScreen() : homeScreen();
   // Keep what the learner is typing when a re-render happens under their fingers.
   const focused = document.activeElement;
   const focusName = focused?.name;
@@ -499,6 +603,17 @@ document.addEventListener('keydown', (event) => {
 setInterval(() => {
   const el = document.getElementById('pr-timer');
   if (el && overview?.current) el.textContent = fmtTime(overview.current.elapsedMs + (Date.now() - fetchedAt));
+  const countdown = document.getElementById('pr-countdown');
+  const deadline = overview?.current?.deadline;
+  if (countdown && deadline) {
+    const left = Date.parse(deadline) - Date.now();
+    countdown.textContent = `⏱ ${fmtTime(left)} left`;
+    countdown.classList.toggle('urgent', left < 60_000);
+    if (left <= 0 && !timeUpSent && screen === 'question') {
+      timeUpSent = true;
+      doAction('finish'); // the server takes the paper in (it answers timeUp if the clock beat us to it)
+    }
+  }
 }, 1000);
 
 await loadBranding().catch(() => {});

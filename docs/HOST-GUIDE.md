@@ -60,6 +60,10 @@ For one person revising for a test (the 11+, SATs, a driving theory test) rather
 - The learner types a name, picks any quiz in your library, how many questions and whether to mix them up, and either **Learn as I go** (the answer, and the `info` line if the question has one, straight after each question) or **Test myself** (marked at the end).
 - No timer stops anything; a small clock just shows time spent. They can go **Back**, **Skip**, **Flag** a question to look at again, and stop and **Carry on** later. Buzzer questions become "show me the answer, did I have it?".
 - At the end: a percentage, a breakdown by round, every question with the right answer, and **Retry the ones I missed**. Past attempts are listed under **Before**.
+- **Another look:** a question got wrong comes back after a day, then three days, a week and a fortnight; right every time and it stops. **Due for another look** on the learner's home page starts just those, per quiz.
+- **📈 My progress:** attempts over time, every topic (round) weakest first, the questions missed most, and **Download everything as CSV** or **Print**. Each results page can be downloaded or printed too.
+- **Exam practice:** in *Test myself*, set a **Time limit** and the paper is marked when the clock runs out, whatever state it is in.
+- **For a parent or teacher:** the **🎓 Practice** pop-up on the host screen lists the learners; pick one for their attempts, weakest topics and most-missed questions, and a CSV.
 - Each learner's history is a file under `practice/` in your library. Nothing leaves the machine. **⋯ More → New host key** also changes the practice link.
 
 Write `info:` lines for the explanations, and check AI-written questions by hand: a wrong answer does more harm in practice than in a pub.

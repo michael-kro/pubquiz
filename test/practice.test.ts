@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { Library } from '../server/library.ts';
-import { cleanLearnerName, learnerId, startSession } from '../server/practice.ts';
+import { cleanLearnerName, dueReview, learnerId, startSession, timeUp, updateReview } from '../server/practice.ts';
 import { parseQuiz } from '../server/quiz.ts';
 import { createQuizServer, type QuizServer } from '../server/server.ts';
 import { Client } from './client.ts';
@@ -272,5 +272,123 @@ test('a learner file is written whole, never half', async () => {
   assert.equal(saved.name, 'Eve');
   assert.ok(saved.sessions.length >= 1);
   assert.equal(saved.sessions.filter((s: { finishedAt?: string }) => !s.finishedAt).length, 1, 'one session in progress at a time');
+  await server.close();
+});
+
+// Stage 2: review boxes, progress, exam simulation, export.
+
+test('a wrong answer comes back for another look straight away; right answers push it further out until it graduates', async () => {
+  const { server } = await setup();
+  const act = async (action: string, body?: unknown) => (await call(server, 'POST', `/api/practice/learners/Fay/current/${action}`, body ?? {})).json;
+  await call(server, 'POST', '/api/practice/learners/Fay/sessions', { quizId: 'facts', mode: 'test', count: 3 });
+  await act('answer', { value: 1 }); // wrong
+  await act('answer', { value: 8 }); // right
+  await act('skip'); // skipped counts as missed
+  const r = await act('finish');
+  assert.deepEqual(r.missed, [0, 2]);
+
+  const overview = (await call(server, 'GET', '/api/practice/learners/Fay')).json;
+  assert.deepEqual(overview.due, [{ quizId: 'facts', quizTitle: 'Practice Test', indices: [0, 2] }], 'both are due now');
+  assert.deepEqual(overview.history[0].right, 1);
+  const progress = (await call(server, 'GET', '/api/practice/learners/Fay/progress')).json;
+  assert.equal(progress.reviewing, 2);
+  assert.equal(progress.attempts.length, 1);
+  assert.deepEqual(progress.topics, [{ round: 'Facts', right: 1, total: 3, percent: 33 }]);
+  assert.equal(progress.hardest[0].misses, 1);
+
+  // A review session is just those questions, in learn mode.
+  const review = (await call(server, 'POST', '/api/practice/learners/Fay/sessions', { quizId: 'facts', mode: 'learn', review: true })).json.current;
+  assert.equal(review.kind, 'review');
+  assert.equal(review.total, 2);
+  assert.equal(review.question.index, 0);
+  await act('answer', { value: 0 }); // right this time
+  await act('next');
+  await act('answer', { value: 'X' }); // wrong again
+  await act('finish');
+  const after = (await call(server, 'GET', '/api/practice/learners/Fay/progress')).json;
+  assert.deepEqual(after.due.map((g: { indices: number[] }) => g.indices), [[2]], 'the one got right is not due for a day; the other is back');
+  assert.equal(after.reviewing, 2);
+  assert.equal(after.hardest[0].misses, 2);
+  assert.equal((await call(server, 'POST', '/api/practice/learners/Fay/sessions', { quizId: 'facts', mode: 'learn', review: true })).json.current.total, 1);
+  await server.close();
+
+  // Time travel through the boxes with the engine itself.
+  const quiz = parseQuiz(QUIZ.replace('image: images/flag-japan.svg', 'image: https://example.com/flag.svg'));
+  const learner = { name: 'T', sessions: [], review: {} as Record<string, import('../server/practice.ts').ReviewItem> };
+  const day = 24 * 3_600_000;
+  let now = Date.parse('2026-10-21T10:00:00Z');
+  const attempt = (correct: boolean) => {
+    const s = startSession(quiz, 'facts', 'h', { mode: 'learn', only: [1] });
+    s.answers['1'] = { value: correct ? 8 : 7, correct, at: new Date(now).toISOString() };
+    updateReview(learner, s, quiz, now);
+  };
+  attempt(false);
+  assert.equal(learner.review['facts:1']!.box, 0);
+  assert.equal(dueReview(learner, now).length, 1, 'due at once');
+  const expectedDays = [1, 3, 7, 14];
+  for (const days of expectedDays) {
+    attempt(true);
+    assert.equal(dueReview(learner, now).length, 0, 'not due yet');
+    assert.equal(dueReview(learner, now + days * day - 1).length, 0);
+    assert.equal(dueReview(learner, now + days * day).length, 1, `due after ${days} day(s)`);
+    now += days * day;
+  }
+  attempt(true);
+  assert.deepEqual(learner.review, {}, 'five rights in a row: graduated');
+  attempt(true);
+  assert.deepEqual(learner.review, {}, 'a right answer to something never missed is not tracked');
+});
+
+test('exam simulation: a time limit, and the paper is taken in when it runs out', async () => {
+  const { dir, server } = await setup();
+  assert.equal((await call(server, 'POST', '/api/practice/learners/Gus/sessions', { quizId: 'facts', mode: 'test', timeLimitMinutes: 999 })).status, 400);
+  const start = (await call(server, 'POST', '/api/practice/learners/Gus/sessions', { quizId: 'facts', mode: 'learn', timeLimitMinutes: 2 })).json.current;
+  assert.equal(start.mode, 'test', 'an exam is always marked at the end');
+  assert.equal(start.kind, 'exam');
+  const left = Date.parse(start.deadline) - Date.now();
+  assert.ok(left > 110_000 && left <= 120_000, `about two minutes: ${left}`);
+  await call(server, 'POST', '/api/practice/learners/Gus/current/answer', { value: 0 });
+
+  // The clock runs out (the file is the truth, so wind it back there).
+  const path = join(dir, 'practice', 'gus.json');
+  const saved = JSON.parse(await readFile(path, 'utf8'));
+  saved.sessions[0].deadline = new Date(Date.now() - 1000).toISOString();
+  await writeFile(path, JSON.stringify(saved));
+  const late = (await call(server, 'POST', '/api/practice/learners/Gus/current/answer', { value: 8 })).json;
+  assert.equal(late.timeUp, true);
+  assert.equal(late.results.timedOut, true);
+  assert.equal(late.results.right, 1, 'the late answer did not count');
+  assert.equal(late.results.kind, 'exam');
+  assert.equal((await call(server, 'GET', '/api/practice/learners/Gus')).json.current, null);
+  assert.equal(timeUp({ deadline: new Date(Date.now() + 1000).toISOString() } as never), false);
+  await server.close();
+});
+
+test('CSV exports for an attempt and for a learner, and the host can read progress for a parent or teacher', async () => {
+  const { server } = await setup();
+  await call(server, 'POST', '/api/practice/learners/Ida/sessions', { quizId: 'facts', mode: 'test', count: 2 });
+  await call(server, 'POST', '/api/practice/learners/Ida/current/answer', { value: 0 });
+  await call(server, 'POST', '/api/practice/learners/Ida/current/answer', { value: 'eight, "roughly"' });
+  const r = (await call(server, 'POST', '/api/practice/learners/Ida/current/finish', {})).json;
+  const attempt = await call(server, 'GET', `/api/practice/learners/Ida/sessions/${r.id}/export.csv`);
+  assert.equal(attempt.status, 200);
+  assert.match(attempt.res.headers.get('content-type') ?? '', /text\/csv/);
+  assert.match(attempt.res.headers.get('content-disposition') ?? '', /attachment; filename="Ida - Practice Test.csv"/);
+  const lines = (attempt.json as string).replace(/^﻿/, '').trim().split('\r\n');
+  assert.equal(lines.length, 3);
+  assert.equal(lines[0], 'Learner,Quiz,Finished,Round,Question,Your answer,Answer,Right,Skipped,Flagged,Info');
+  assert.match(lines[1]!, /^Ida,Practice Test,.*,Facts,Capital of France\?,Paris,Paris,yes,,,Paris has been the capital since 987\.$/);
+  assert.match(lines[2]!, /"Type a number\."|,no,/, 'the typed text was not a number, so it was refused and the question is unanswered');
+  const all = await call(server, 'GET', '/api/practice/learners/Ida/export.csv');
+  assert.match(all.res.headers.get('content-disposition') ?? '', /filename="Ida practice.csv"/);
+  const rows = (all.json as string).replace(/^﻿/, '').trim().split('\r\n');
+  assert.equal(rows[0], 'Learner,Finished,Quiz,Mode,Kind,Right,Total,Percent,Minutes');
+  assert.match(rows[1]!, /^Ida,.*,Practice Test,test,,1,2,50,/);
+
+  const asHost = await call(server, 'GET', '/api/practice/learners/Ida/progress', undefined, server.hostKey, 'x-host-key');
+  assert.equal(asHost.status, 200);
+  assert.equal(asHost.json.name, 'Ida');
+  assert.equal(asHost.json.percent, 50);
+  assert.equal((await call(server, 'GET', '/api/practice/learners/Ida/progress', undefined, '')).status, 401);
   await server.close();
 });

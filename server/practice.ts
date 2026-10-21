@@ -25,9 +25,42 @@ export interface PracticeOptions {
   /** How many questions (left out: all of them). */
   count?: number;
   shuffle?: boolean;
-  /** Only these questions (by index in the quiz), for "retry the ones I missed". */
+  /** Only these questions (by index in the quiz), for "retry the ones I missed" and review sessions. */
   only?: number[];
+  /** Exam simulation: the whole paper has this long, then it is marked whatever state it is in. */
+  timeLimitMinutes?: number;
+  /** What kind of session this is, for the history. */
+  kind?: 'review' | 'exam';
 }
+
+/** What a finished attempt came to, kept with it so progress needs no quiz files later. */
+export interface SessionSummary {
+  right: number;
+  total: number;
+  byRound: { round: string; right: number; total: number }[];
+  missed: { index: number; text: string; round: string }[];
+}
+
+/**
+ * A question the learner has got wrong at least once, and when to ask it again. Leitner boxes: a right answer moves
+ * it up a box and further into the future; a wrong one puts it back in box 0, due straight away; five rights in a
+ * row and it graduates (is forgotten about).
+ */
+export interface ReviewItem {
+  quizId: string;
+  quizTitle: string;
+  index: number;
+  text: string;
+  round: string;
+  box: number;
+  due: string;
+  misses: number;
+  rights: number;
+  lastAt: string;
+}
+
+export const REVIEW_DELAYS_MS = [0, 24 * 3_600_000, 3 * 24 * 3_600_000, 7 * 24 * 3_600_000, 14 * 24 * 3_600_000];
+const GRADUATE_BOX = REVIEW_DELAYS_MS.length;
 
 export interface PracticeAnswer {
   value: AnswerValue;
@@ -57,11 +90,36 @@ export interface PracticeSession {
   /** Time spent, not counting long gaps. */
   elapsedMs: number;
   lastActionAt: string;
+  /** Exam simulation: when the paper is taken in, whatever state it is in. */
+  deadline?: string;
+  kind?: 'review' | 'exam';
+  summary?: SessionSummary;
 }
 
 export interface Learner {
   name: string;
   sessions: PracticeSession[];
+  /** Questions to ask again, by "quizId:index". */
+  review?: Record<string, ReviewItem>;
+}
+
+export interface DueGroup {
+  quizId: string;
+  quizTitle: string;
+  indices: number[];
+}
+
+export interface Progress {
+  attempts: { id: string; quizId: string; quizTitle: string; mode: PracticeMode; kind?: 'review' | 'exam'; finishedAt: string; right: number; total: number; percent: number; elapsedMs: number }[];
+  /** Every round the learner has met, weakest first. */
+  topics: { round: string; right: number; total: number; percent: number }[];
+  /** The questions missed most often that are still in the boxes. */
+  hardest: { quizTitle: string; text: string; round: string; misses: number; box: number; due: string }[];
+  due: DueGroup[];
+  reviewing: number;
+  answered: number;
+  right: number;
+  percent: number;
 }
 
 /** What the page shows for the current question. The answer is included only once it may be seen. */
@@ -75,6 +133,8 @@ export interface PracticeView {
   answered: number;
   finished: boolean;
   elapsedMs: number;
+  deadline?: string;
+  kind?: 'review' | 'exam';
   question?: {
     index: number;
     type: Question['type'];
@@ -100,6 +160,9 @@ export interface PracticeResults {
   quizId: string;
   quizTitle: string;
   mode: PracticeMode;
+  kind?: 'review' | 'exam';
+  /** Exam simulation: the clock ran out before the learner finished. */
+  timedOut?: boolean;
   startedAt: string;
   finishedAt: string;
   right: number;
@@ -157,8 +220,21 @@ export function startSession(quiz: Quiz, quizId: string, quizHash: string, optio
   if (options.count && options.count > 0 && options.count < indices.length) indices = indices.slice(0, options.count);
   const displays: Record<string, number[]> = {};
   for (const i of indices) if (quiz.questions[i]!.type === 'ordering') displays[i] = shuffled(ORDERING_ITEMS, true);
-  const now = new Date().toISOString();
-  return { id: randomUUID(), quizId, quizTitle: quiz.title, quizHash, mode: options.mode, startedAt: now, order: indices, position: 0, answers: {}, flagged: [], skipped: [], displays, elapsedMs: 0, lastActionAt: now };
+  const startedAt = Date.now();
+  const now = new Date(startedAt).toISOString();
+  const minutes = options.timeLimitMinutes;
+  if (minutes !== undefined && !(Number.isFinite(minutes) && minutes >= 1 && minutes <= 180)) throw new PracticeError('A time limit is between 1 and 180 minutes.');
+  const kind = options.kind ?? (minutes ? 'exam' : undefined);
+  return {
+    id: randomUUID(), quizId, quizTitle: quiz.title, quizHash, mode: minutes ? 'test' : options.mode, startedAt: now, order: indices, position: 0, answers: {}, flagged: [], skipped: [], displays, elapsedMs: 0, lastActionAt: now,
+    ...(minutes ? { deadline: new Date(startedAt + minutes * 60_000).toISOString() } : {}),
+    ...(kind ? { kind } : {}),
+  };
+}
+
+/** Exam simulation: the time is up. */
+export function timeUp(session: PracticeSession, now = Date.now()): boolean {
+  return Boolean(session.deadline && !session.finishedAt && Date.parse(session.deadline) <= now);
 }
 
 /** Adds the time since the last action to the clock, unless the learner was clearly away. */
@@ -210,6 +286,8 @@ export function view(session: PracticeSession, quiz: Quiz): PracticeView {
     answered: Object.keys(session.answers).length,
     finished: Boolean(session.finishedAt),
     elapsedMs: session.elapsedMs,
+    ...(session.deadline ? { deadline: session.deadline } : {}),
+    ...(session.kind ? { kind: session.kind } : {}),
   };
   if (!q || index === undefined || session.finishedAt) return base;
   const answer = session.answers[index];
@@ -290,10 +368,110 @@ export function toggleFlag(session: PracticeSession): void {
   session.flagged = session.flagged.includes(index) ? session.flagged.filter((i) => i !== index) : [...session.flagged, index];
 }
 
-export function finish(session: PracticeSession): void {
+/** Ends the session. With the quiz to hand, what it came to is kept with it (for progress later, without the quiz). */
+export function finish(session: PracticeSession, quiz?: Quiz): void {
   if (session.finishedAt) return;
   touch(session);
   session.finishedAt = new Date().toISOString();
+  if (quiz) {
+    const r = results(session, quiz);
+    session.summary = { right: r.right, total: r.total, byRound: r.byRound, missed: r.review.filter((x) => !x.correct).map((x) => ({ index: x.index, text: x.text, round: x.round })) };
+  }
+}
+
+/**
+ * Moves the learner's review boxes on from a finished attempt: a wrong or skipped question goes to (or back to) box 0,
+ * due now; a right answer to a question already in the boxes moves it up a box, or out altogether. Questions never
+ * missed are not tracked: the boxes hold only what needs another look.
+ */
+export function updateReview(learner: Learner, session: PracticeSession, quiz: Quiz, now = Date.now()): void {
+  const review = (learner.review ??= {});
+  const at = new Date(now).toISOString();
+  for (const index of session.order) {
+    const q = quiz.questions[index];
+    if (!q) continue;
+    const a = session.answers[index];
+    if (!a && !session.skipped.includes(index)) continue; // never reached: says nothing
+    const key = `${session.quizId}:${index}`;
+    const item = review[key];
+    if (a?.correct) {
+      if (!item) continue;
+      item.rights++;
+      item.box++;
+      item.lastAt = at;
+      if (item.box >= GRADUATE_BOX) delete review[key];
+      else item.due = new Date(now + REVIEW_DELAYS_MS[item.box]!).toISOString();
+    } else {
+      review[key] = { quizId: session.quizId, quizTitle: quiz.title, index, text: q.text, round: q.round, box: 0, due: at, misses: (item?.misses ?? 0) + 1, rights: item?.rights ?? 0, lastAt: at };
+    }
+  }
+}
+
+/** What is due for another look, by quiz. */
+export function dueReview(learner: Learner, now = Date.now()): DueGroup[] {
+  const groups = new Map<string, DueGroup>();
+  for (const item of Object.values(learner.review ?? {})) {
+    if (Date.parse(item.due) > now) continue;
+    const g = groups.get(item.quizId) ?? { quizId: item.quizId, quizTitle: item.quizTitle, indices: [] };
+    g.indices.push(item.index);
+    groups.set(item.quizId, g);
+  }
+  return [...groups.values()].map((g) => ({ ...g, indices: g.indices.sort((a, b) => a - b) }));
+}
+
+/** Drops review items for a quiz that has changed or gone, since their question numbers may no longer mean the same. */
+export function forgetReview(learner: Learner, quizId: string): void {
+  for (const [key, item] of Object.entries(learner.review ?? {})) if (item.quizId === quizId) delete learner.review![key];
+}
+
+/** Everything the learner (or a parent or teacher) might want to know about how it is going. */
+export function progress(learner: Learner, now = Date.now()): Progress {
+  const attempts: Progress['attempts'] = [];
+  const topics = new Map<string, { right: number; total: number }>();
+  let answered = 0;
+  let right = 0;
+  for (const s of learner.sessions) {
+    if (!s.finishedAt) continue;
+    const r = s.summary?.right ?? Object.values(s.answers).filter((a) => a.correct).length;
+    const total = s.summary?.total ?? s.order.length;
+    attempts.push({ id: s.id, quizId: s.quizId, quizTitle: s.quizTitle, mode: s.mode, ...(s.kind ? { kind: s.kind } : {}), finishedAt: s.finishedAt, right: r, total, percent: total ? Math.round((100 * r) / total) : 0, elapsedMs: s.elapsedMs });
+    answered += total;
+    right += r;
+    for (const b of s.summary?.byRound ?? []) {
+      const t = topics.get(b.round) ?? { right: 0, total: 0 };
+      t.right += b.right;
+      t.total += b.total;
+      topics.set(b.round, t);
+    }
+  }
+  const items = Object.values(learner.review ?? {});
+  return {
+    attempts: attempts.sort((a, b) => a.finishedAt.localeCompare(b.finishedAt)),
+    topics: [...topics].map(([round, t]) => ({ round, ...t, percent: t.total ? Math.round((100 * t.right) / t.total) : 0 })).sort((a, b) => a.percent - b.percent || b.total - a.total),
+    hardest: items.sort((a, b) => b.misses - a.misses || a.due.localeCompare(b.due)).slice(0, 10).map((i) => ({ quizTitle: i.quizTitle, text: i.text, round: i.round, misses: i.misses, box: i.box, due: i.due })),
+    due: dueReview(learner, now),
+    reviewing: items.length,
+    answered,
+    right,
+    percent: answered ? Math.round((100 * right) / answered) : 0,
+  };
+}
+
+const csvCell = (value: unknown) => {
+  const text = value === undefined || value === null ? '' : String(value);
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+};
+const csvLine = (cells: unknown[]) => cells.map(csvCell).join(',') + '\r\n';
+
+/** One row per finished attempt. */
+export function learnerCsv(learner: Learner): string {
+  const p = progress(learner);
+  return csvLine(['Learner', 'Finished', 'Quiz', 'Mode', 'Kind', 'Right', 'Total', 'Percent', 'Minutes']) + p.attempts.map((a) => csvLine([learner.name, a.finishedAt, a.quizTitle, a.mode, a.kind ?? '', a.right, a.total, a.percent, Math.round(a.elapsedMs / 6000) / 10])).join('');
+}
+
+/** One row per question of an attempt. */
+export function resultsCsv(learner: Learner, r: PracticeResults): string {
+  return csvLine(['Learner', 'Quiz', 'Finished', 'Round', 'Question', 'Your answer', 'Answer', 'Right', 'Skipped', 'Flagged', 'Info']) + r.review.map((x) => csvLine([learner.name, r.quizTitle, r.finishedAt, x.round, x.text, x.given ?? '', x.answer, x.correct ? 'yes' : 'no', x.skipped ? 'yes' : '', x.flagged ? 'yes' : '', x.info ?? ''])).join('');
 }
 
 export function results(session: PracticeSession, quiz: Quiz): PracticeResults {
@@ -331,6 +509,8 @@ export function results(session: PracticeSession, quiz: Quiz): PracticeResults {
     quizId: session.quizId,
     quizTitle: session.quizTitle,
     mode: session.mode,
+    ...(session.kind ? { kind: session.kind } : {}),
+    ...(session.deadline && Date.parse(session.finishedAt) >= Date.parse(session.deadline) ? { timedOut: true } : {}),
     startedAt: session.startedAt,
     finishedAt: session.finishedAt,
     right,
