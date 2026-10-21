@@ -1,80 +1,94 @@
 # Host guide
 
-Everything you can do from the host screen. New here? Start with [Getting started](GETTING-STARTED.md).
+Everything the host screen does. The [README](../README.md) has the five-minute start.
 
-From source (needs Node.js 22.18 or newer). Most people use the downloaded program or Docker instead: see [Getting started](GETTING-STARTED.md).
+## The host screen
 
-```sh
-npm install
-npm start                                  # your quiz library and editor
-npm start -- examples/sample-quiz.yaml     # or run one quiz file straight away
-```
+Start the program and open the host link (`docker logs pubquiz` prints it; from source it opens by itself). It stays the same between runs, so bookmark it. It shows **Your quizzes**:
 
-The host screen opens in your browser. With no quiz file it shows **Your quizzes**, kept in `~/PubQuiz` (change it with `--quizzes <folder>`). There you can:
+- **New quiz** opens the editor: pick a type for each question, upload pictures (big ones are shrunk), drag questions to reorder, and preview the phone. It saves as you type and flags anything that needs fixing.
+- **Import** a `.yaml` file or a `.zip` with `quiz.yaml` and `images/`. **Export** a `.zip` to back up or share.
+- **Run ▶** starts a quiz; **End quiz** comes back here. An unfinished quiz offers **Resume** or **Start over**.
+- **⚙ Settings** moves your library folder. **Branding** and **Clips** are described below.
 
-- **New quiz:** write one in the editor. Pick a type for each question, upload pictures (big photos are shrunk automatically), drag questions to reorder them, and see a preview of what teams see. It saves as you type, and marks anything that needs fixing.
-- **Import:** a `.yaml` quiz file, or a `.zip` with `quiz.yaml` and an `images/` folder.
-- **Export:** a `.zip` you can back up, share or import elsewhere.
-- **Run ▶:** start the quiz. **End quiz** takes you back. An unfinished quiz can be resumed later or started over.
+## Running a quiz
 
-The host link stays the same between runs, so you can bookmark it.
+The yellow button (or **Space**, **→**, or a presentation clicker) moves on: **Start quiz → Close question → Reveal answer → Next question**. A question also closes by itself when time runs out, or, with **Close early when all have answered** ticked, when every team has answered.
 
-Show the QR code on a projector, and teams scan it to join. Use the yellow button (or Space, →, or a presentation clicker) to move through each question:
+- **Ask the question before the timer starts** (ticked by default): you read the question out first; for multiple choice each press shows the next option, and the timer starts on the last one. **Start timer now** (or **S**) skips ahead.
+- **Checking the answer:** when time is up, the answer shows in a dashed box only you can see. Click another option, or edit the value, to change it. For typed answers (picture, music) every team's answer is grouped: tick or untick each, then reveal. Scores follow, even after the reveal.
+- **Pause** (**P**) stops the clock for everyone and resuming gives back exactly the time left. **+10 s** adds time. **Skip question** scores nobody. **⏭ End round** skips the rest of the round and shows its leaderboard.
+- **Leaderboard:** the full board shows at the end of each round, and the top five after every reveal. **Leaderboard** shows the full one at any time; `leaderboard: question` in the quiz file shows it after every question.
+- **☕ Break** puts a break screen with fun facts on the TV and the phones, with or without a timer.
+- **Buzzer questions:** the first team to buzz answers out loud; you press **✓ Correct** or **✗ Wrong** (**Y** / **N**).
+- **Results:** the final screen has a podium and **Download results (CSV)**, one column per question. A copy is saved next to the quiz.
 
-**Start quiz → Close question → Reveal answer → Next question**
+Teams on equal points are separated by their quicker total answer time.
 
-The full leaderboard comes by itself at the end of each round, and mid-round the reveal shows the top five. Press **Leaderboard** any time after a reveal to show the full board first. If you'd rather have it after every question, set `leaderboard: question` under `scoring` (or choose it in the editor).
+## The TV
 
-**Checking the answer:** when time runs out the host screen shows the answer in a dashed box that only you can see, before you press Reveal answer. For multiple choice, click another option to change which one is right; for letter, number and nearest questions, edit the value. Scores follow, and you can still fix a slip after the reveal.
+**TV ↗** opens a page for the TV or projector: the QR code and the teams while waiting, then the question, countdown, answer count, leaderboard, round breaks and the podium. It never shows an answer before the reveal and has no controls. Press its 🔊 button once so clips and sound effects play.
 
-**Teams on the TV:** the wait screen lists teams as they join (untick **Show teams on the TV as they join** on the start screen to hide them). Once the quiz starts the TV never lists teams; the leaderboard shows who is winning.
+- **Show teams on the TV as they join** (start screen): untick to keep names off the wait screen.
+- **Show questions on the TV** (Options): untick if the TV runs behind the phones, which could give some teams a head start. The TV then shows only "Look at your phone" and the countdown until you reveal the answer.
+- **⋯ More → Show join QR code** puts the QR code back on both screens mid-quiz for latecomers.
 
-A question also closes on its own when time runs out or every connected team has answered.
+## Teams
 
-**TV screen:** the host screen has a **TV screen ↗** button. Open that link on the TV or projector and run the quiz from your phone or laptop. The TV shows the question, countdown, answer count, leaderboard (with points gained and places moved), a round break after each round, and a podium at the end. It never shows an answer before the reveal, and has no controls. The 🔇 button turns on sound effects.
+- **Joining:** teams scan the QR code, or open the address shown, and type a name: one phone per team. Swearing is blocked (`--no-name-filter` allows anything). **Max teams** is 30 by default. **Lock the quiz when it starts** stops new teams once you press Start; **🔒 Lock joining now** does it at once.
+- **Entry fee and prizes** (start screen) show big on the TV and the phones. **Teams wait to be admitted (paid)** (ticked by default) holds new teams on a "Nearly there" screen until you press **Admit** or **Admit all**, so you can check they have paid; **×** turns one away.
+- **Rejoining:** a phone that loses signal or locks rejoins by itself with its score. A team that lost its page scans again and taps **Already joined? Rejoin with your team code**; the 6-character code is at the bottom of its screen and under **🔑 Team codes**.
+- **Team photos:** a team can add a photo (cropped, shrunk and checked by the server) that shows on the leaderboard, the TV and the podium. Untick **Team photos** to switch them off, hover over a team and press 🚫 to remove one, or start with `--no-photos`.
+- **⏱ Head starts:** give a slower player (a young child, say) up to 30 seconds. It is taken off that team's answer time when working out who was fastest, so they can still win the speed points. Set it before the question; a ⏱ badge shows beside the team.
 
-**Ending a round early:** press **⏭ End round** (next to Skip question, in the **⋯ More** menu, and after a reveal) to skip what is left of the current round and show its leaderboard. The question on screen, if it hasn't been revealed, and the rest of the round score nothing for anyone; questions already revealed keep their points. Ending the last round finishes the quiz. It asks first.
+## Hosting from your phone
 
-**Running the night:** during a question the host can **Pause** (the clock stops for every team, and resuming gives back exactly the time left; **P** also works), add **+10 s**, or **Skip question** (nobody scores on it). Teams with equal scores are separated by their quicker total answer time.
+Open the host link on your phone, or press **📲 Host on my phone** for a QR code of it. The screen becomes a remote: the question and answers, and big buttons along the bottom. **Clips**, **Show join QR code**, **End round** and **End quiz** are under **⋯**. Keep the laptop on: it runs the quiz, the phone only controls it.
 
-**From a phone:** start with `--host-pin <pin>` (6 or more characters), open `/host` on the host's phone and type the PIN. The phone remembers it. Wrong guesses are limited, but if the quiz is on the internet link, choose a long PIN. The host screen reshapes itself on a phone: a slim header, the question and answers, and a bar of big buttons along the bottom (Next, Break, More). The QR code, Clips and End round are under More.
+## Sound clips
 
-**Head starts (so a slower player can still win):** in the Options panel, press **⏱ Head starts** and give a team a number of seconds, for example 5 for a young child. That many seconds are taken off the team's answer time when working out who was fastest (rank order, speed points and "fastest" bonuses). Giving one team 5 seconds is the same as adding 5 seconds to every other team. The team still has only the normal time to answer, and a head start applies to answers given from then on, so set it before the question. A small ⏱ badge shows beside the team on your screen.
+**Clips** is a soundboard of your own mp3, m4a, ogg or wav files (up to 20 MB each, kept in `clips` inside your library). **📺 TV** plays a clip through the TV page; **▶ Play** plays it on the device you are holding (hidden on a phone). A question's own `audio` clip plays from the question screen.
 
-**Questions off the TV:** untick **Show questions on the TV** in the Options panel on the host screen if the TV and the phones might be out of step (a slow cast, say), which could give some teams a head start. While a question is open the TV then shows only "Look at your phone", the question number and the countdown. When you reveal the answer, the TV shows the question with its answer as normal. The phones and your own host screen are not affected, and a music clip still plays on the TV. You can switch it on or off at any point in the quiz.
+## Branding and venues
 
-**Branding:** press **Branding** on the quizzes screen to set your venue's name, tagline, accent and background colours, and logo. They show on the team phones (join, lobby and final screens), the host screen and the TV. Text colours are worked out for you so everything stays readable, and the panel warns if the accent is hard to see. Use a logo with a transparent background. **Several venues:** each venue is a profile with its own name, colours and logo. The row of tabs at the top of the Branding panel switches between them, and **+ New venue** adds one (optionally starting from a copy of the current venue). A drop-down on the quizzes screen switches venue in one click; the page reloads in the new colours and every team phone and TV shows that venue from then on. The profiles are folders inside your library's `branding` folder (`branding/<venue>/branding.json` and `logo.png`), and the one in use is remembered in `branding/profiles.json`. To brand a single quiz file, point `--branding <folder>` at a folder holding `branding.json` and `logo.png` (see `venues/my-venue/branding` for a real one).
+**Branding** sets a name, tagline, two colours and a logo for every page; text colours are worked out so everything stays readable, and the panel warns if the accent is hard to see. Each venue is a profile: the tabs at the top of the panel switch between them, **+ New venue** adds one (optionally copied from the current one), and the 🍺 drop-down on the quizzes screen switches venue in one click. Profiles are folders under `branding/` in your library.
 
-**Team photos:** each team can add a photo from its phone (a selfie, or one from the camera roll). It is cropped square and shrunk on the phone, checked by the server, and shows next to the team's name on the leaderboard, the TV, the host list and the podium. Teams without one get coloured initials. The host can untick **Team photos** at any time to switch them off for everyone, or hover over a team and press 🚫 to remove one. `--no-photos` starts with photos off. Photos are saved beside the game, so they survive a restart, and a new game starts without them.
+## How phones connect
 
-**Speed bonus:** besides faster answers scoring more, the quickest correct teams earn extra: set `fastBonus` and `fastPlaces` under `scoring` (or use the editor's **Fastest teams bonus**). First place gets all of it, second 60% and third 30%. The reveal shows who earned it.
+By default the quiz gets a free public `https://` link from Cloudflare (no account needed) and the QR code points to it, so teams can use 4G or any Wi-Fi, and pub Wi-Fi that stops devices seeing each other does not matter. The first run downloads Cloudflare's `cloudflared` (checksum-verified). The host screen shows **🌐 Internet link** when it is ready, usually within 15 seconds; until then the QR code uses the local address. The link has a **new address after every restart**, and after it drops and comes back: teams already in rejoin by themselves, latecomers scan the new code.
 
-**Results:** when a quiz finishes, a `…results-<date>.csv` is saved next to it, and the final screen has **Download results (CSV)** with one column per question.
+**No internet at the venue?** Press **Switch to local Wi-Fi** (or start with `--lan`; in Docker `PUBQUIZ_LAN=1`) and put the phones on the same Wi-Fi as the laptop, or on the laptop's hotspot. Try a hotspot before the night: some do not let devices see each other, and most allow only a handful. If the QR code shows the wrong address (a laptop with several networks), set `--public-host` (`PUBQUIZ_PUBLIC_HOST`).
 
-### How phones connect
-
-By default the quiz gets a free public `https://` link from Cloudflare (no account needed), and the QR code points to it. Teams can use 4G or any Wi-Fi, and pub Wi-Fi that stops devices seeing each other doesn't matter. The first run downloads Cloudflare's `cloudflared` tool (checksum-verified) to `~/.pubquiz/bin`. The host screen shows **🌐 Internet link** when it's ready, usually within 15 seconds. The QR code only switches to it once the link is confirmed working.
-
-If the link drops, the app keeps trying to restore it, and the host screen offers **Switch to local Wi-Fi**. A restored link has a new address. Teams rejoin by scanning the new QR code and tapping **Rejoin with your team code**: the 6-character code is at the bottom of every team's screen. The same code moves a team to another phone if a battery dies.
-
-No internet at the venue? Run with `--lan`, and put the phones on the same Wi-Fi as the laptop, or on the laptop's own hotspot.
-
-Options:
-
-| Option | What it does |
+| Option (Docker variable) | What it does |
 |---|---|
-| `--lan` | Local Wi-Fi only, no internet link |
-| `--tunnel ngrok` | Use ngrok instead of Cloudflare (needs ngrok installed and signed in) |
-| `--public-url <url>` | Use your own public address, e.g. a VPS or Tailscale Funnel |
-| `--port 3001` | Use a different port |
-| `--public-host <address>` | Override the laptop address in the local join link |
-| `--no-open` | Don't open the host screen automatically |
-| `--fresh` | Start over instead of resuming an unfinished quiz |
-| `--wifi-ssid <name>` `--wifi-password <pw>` | Show a second QR code on the host and TV lobby for joining a Wi-Fi network (a hotspot, say) |
-| `--host-pin <pin>` | Sign in to `/host` by PIN, e.g. from a phone |
-| `--branding <folder>` | Name, colours and logo for every page |
-| `--no-photos`, `--no-name-filter` | Switch off team photos, or the swearing filter |
+| `--lan` (`PUBQUIZ_LAN=1`) | Local Wi-Fi only, no internet link |
+| `--public-host <address>` (`PUBQUIZ_PUBLIC_HOST`) | The laptop's address in the local join link |
+| `--public-url <url>` (`PUBQUIZ_PUBLIC_URL`) | Your own public address instead (a VPS, Tailscale Funnel) |
+| `--tunnel ngrok` | ngrok instead of Cloudflare (needs ngrok installed and signed in) |
+| `--short-links` (`PUBQUIZ_SHORT_LINKS=1`) | Ask is.gd for a short address (is.gd currently refuses Cloudflare's) |
+| `--wifi-ssid <name>` `--wifi-password <pw>` | A second QR code for joining a Wi-Fi network, such as a hotspot |
+| `--port <n>` (`PUBQUIZ_PORT`) | Another port |
+| `--quizzes <folder>` (`PUBQUIZ_LIBRARY`) | Where your library is |
+| `--no-open`, `--fresh` | Do not open the browser; start over instead of resuming |
 
-**If something goes wrong mid-quiz:** phones that lose signal or lock rejoin automatically with their score. The quiz is saved to `<quiz name>.session.json` as it runs. If the laptop crashes or you close the program, run the same command again: it carries on from where it was, with the same room code and host link. Use `--fresh` to start over.
+## Locking down the host controls
 
-**Fair timing:** the server measures each phone's connection delay and takes it off the answer time, so a team on a slow connection isn't penalised (up to 1.5 seconds).
+- `--host-pin <6+ characters>` (`PUBQUIZ_HOST_PIN`): open `/host` and type the PIN instead of using the long link, which is handy on a phone. Wrong guesses are limited.
+- **⋯ More → New host key** (or `--new-key`) replaces the key at once; the old host and TV links stop working.
+- `--host-local-only`: the host screen only works on the laptop itself, not over Wi-Fi or the internet link.
+- In local mode the host key travels over plain HTTP, so on shared Wi-Fi prefer the internet link.
+
+## If something goes wrong
+
+| What you see | Why | What to do |
+|---|---|---|
+| The QR code scans but the page never loads, and the host screen says **📶 Local Wi-Fi** | The phones are not on the laptop's Wi-Fi, or the venue Wi-Fi isolates devices | Press **Use the internet link**, or get the phones onto the laptop's network |
+| **🌐 Connecting to the internet…** for a long time | The laptop has no internet, or the venue blocks it | Check the laptop can browse; otherwise use local Wi-Fi mode (above) |
+| **⚠️ Internet link down** | The link dropped | It retries by itself; if it keeps failing, **Switch to local Wi-Fi** |
+| A phone says "Reconnecting…" | It lost signal or went to sleep | It rejoins by itself; the score is kept |
+| A team closed its page | | Scan again and **Rejoin with your team code** |
+| Answers arrive late, or teams drop, on one Wi-Fi | Too many devices on it | Use the internet link so phones can use mobile data, and ask players to keep off the Wi-Fi for anything else |
+| Pictures load slowly | Big files referenced by hand | Pictures uploaded in the editor are shrunk for you; shrink others first (10 MB each at most) |
+| The laptop slept or the program closed | | Turn sleep off for the night. Start it again and press **Resume**: same room code, scores kept, phones rejoin |
+
+**Fair timing:** each phone times its own answer and the server takes the connection delay off, so a slow connection is not penalised (up to 1.5 seconds).
