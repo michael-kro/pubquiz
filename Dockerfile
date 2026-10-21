@@ -1,13 +1,13 @@
 # Pub quiz in a container. Build: docker build -t pubquiz .   Run: see compose.yaml or README.md.
 
 # Stage 1: install the server's packages.
-FROM node:24-slim AS deps
+FROM node:25-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 # Stage 2: the image that runs.
-FROM node:24-slim
+FROM node:25-slim
 
 # cloudflared (the internet link) checks Cloudflare's certificate against the system's trusted list.
 # The base image is updated regularly and this is a plain certificate list, so pinning its version would only break builds.
