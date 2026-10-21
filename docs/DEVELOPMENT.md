@@ -37,7 +37,7 @@ npm run try                              # a throwaway library and settings on p
 
 ## Docker
 
-`docker compose up -d` builds and runs the image with `~/PubQuiz` as the library (`PUBQUIZ_LIBRARY` to change it) and a `pubquiz-data` volume for settings and `cloudflared`. Settings are environment variables in [compose.yaml](../compose.yaml). The image is built in two stages, runs as `node` and ships without npm. Each release publishes it to `ghcr.io/michael-kro/pubquiz` for amd64 and arm64.
+`docker compose up -d` builds and runs the image with `~/PubQuiz` as the library (`PUBQUIZ_LIBRARY` to change it) and a `pubquiz-data` volume for settings and `cloudflared`. Settings are environment variables in [compose.yaml](../compose.yaml). The image is built in two stages with no install scripts, runs as `node`, ships without npm, and starts Node with `--disallow-code-generation-from-strings` (no `eval` at runtime). The container runs read-only with every Linux capability dropped and no privilege escalation (`compose.yaml`, and the flags in the README command); the app only writes under `/data`. Each release publishes the image to `ghcr.io/michael-kro/pubquiz` for amd64 and arm64 with an SBOM and signed build provenance; check an image came from this repository's workflow with `gh attestation verify oci://ghcr.io/michael-kro/pubquiz:<version> --owner michael-kro`.
 
 ## CI and security scanning
 

@@ -97,6 +97,22 @@ test('keys travel in headers and in the link fragment, never in a request addres
     assert.equal((await fetch(`${base}${path}?key=${server.hostKey}`)).status, inAddress, `${path} with the key in the address`);
     if (inHeader) assert.equal((await fetch(`${base}${path}`, { headers: { 'x-host-key': server.hostKey } })).status, inHeader, `${path} with the key in a header`);
   }
+test('a WebSocket upgrade from another website is refused; the app itself and non-browser clients connect', async () => {
+  const server = await start();
+  const attempt = (headers: Record<string, string>) =>
+    new Promise<'open' | 'refused'>((resolve) => {
+      const ws = new WebSocket(`ws://127.0.0.1:${server.port}/ws`, { headers });
+      ws.once('open', () => {
+        ws.terminate();
+        resolve('open');
+      });
+      ws.once('unexpected-response', () => resolve('refused'));
+      ws.once('error', () => resolve('refused'));
+    });
+  assert.equal(await attempt({ Origin: 'https://evil.example' }), 'refused', 'another site');
+  assert.equal(await attempt({ Origin: `http://127.0.0.1:${server.port}` }), 'open', 'the app page, by the address it was opened on');
+  assert.equal(await attempt({ Origin: 'null' }), 'refused', 'an opaque origin');
+  assert.equal(await attempt({}), 'open', 'a client that is not a browser');
   await server.close();
 });
 

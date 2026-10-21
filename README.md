@@ -10,6 +10,7 @@ Run a live pub quiz from your laptop. Teams join on their own phones by scanning
    mkdir -p ~/PubQuiz
    docker run -d --name pubquiz -p 3000:3000 \
      -v ~/PubQuiz:/data/quizzes -v pubquiz-data:/data \
+     --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges \
      ghcr.io/michael-kro/pubquiz:latest
    docker logs pubquiz        # prints the host link
    ```
