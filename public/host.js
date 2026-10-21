@@ -364,8 +364,10 @@ const NETWORK_LABELS = {
   down: '⚠️ Internet link down',
 };
 
-function networkPill(network) {
+function networkPill(network, compact = false) {
   const key = network.mode === 'lan' ? 'lan' : network.state;
+  // On a phone the pill is just its emoji, with the words as the tooltip and for screen readers.
+  if (compact) return h('span', { class: `network-pill compact ${key}`, role: 'img', 'aria-label': NETWORK_LABELS[key].replace(/^\S+\s/, ''), title: `${NETWORK_LABELS[key].replace(/^\S+\s/, '')}${network.message ? `: ${network.message}` : ''}` }, NETWORK_LABELS[key].split(' ')[0]);
   return h('span', { class: `network-pill ${key}`, title: network.message ?? '' }, NETWORK_LABELS[key]);
 }
 
@@ -872,18 +874,15 @@ function topBar(s) {
       { class: 'phone-top' },
       h(
         'header',
-        { class: 'host-bar' },
-        hostBadge(),
-        h('div', { class: 'bar-id' }, h('span', { class: 'quiz-title', title: s.quizTitle }, s.quizTitle), h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Room ', h('strong', {}, s.roomCode)])),
-        networkPill(s.network),
-        soundButton(),
+        { class: 'host-bar phone-head' },
+        h('div', { class: 'phone-head-row' }, hostBadge(), h('span', { class: 'quiz-title', title: s.quizTitle }, s.quizTitle), soundButton()),
+        h('div', { class: 'phone-head-row' }, h('span', { class: 'join-hint' }, s.joiningLocked ? [h('strong', { title: 'Closed to new teams' }, '🔒 Closed'), ' · '] : null, 'Room ', h('strong', {}, s.roomCode)), networkPill(s.network, true)),
       ),
       h(
         'div',
         { class: 'phone-actions' },
         s.pendingTeams?.length ? h('button', { type: 'button', class: 'pending-pill', onclick: () => socket.send({ t: 'admit-all' }) }, `⏳ ${s.pendingTeams.length} · Admit`) : null,
-        !TV && s.phase === 'reveal' && s.skipsLeaderboardNext ? h('button', { onclick: () => socket.send({ t: 'leaderboard' }) }, 'Board') : null,
-        breakControl(s),
+        breakControl(s, true),
         moreControl(s),
         h('button', { class: 'primary next', onclick: advance, disabled: s.phase === 'finished' || (s.phase === 'lobby' && !s.canStart) }, nextLabel(s)),
       ),
@@ -1107,7 +1106,7 @@ function answerReview(s, q) {
     h('strong', { class: 'answer-review-text' }, q.answerText),
     q.answerEdited ? h('span', { class: 'chip plain' }, 'changed') : null,
     edit,
-    h('span', { class: 'muted small' }, 'Only you can see this until you press Reveal answer.'),
+    h('span', { class: 'muted small answer-review-note' }, 'Only you can see this until you press Reveal answer.'),
   );
 }
 
@@ -1132,6 +1131,7 @@ let moreOpen = false;
 /** Rarely used actions, tucked into a menu so the top bar stays on one line. */
 function moreControl(s) {
   const items = [
+    ...(isPhone() && s.phase === 'reveal' && s.skipsLeaderboardNext ? [['🏆 Show leaderboard', () => socket.send({ t: 'leaderboard' })]] : []),
     ...(isPhone() ? [['🎵 Clips', openClips]] : [['📲 Host on my phone', () => { hostQrOpen = true; }]]),
     ...(isPhone() ? [['📋 Copy join link', async () => showNotice((await copyText(s.shortLinks?.join ?? s.joinUrl)) ? 'Join link copied.' : 'Could not copy the link.')]] : []),
     ['📱 Show join QR code', () => socket.send({ t: 'show-join', shown: true })],
@@ -1144,14 +1144,14 @@ function moreControl(s) {
   return h(
     'span',
     { class: 'break-menu-wrap more-menu-wrap' },
-    h('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': String(moreOpen), title: 'More actions', onclick: () => { moreOpen = !moreOpen; render(); } }, '⋯ More'),
+    h('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': String(moreOpen), title: 'More actions', 'aria-label': 'More actions', onclick: () => { moreOpen = !moreOpen; render(); } }, isPhone() ? '⋯' : '⋯ More'),
     moreOpen
       ? h('div', { class: 'break-menu', role: 'menu' }, items.map(([label, run]) => h('button', { role: 'menuitem', onclick: () => { moreOpen = false; run(); render(); } }, label)))
       : null,
   );
 }
 
-function breakControl(s) {
+function breakControl(s, compact = false) {
   if (TV || s.onBreak || !['lobby', 'reveal', 'leaderboard'].includes(s.phase)) return null;
   const start = (minutes) => {
     breakMenuOpen = false;
@@ -1160,7 +1160,7 @@ function breakControl(s) {
   return h(
     'span',
     { class: 'break-menu-wrap' },
-    h('button', { 'aria-haspopup': 'true', 'aria-expanded': String(breakMenuOpen), onclick: () => { breakMenuOpen = !breakMenuOpen; render(); }, title: 'Show a break screen with fun facts' }, '☕ Break'),
+    h('button', { 'aria-haspopup': 'true', 'aria-expanded': String(breakMenuOpen), onclick: () => { breakMenuOpen = !breakMenuOpen; render(); }, title: 'Show a break screen with fun facts', 'aria-label': 'Break' }, compact ? '☕' : '☕ Break'),
     breakMenuOpen
       ? h(
           'div',
