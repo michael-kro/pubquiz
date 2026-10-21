@@ -1,0 +1,68 @@
+# Rules specific to this app. Run them with:  semgrep scan --config semgrep-rules/pubquiz.yml .
+# Test them with:                            semgrep --test semgrep-rules/
+rules:
+  - id: pubquiz-no-html-injection
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Do not build the page from HTML strings. The pages are built with the h() helper, which sets text safely, so a
+      team name or answer can never become markup. Use h() and textContent instead.
+    pattern-either:
+      - pattern: $EL.innerHTML = $X
+      - pattern: $EL.outerHTML = $X
+      - pattern: $EL.insertAdjacentHTML(...)
+      - pattern: document.write(...)
+    metadata:
+      category: security
+      cwe: 'CWE-79: Cross-site Scripting'
+
+  - id: pubquiz-no-eval
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Do not run strings as code (eval, new Function, or a string passed to setTimeout/setInterval).
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+      - pattern: setTimeout("...", ...)
+      - pattern: setInterval("...", ...)
+    metadata:
+      category: security
+      cwe: 'CWE-95: Eval Injection'
+
+  - id: pubquiz-compare-secret-in-constant-time
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      Compare keys, PINs, tokens and passwords with timingSafeEqual (see keyIs in server/server.ts), not === or !==,
+      so how long the comparison takes cannot be used to guess them.
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: $A === $B
+              - pattern: $A !== $B
+              - pattern: $A == $B
+              - pattern: $A != $B
+          - metavariable-regex:
+              metavariable: $A
+              regex: '(?i)((.*\.)?(hostkey|screenkey|hostpin)|.*secret.*|.*password.*)'
+          - pattern-not: $A === undefined
+          - pattern-not: $A !== undefined
+          - pattern-not: $A === null
+          - pattern-not: $A !== null
+          - pattern-not: $A === ''
+          - pattern-not: $A !== ''
+      - patterns:
+          - pattern-either:
+              - pattern: $A === $B
+              - pattern: $A !== $B
+              - pattern: $A == $B
+              - pattern: $A != $B
+          - metavariable-regex:
+              metavariable: $B
+              regex: '(?i)((.*\.)?(hostkey|screenkey|hostpin)|.*secret.*|.*password.*)'
+          - pattern-not: undefined === $B
+          - pattern-not: null === $B
+          - pattern-not: '"" === $B'
+    metadata:
+      category: security
+      cwe: 'CWE-208: Observable Timing Discrepancy'

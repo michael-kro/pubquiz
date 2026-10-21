@@ -65,6 +65,9 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
 
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
 
+/** Every message type the server accepts. The host-only test uses this to make sure each one is classified. */
+export const CLIENT_MESSAGE_TYPES: string[] = ClientMessageSchema.options.map((option) => option.shape.t.value);
+
 export function parseClientMessage(raw: string): ClientMessage | undefined {
   try {
     const result = ClientMessageSchema.safeParse(JSON.parse(raw));

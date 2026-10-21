@@ -5,6 +5,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Wait a week before proposing a brand-new release, so a compromised release is noticed first.
+    cooldown:
+      default-days: 7
     groups:
       minor-and-patch:
         update-types: [minor, patch]
@@ -13,6 +16,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Wait a week before proposing a brand-new release, so a compromised release is noticed first.
+    cooldown:
+      default-days: 7
     groups:
       actions:
         patterns: ['*']
@@ -20,3 +26,6 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Wait a week before proposing a brand-new release, so a compromised release is noticed first.
+    cooldown:
+      default-days: 7

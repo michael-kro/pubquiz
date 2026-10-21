@@ -52,3 +52,5 @@ The server is TypeScript run directly by Node (no build step). The browser pages
 ## Continuous integration
 
 Every push and pull request to `main` or `develop` runs `.github/workflows/ci.yml`: typecheck and the fast tests on Node 22.18 and 24, the load test on its own (with one retry), `npm audit` for the shipped dependencies, a secret scan of the whole history, and a lint of the workflow files. Run the same checks locally with `npm run check`. The plan for what comes next (Semgrep, CodeQL, image scanning, browser tests and DAST) is in `docs/plans/ci-and-security.md`.
+
+Security scanning (`.github/workflows/security.yml`) adds Semgrep with this app's own rules (`semgrep-rules/`, tested with `semgrep --test semgrep-rules/`), CodeQL, and hadolint and Trivy on the Docker image, on every push and pull request and weekly. `test/host-only.test.ts` makes every new WebSocket message type be classified as host-only or open. To run Semgrep yourself: `docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep semgrep scan --config semgrep-rules/pubquiz.yml --config p/typescript --config p/javascript .`
