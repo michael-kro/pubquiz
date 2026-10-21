@@ -81,6 +81,25 @@ test('the game uses the name check, and the host can turn the word filter off', 
   open.dispose();
 });
 
+test('an oversized WebSocket frame closes that connection and nothing else', async () => {
+  // Found by the fuzz test: without an error listener on each socket, ws's "Max payload size exceeded" was an
+  // uncaught exception, so one 5 KB frame from anyone with the join link took the whole server down.
+  const server = await start();
+  const bad = new WebSocket(`ws://127.0.0.1:${server.port}/ws`);
+  bad.on('error', () => {});
+  await new Promise((resolve) => bad.once('open', resolve));
+  const closed = new Promise<number>((resolve) => bad.once('close', (code) => resolve(code)));
+  bad.send(`{"t":"join","name":"${'a'.repeat(5000)}"}`);
+  assert.equal(await closed, 1009, 'the offending connection is closed as too big');
+  // Everyone else carries on.
+  const team = await Client.connect(server.port);
+  team.send({ t: 'join', name: 'Still here' });
+  await team.waitFor((m) => m.t === 'joined');
+  assert.equal((await fetch(`http://127.0.0.1:${server.port}/healthz`)).status, 200);
+  await team.close();
+  await server.close();
+});
+
 test('every page carries headers that stop the host key leaking or the page being framed', async () => {
   const server = await start();
   // Error pages too: a 404 is typed and locked down like everything else.

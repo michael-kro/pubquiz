@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.1.5 — 2026-10-21
+
+- **Fix (security):** a single WebSocket frame over 4 KB, from anyone who could reach the join page, crashed the whole server. The connection is now closed and the quiz carries on. Found by the new fuzz test; a regression test covers it.
+
 ## 0.1.4 — 2026-10-21
 
 - **Docs:** rewritten to be short: the README is the quick start, the host guide now holds everything a host needs (including hosting from a phone, how phones connect and troubleshooting), and the getting-started and venue-troubleshooting pages are folded into them.

@@ -1116,8 +1116,12 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     conn.ws.ping();
   }
 
+  wss.on('error', (error: Error) => console.error(`WebSocket server error: ${error.message}`));
   wss.on('connection', (ws, req) => {
     const address = clientAddress(req);
+    // A frame over maxPayload, or a malformed one, makes ws emit 'error' and close the socket (1009). Without a
+    // listener that error is uncaught and takes the whole server down, so anyone with the join link could stop a quiz.
+    ws.on('error', (error: Error) => console.warn(`Dropped a connection from ${address}: ${error.message}`));
     const open = perAddress.get(address) ?? 0;
     if (open >= MAX_CONNECTIONS_PER_ADDRESS || connections.size >= MAX_CONNECTIONS) {
       ws.close(1013, 'busy');
