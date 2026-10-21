@@ -1,0 +1,5 @@
+# Not scanned by Semgrep.
+node_modules/
+dist/
+# The rule tests contain the very patterns the rules flag, on purpose.
+semgrep-rules/

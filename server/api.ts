@@ -5,12 +5,12 @@ import { loadBundledFacts, pickFacts } from './facts.ts';
 import { buildEntries, filterEntries, sample, summarise, type BankEntry } from './bank.ts';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { BrandingError, MAX_LOGO_BYTES, type BrandingStore } from './branding.ts';
+import { BrandingError, BrandingProfiles, MAX_LOGO_BYTES, type BrandingSource } from './branding.ts';
 import { Library, LibraryError, MAX_AUDIO_UPLOAD, MAX_IMAGE_UPLOAD, MAX_IMPORT, type QuizDraft } from './library.ts';
 
 export interface ApiContext {
   library: Library;
-  branding?: BrandingStore;
+  branding?: BrandingSource;
   isHost(key: string | undefined, req: IncomingMessage): boolean;
   /** Starts a library quiz; returns problems that stop it running, if any. */
   runQuiz(id: string, fresh: boolean): Promise<{ ok: true } | { ok: false; issues: string[] }>;
@@ -89,20 +89,37 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
 
     if (parts[0] === 'branding' && ctx.branding) {
       const branding = ctx.branding;
+      // With profiles, every answer also lists them, so the editor can show the switcher.
+      const profiles = branding instanceof BrandingProfiles ? branding : undefined;
+      const reply = async () => ({ ...(await branding.info()), editable: branding.editable, ...(profiles ? { profiles: await profiles.list(), active: profiles.active } : {}) });
+      if (profiles && parts[1] === 'profiles' && parts.length === 2 && method === 'POST') {
+        const body = (await readJson(req)) as { name?: unknown; copyFrom?: unknown; activate?: unknown };
+        const id = await profiles.create(body.name, body.copyFrom);
+        if (body.activate) await profiles.activate(id);
+        return void sendJson(res, 201, { id, ...(await reply()) }), true;
+      }
+      if (profiles && parts[1] === 'profiles' && parts.length === 3 && method === 'DELETE') {
+        await profiles.remove(parts[2]);
+        return void sendJson(res, 200, await reply()), true;
+      }
+      if (profiles && parts[1] === 'active' && parts.length === 2 && method === 'POST') {
+        await profiles.activate(((await readJson(req)) as { id?: unknown }).id);
+        return void sendJson(res, 200, await reply()), true;
+      }
       if (parts.length === 1 && method === 'GET') {
-        return void sendJson(res, 200, { ...(await branding.info()), editable: branding.editable }), true;
+        return void sendJson(res, 200, await reply()), true;
       }
       if (parts.length === 1 && method === 'PUT') {
         await branding.save(await readJson(req));
-        return void sendJson(res, 200, { ...(await branding.info()), editable: branding.editable }), true;
+        return void sendJson(res, 200, await reply()), true;
       }
       if (parts[1] === 'logo' && method === 'POST') {
         await branding.setLogo(url.searchParams.get('name') ?? '', await readBody(req, MAX_LOGO_BYTES));
-        return void sendJson(res, 200, { ...(await branding.info()), editable: branding.editable }), true;
+        return void sendJson(res, 200, await reply()), true;
       }
       if (parts[1] === 'logo' && method === 'DELETE') {
         await branding.removeLogo();
-        return void sendJson(res, 200, { ...(await branding.info()), editable: branding.editable }), true;
+        return void sendJson(res, 200, await reply()), true;
       }
     }
 

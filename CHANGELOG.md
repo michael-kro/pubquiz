@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+## 0.1.3 — 2026-10-21
+
+- **No more downloadable programs:** the five single-file programs (Mac, Windows, Linux) are gone. They were unsigned, so every user got an operating system warning, and they carried a second copy of the pages to maintain. Run the Docker image or the source instead; the README quick start is now built on Docker. Removed `npm run build:binaries`, the build script, the embedded-files code and the `bun` dependency.
+- **Release process:** a release every two weeks, feature and fix branches off `develop`, hotfix branches off `main`; written up in the README and `docs/RELEASING.md`, with a pull request template and a reminder issue opened on each freeze Friday.
+- **Dynamic scanning (OWASP ZAP):** a passive scan on every pull request and an active one nightly, run against a throwaway copy of the app. Error pages, `/status.json` and `/healthz` now carry the same security headers as the pages, and every response has a Permissions-Policy and cross-origin opener and resource policies.
+- **Security scanning in CI:** Semgrep (with the app's own rules), CodeQL, hadolint and Trivy run on every push and pull request and weekly. The Docker image is built in two stages and no longer ships npm (fewer packages, smaller, and three scanner findings gone). A new test makes every WebSocket message type be classified as host-only or open. GitHub Actions are pinned to commit hashes.
+- **Continuous integration:** every push and pull request now runs typecheck and tests on Node 22.18 and 24, the load test, `npm audit`, a secret scan and a workflow lint; Dependabot keeps dependencies, actions and the Docker base image up to date. Plans for what comes next are in `docs/plans/`.
+- **Fixes from a full screen tour (host on a phone and a laptop, the TV and a team phone, every question type):** the host top bar fits on a 1280px-wide laptop; the More and Break menus on a phone are a sheet above the buttons instead of running off the edge; the TV page no longer makes two requests it is not allowed to; the host phone drops the room code and the Tiles/List switch.
+- **Host screen on a phone, tidied up:** the title has room, the network status is an emoji, the bottom bar never overflows (Break is an icon, Leaderboard moved under More), the question controls sit in a tidy grid, answer tiles are shorter, and the fastest-answer rows no longer squash the team name.
+- **Head starts:** give a slower player (a young child, say) a head start of up to 30 seconds. It is taken off that team's answer time when working out who was fastest, so they can still win the speed points. Host only, from the Options panel; it also survives a restart.
+- **Option to keep questions off the TV:** "Show questions on the TV" (Options panel, ticked by default). Unticked, the TV shows the countdown and "Look at your phone" while a question is open, and the question again only when the answer is revealed. Nothing of the question is sent to the TV in the meantime.
+- **Quizzes screen on a phone:** each quiz shows Run, Edit and Duplicate only; Export and Delete are left for the laptop.
+- **Escape closes pop-ups:** on the host screen, Escape closes whichever pop-up is open (host QR code, clips, settings, team codes, the join QR on the screens, the More and Break menus).
+- **Branding profiles (venues):** keep a branding setup per pub and switch between them from a drop-down on the quizzes screen or the tabs in the Branding panel. An existing branding setup becomes the "default" profile automatically. Fixes the Tiles/List toggle being unreadable on light backgrounds.
+- **Ordering is drag and drop only:** teams drag any row into place and the others slide out of the way; the ▲▼ arrows are gone. (Keyboard: focus a row and use the up and down arrow keys.)
+- **Fix:** the final results (and any leaderboard) on a team's phone no longer scroll sideways when team names are long; the list shrinks to fit and names are cut short.
+- **Fix:** an ordering question that is asked before its timer starts no longer crashes the server (it showed up once "ask the question first" became the default).
+- **New defaults:** "Teams wait to be admitted (paid)" and "Ask the question before the timer starts" are ticked by default. Untick either on the host screen, or set `readOut: false` in a quiz.
+- **Host screen is labelled:** a yellow "🎛 HOST" badge and a yellow strip across the top, and the browser tab says "HOST"; the TV tab says "TV screen". So the controls are never mistaken for the TV.
+- **Clips on a phone:** tap a clip's name to play it on the TV (no separate Play button, no delete button).
+- **Copy buttons:** a "📋 Copy link" button beside the join address (lobby, top bar, short links, join QR screen), and "Copy join link" under More on a phone.
 ## 0.1.2 — 2026-10-19
 
 - **Host from your phone, by QR:** "📲 Host on my phone" (on the quiz library screen and under More) shows a QR code of the host page. It uses the internet link when there is one, otherwise the laptop's Wi-Fi address.

@@ -1,14 +1,26 @@
 # Pub quiz in a container. Build: docker build -t pubquiz .   Run: see compose.yaml or README.md.
+
+# Stage 1: install the server's packages.
+FROM node:24-slim AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+# Stage 2: the image that runs.
 FROM node:24-slim
 
 # cloudflared (the internet link) checks Cloudflare's certificate against the system's trusted list.
+# The base image is updated regularly and this is a plain certificate list, so pinning its version would only break builds.
+# hadolint ignore=DL3008
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# The server runs on node alone. Taking npm out removes it, and the packages it bundles, from what ships.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+
 WORKDIR /app
 COPY package.json package-lock.json ./
-# bun is only needed to build the single-file programs, not to run the server.
-RUN npm ci --omit=dev
+COPY --from=deps /app/node_modules ./node_modules
 COPY server ./server
 COPY public ./public
 COPY examples ./examples
@@ -19,9 +31,11 @@ ENV HOME=/data
 # Writable by any user, so `docker run --user $(id -u):$(id -g)` works (on Linux, to keep your own files owned by you).
 RUN mkdir -p /data && chown node:node /data && chmod 1777 /data
 VOLUME /data
+# The node image's own user; compose and docker run can still override it with a numeric --user.
+# hadolint ignore=DL3066
 USER node
 
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
-  CMD node -e "fetch('http://127.0.0.1:3000/healthz').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+  CMD ["node", "-e", "fetch('http://127.0.0.1:3000/healthz').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
 ENTRYPOINT ["sh", "/app/docker-entrypoint.sh"]

@@ -6,6 +6,13 @@ import { isTextAnswer, LETTER_GROUPS, ORDERING_ITEMS, POINTS_UNIT, type Question
 import { scoreAnswer } from './scoring.ts';
 
 /** The usual limit on teams, and what the quiz is tested with. The host can change it (up to ABSOLUTE_MAX_TEAMS). */
+/** Teams wait to be admitted (the host ticks them once paid) and the host asks each question before the timer starts, unless the host says otherwise.
+ *  (The tests set these to "off" so their long-standing flows still apply.) */
+/** The most a team can be given as a head start. */
+const MAX_HEAD_START_SECONDS = 30;
+const ADMISSION_DEFAULT = process.env['PUBQUIZ_ADMISSION_DEFAULT'] !== 'off';
+const READ_OUT_DEFAULT = process.env['PUBQUIZ_READOUT_DEFAULT'] !== 'off';
+
 export const MAX_TEAMS = 30;
 export const ABSOLUTE_MAX_TEAMS = 100;
 export { MAX_NAME_LENGTH };
@@ -85,6 +92,8 @@ export interface GameSnapshot {
   break?: { startedAt: number; durationMs?: number; facts: string[] };
   wagers?: [number, [string, number][]][];
   tvShowTeams?: boolean;
+  tvShowQuestions?: boolean;
+  headStarts?: [string, number][];
   readOut?: boolean;
   startOnLastAnswer?: boolean;
   joiningLocked?: boolean;
@@ -114,6 +123,7 @@ export interface GameOptions {
   closeEarly?: boolean;
   /** Show the team list on the TV screen (default on here; the server turns it off). */
   tvShowTeams?: boolean;
+  tvShowQuestions?: boolean;
   /** Let the quiz start with no teams in it (default on here; the server turns it off, so the host waits for players). */
   allowEmptyStart?: boolean;
   /** Pressing Start quiz stops new teams joining (default off here; the server turns it on). */
@@ -184,6 +194,10 @@ export class Game {
   private readonly answerEdits = new Map<number, number | string>();
   /** Show the team list on the TV screen. The host can hide it. */
   tvShowTeams = true;
+  /** The TV shows each question as it is asked. Off: it only shows the answer, so nobody gains from a delay between the TV and the phones. */
+  tvShowQuestions = true;
+  /** Per team: milliseconds taken off its answer times when working out who was fastest, so a slower player (a young child, say) can still win the speed points. */
+  private readonly headStartMs = new Map<string, number>();
   /** The host has put the join QR code up on the screens (not saved: it is a moment-to-moment thing). */
   showJoin = false;
   /** Multiple choice: announce the answers one by one before the timer starts. */
@@ -199,7 +213,7 @@ export class Game {
   /** What it costs to play, shown on the start screen ('' for free). */
   entryFee = '';
   /** Teams wait in `pending` until the host admits them (after they've paid). */
-  requireAdmission = false;
+  requireAdmission = ADMISSION_DEFAULT;
   readonly pending = new Map<string, Team>();
   /** Optional prizes for 1st, 2nd and 3rd ('' when not set). */
   prizes: string[] = ['', '', ''];
@@ -232,13 +246,14 @@ export class Game {
     this.now = options.now ?? Date.now;
     this.onChange = options.onChange ?? (() => {});
     this.nameFilter = options.nameFilter ?? true;
-    this.readOut = quiz.readOut ?? false;
+    this.readOut = quiz.readOut ?? READ_OUT_DEFAULT;
     this.startOnLastAnswer = quiz.startOnLastAnswer ?? true;
     this.closeEarly = quiz.closeEarly ?? options.closeEarly ?? true;
     this.lockOnStart = options.lockOnStart ?? false;
     this.prizes = [0, 1, 2].map((i) => quiz.prizes?.[i] ?? '');
     this.entryFee = quiz.entryFee ?? '';
     this.tvShowTeams = options.tvShowTeams ?? true;
+    this.tvShowQuestions = options.tvShowQuestions ?? true;
     this.allowEmptyStart = options.allowEmptyStart ?? true;
   }
 
@@ -486,6 +501,21 @@ export class Game {
     this.changed();
   }
 
+  /** Gives a team a head start of this many seconds (0 clears it). It applies to answers given from now on. */
+  setHeadStart(teamId: string, seconds: number): Result<null> {
+    if (!this.teams.has(teamId)) return fail('There is no team like that.');
+    if (typeof seconds !== 'number' || !Number.isFinite(seconds) || seconds < 0 || seconds > MAX_HEAD_START_SECONDS) return fail(`A head start is between 0 and ${MAX_HEAD_START_SECONDS} seconds.`);
+    if (seconds === 0) this.headStartMs.delete(teamId);
+    else this.headStartMs.set(teamId, Math.round(seconds * 1000));
+    this.changed();
+    return { ok: true, value: null };
+  }
+
+  setTvShowQuestions(visible: boolean): void {
+    this.tvShowQuestions = visible;
+    this.changed();
+  }
+
   setTvShowTeams(visible: boolean): void {
     this.tvShowTeams = visible;
     this.changed();
@@ -532,7 +562,7 @@ export class Game {
     if (!stored.ok) return stored;
     const timing = this.measure(teamId, latencyMs, clientElapsedMs);
     if (timing.late) return fail("Too late, time's up.");
-    team.answers.set(this.questionIndex, { value: stored.value, answerMs: timing.answerMs });
+    team.answers.set(this.questionIndex, { value: stored.value, answerMs: Math.max(0, timing.answerMs - (this.headStartMs.get(teamId) ?? 0)) });
 
     if (this.everyoneAnswered()) this.closeQuestion();
     else this.changed();
@@ -731,7 +761,7 @@ export class Game {
       case 'buzzer':
         return fail('Press the buzzer.');
       case 'ordering': {
-        const display = this.displayOrders.get(this.questionIndex)!;
+        const display = this.displayOrderFor(this.questionIndex, ORDERING_ITEMS);
         const valid =
           Array.isArray(value) &&
           value.length === ORDERING_ITEMS &&
@@ -977,6 +1007,8 @@ export class Game {
       break: this.breakState,
       wagers: [...this.wagers].map(([index, bets]) => [index, [...bets]] as [number, [string, number][]]),
       tvShowTeams: this.tvShowTeams,
+      tvShowQuestions: this.tvShowQuestions,
+      headStarts: [...this.headStartMs],
       readOut: this.readOut,
       startOnLastAnswer: this.startOnLastAnswer,
       joiningLocked: this.joiningLocked,
@@ -1013,7 +1045,9 @@ export class Game {
     game.breakState = snapshot.break;
     for (const [index, bets] of snapshot.wagers ?? []) game.wagers.set(index, new Map(bets));
     game.tvShowTeams = snapshot.tvShowTeams ?? game.tvShowTeams;
-    game.readOut = snapshot.readOut ?? quiz.readOut ?? false;
+    game.tvShowQuestions = snapshot.tvShowQuestions ?? game.tvShowQuestions;
+    for (const [id, ms] of snapshot.headStarts ?? []) if (game.teams.has(id)) game.headStartMs.set(id, ms);
+    game.readOut = snapshot.readOut ?? quiz.readOut ?? READ_OUT_DEFAULT;
     game.readShown = snapshot.readShown ?? 0;
     game.joiningLocked = snapshot.joiningLocked ?? false;
     game.lockOnStart = snapshot.lockOnStart ?? game.lockOnStart;
@@ -1021,7 +1055,7 @@ export class Game {
     game.maxTeams = snapshot.maxTeams ?? game.maxTeams;
     game.prizes = snapshot.prizes ?? game.prizes;
     game.entryFee = snapshot.entryFee ?? game.entryFee;
-    game.requireAdmission = snapshot.requireAdmission ?? false;
+    game.requireAdmission = snapshot.requireAdmission ?? ADMISSION_DEFAULT;
     for (const t of snapshot.pending ?? []) game.pending.set(t.id, { ...t, connected: false, answers: new Map() });
     game.startOnLastAnswer = snapshot.startOnLastAnswer ?? game.startOnLastAnswer;
     game.closeEarly = snapshot.closeEarly ?? game.closeEarly;
@@ -1066,6 +1100,17 @@ export class Game {
     this.beginPlay();
   }
 
+  /** The shuffled order an ordering question's items are shown in. Made the first time anything needs it (the question can be on screen,
+   *  being read out, before its clock starts) and then kept, so every screen and the answer check agree. */
+  private displayOrderFor(index: number, length: number): number[] {
+    let order = this.displayOrders.get(index);
+    if (!order) {
+      order = shuffledOrder(length);
+      this.displayOrders.set(index, order);
+    }
+    return order;
+  }
+
   /** Starts the clock on the current question. */
   private beginPlay(): void {
     const index = this.questionIndex;
@@ -1073,9 +1118,7 @@ export class Game {
     this.phase = 'open';
     this.openedAt = this.now();
     this.endsAt = this.openedAt + question.seconds * 1000;
-    if (question.type === 'ordering' && !this.displayOrders.has(index)) {
-      this.displayOrders.set(index, shuffledOrder(question.items.length));
-    }
+    if (question.type === 'ordering') this.displayOrderFor(index, question.items.length);
     for (const team of this.teams.values()) this.markSent(team);
     this.startTimer();
     this.changed();
@@ -1477,7 +1520,7 @@ export class Game {
       revealAudio: this.phase === 'reveal' ? q.revealAudioUrl : undefined,
       revealCaption: this.phase === 'reveal' && q.revealAudioUrl ? q.revealCaption : undefined,
       options: q.type === 'multiple-choice' ? (this.phase === 'reading' ? q.options.slice(0, this.readShown) : q.options) : undefined,
-      items: q.type === 'ordering' ? this.displayOrders.get(this.questionIndex)!.map((i) => q.items[i]!) : undefined,
+      items: q.type === 'ordering' ? this.displayOrderFor(this.questionIndex, q.items.length).map((i) => q.items[i]!) : undefined,
       seconds: q.seconds,
       remainingMs: this.phase === 'open' ? Math.max(0, this.endsAt - (this.pausedAt ?? this.now())) : undefined,
       paused: this.phase === 'open' && this.pausedAt !== undefined ? true : undefined,
@@ -1695,6 +1738,7 @@ export class Game {
       maxTeams: this.maxTeams,
       photosEnabled: this.photosEnabled,
       tvShowTeams: this.tvShowTeams,
+      tvShowQuestions: this.tvShowQuestions,
       showJoin: this.showJoin,
       entryFee: this.entryFee,
       requireAdmission: this.requireAdmission,
@@ -1717,6 +1761,7 @@ export class Game {
         score: scores.get(t.id) ?? 0,
         connected: t.connected,
         answered: t.answers.has(this.questionIndex),
+        headStart: (this.headStartMs.get(t.id) ?? 0) / 1000,
       })),
       wagering:
         this.phase === 'wagering'

@@ -83,7 +83,8 @@ test('the game uses the name check, and the host can turn the word filter off', 
 
 test('every page carries headers that stop the host key leaking or the page being framed', async () => {
   const server = await start();
-  for (const path of ['/', '/host', '/screen', '/play.js']) {
+  // Error pages too: a 404 is typed and locked down like everything else.
+  for (const path of ['/', '/host', '/screen', '/play.js', '/status.json', '/healthz', '/robots.txt', '/no-such-page']) {
     const res = await fetch(`http://127.0.0.1:${server.port}${path}`);
     assert.equal(res.headers.get('referrer-policy'), 'no-referrer', path);
     assert.equal(res.headers.get('x-frame-options'), 'DENY', path);
@@ -91,6 +92,9 @@ test('every page carries headers that stop the host key leaking or the page bein
     const csp = res.headers.get('content-security-policy') ?? '';
     assert.match(csp, /script-src 'self'/, path);
     assert.match(csp, /frame-ancestors 'none'/, path);
+    assert.match(res.headers.get('permissions-policy') ?? '', /microphone=\(\)/, path);
+    assert.equal(res.headers.get('cross-origin-opener-policy'), 'same-origin', path);
+    assert.match(res.headers.get('content-type') ?? '', /^(text|application)\//, `${path} has a content type`);
   }
   await server.close();
 });

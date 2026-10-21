@@ -140,3 +140,188 @@ export class BrandingStore {
     for (const ext of Object.keys(IMAGE_TYPES)) await rm(join(this.dir, `logo${ext}`), { force: true });
   }
 }
+
+/** Anything the pages and the editor can read branding from and (maybe) change: one folder, or the active profile. */
+export interface BrandingSource {
+  readonly editable: boolean;
+  config(): Promise<BrandingConfig>;
+  logo(): Promise<{ data: Buffer; contentType: string; version: string } | undefined>;
+  info(): Promise<BrandingInfo>;
+  save(input: unknown): Promise<BrandingConfig>;
+  setLogo(filename: string, data: Uint8Array): Promise<void>;
+  removeLogo(): Promise<void>;
+}
+
+export interface BrandingProfileSummary {
+  id: string;
+  /** The venue's name as set in the profile (the folder name if it has none yet). */
+  label: string;
+}
+
+const PROFILES_FILE = 'profiles.json';
+const DEFAULT_PROFILE = 'default';
+const MAX_PROFILES = 30;
+
+/** "The Thirsty Bear, Warwick" → "the-thirsty-bear-warwick" */
+export function profileId(name: string): string {
+  return name
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+}
+
+/**
+ * Several branding setups ("profiles", one per venue) kept side by side in one folder, one of them active.
+ * Each profile is an ordinary branding folder (branding.json and a logo) inside <root>/<id>/. The active
+ * profile is what every page shows; switching is one click. It looks like a single BrandingStore to the rest of the program.
+ */
+export class BrandingProfiles implements BrandingSource {
+  readonly root: string;
+  private activeId = DEFAULT_PROFILE;
+  private ready: Promise<void> | undefined;
+
+  constructor(root: string) {
+    this.root = root;
+  }
+
+  /** Reads the profile list, and on first use moves a plain single branding setup into a profile called "default". */
+  init(): Promise<void> {
+    this.ready ??= this.load();
+    return this.ready;
+  }
+
+  private async load(): Promise<void> {
+    await mkdir(this.root, { recursive: true });
+    const entries = await readdir(this.root, { withFileTypes: true }).catch(() => []);
+    const profiles = entries.filter((e) => e.isDirectory() && /^[a-z0-9-]+$/.test(e.name) && e.name !== 'original');
+    const legacy = entries.some((e) => e.isFile() && (e.name === CONFIG_FILE || /^logo\.\w+$/.test(e.name)));
+    if (legacy) {
+      // The old layout: branding.json and the logo straight in the folder. They become the "default" profile.
+      const target = join(this.root, DEFAULT_PROFILE);
+      await mkdir(target, { recursive: true });
+      for (const e of entries) {
+        const isLegacyFile = e.isFile() && (e.name === CONFIG_FILE || /^logo\.\w+$/.test(e.name));
+        const isOriginal = e.isDirectory() && e.name === 'original';
+        if (isLegacyFile || isOriginal) await rename(join(this.root, e.name), join(target, e.name));
+      }
+    } else if (profiles.length === 0) {
+      await mkdir(join(this.root, DEFAULT_PROFILE), { recursive: true });
+    }
+    let saved: string | undefined;
+    try {
+      saved = (JSON.parse(await readFile(join(this.root, PROFILES_FILE), 'utf8')) as { active?: unknown }).active as string | undefined;
+    } catch {
+      saved = undefined;
+    }
+    const ids = await this.ids();
+    this.activeId = saved && ids.includes(saved) ? saved : ids.includes(DEFAULT_PROFILE) ? DEFAULT_PROFILE : ids[0]!;
+    await this.writeActive();
+  }
+
+  private async ids(): Promise<string[]> {
+    const entries = await readdir(this.root, { withFileTypes: true }).catch(() => []);
+    return entries.filter((e) => e.isDirectory() && /^[a-z0-9-]+$/.test(e.name) && e.name !== 'original').map((e) => e.name).sort();
+  }
+
+  private async writeActive(): Promise<void> {
+    const path = join(this.root, PROFILES_FILE);
+    await writeFile(`${path}.tmp`, JSON.stringify({ active: this.activeId }, null, 2));
+    await rename(`${path}.tmp`, path);
+  }
+
+  private store(id = this.activeId): BrandingStore {
+    return new BrandingStore(join(this.root, id));
+  }
+
+  get active(): string {
+    return this.activeId;
+  }
+
+  get editable(): boolean {
+    return true;
+  }
+
+  async list(): Promise<BrandingProfileSummary[]> {
+    await this.init();
+    const ids = await this.ids();
+    return Promise.all(ids.map(async (id) => ({ id, label: (await this.store(id).config()).name || id })));
+  }
+
+  private async existing(id: unknown): Promise<string> {
+    await this.init();
+    if (typeof id !== 'string' || !(await this.ids()).includes(id)) throw new BrandingError('There is no branding profile like that.', 404);
+    return id;
+  }
+
+  async activate(id: unknown): Promise<void> {
+    this.activeId = await this.existing(id);
+    await this.writeActive();
+  }
+
+  /** Makes a profile for a venue, empty or copied from another, and returns its id. It does not become active by itself. */
+  async create(name: unknown, copyFrom?: unknown): Promise<string> {
+    await this.init();
+    const venue = tidy(name, MAX_NAME, 'The name');
+    const base = profileId(venue);
+    if (!base) throw new BrandingError('Give the profile a name.');
+    const ids = await this.ids();
+    if (ids.length >= MAX_PROFILES) throw new BrandingError(`There can be at most ${MAX_PROFILES} profiles.`);
+    let id = base;
+    for (let n = 2; ids.includes(id); n++) id = `${base}-${n}`;
+    const from = copyFrom ? await this.existing(copyFrom) : undefined;
+    const target = this.store(id);
+    if (from) {
+      await mkdir(target.dir, { recursive: true });
+      const source = this.store(from);
+      const logo = await source.logo();
+      await target.save({ ...(await source.config()), name: venue });
+      if (logo) {
+        const ext = (await readdir(source.dir)).find((f) => /^logo\.\w+$/.test(f));
+        if (ext) await writeFile(join(target.dir, ext), logo.data);
+      }
+    } else {
+      await target.save({ ...DEFAULT_BRANDING, name: venue });
+    }
+    return id;
+  }
+
+  /** Deletes a profile. The last one cannot go; deleting the active one switches to another. */
+  async remove(id: unknown): Promise<void> {
+    const target = await this.existing(id);
+    const ids = await this.ids();
+    if (ids.length <= 1) throw new BrandingError('That is the only profile, so it cannot be deleted.');
+    await rm(join(this.root, target), { recursive: true, force: true });
+    if (this.activeId === target) {
+      this.activeId = ids.find((other) => other !== target)!;
+      await this.writeActive();
+    }
+  }
+
+  async config(): Promise<BrandingConfig> {
+    await this.init();
+    return this.store().config();
+  }
+  async logo() {
+    await this.init();
+    return this.store().logo();
+  }
+  async info(): Promise<BrandingInfo> {
+    await this.init();
+    return this.store().info();
+  }
+  async save(input: unknown): Promise<BrandingConfig> {
+    await this.init();
+    return this.store().save(input);
+  }
+  async setLogo(filename: string, data: Uint8Array): Promise<void> {
+    await this.init();
+    return this.store().setLogo(filename, data);
+  }
+  async removeLogo(): Promise<void> {
+    await this.init();
+    return this.store().removeLogo();
+  }
+}

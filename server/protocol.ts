@@ -32,6 +32,8 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('end-break') }),
   z.object({ t: z.literal('set-answer'), value: z.union([z.number(), z.string().max(4)]) }),
   z.object({ t: z.literal('tv-teams'), visible: z.boolean() }),
+  z.object({ t: z.literal('tv-questions'), visible: z.boolean() }),
+  z.object({ t: z.literal('head-start'), teamId: z.string().max(100), seconds: z.number().min(0).max(30) }),
   z.object({ t: z.literal('show-join'), shown: z.boolean() }),
   z.object({ t: z.literal('read-out'), on: z.boolean() }),
   z.object({ t: z.literal('rotate-key') }),
@@ -62,6 +64,9 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
 ]);
 
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
+
+/** Every message type the server accepts. The host-only test uses this to make sure each one is classified. */
+export const CLIENT_MESSAGE_TYPES: string[] = ClientMessageSchema.options.map((option) => option.shape.t.value);
 
 export function parseClientMessage(raw: string): ClientMessage | undefined {
   try {
@@ -100,6 +105,8 @@ export interface QuestionView {
   roundQuestions: number;
   type: QuestionType;
   text: string;
+  /** TV only: the question is being kept off the screen, so text, picture and options are blank. */
+  hidden?: boolean;
   image?: string;
   /** A sound clip for the host and TV screens to play (never sent to phones). */
   audio?: string;
@@ -210,7 +217,7 @@ export interface HostView {
   openHost?: boolean;
   network: NetworkStatus;
   /** `code` is blank on the TV screen: anyone with a team's code can take over its phone. */
-  teams: { id: string; name: string; code: string; photo?: string; score: number; connected: boolean; answered: boolean }[];
+  teams: { id: string; name: string; code: string; photo?: string; score: number; connected: boolean; answered: boolean; headStart: number }[];
   photosEnabled: boolean;
   /** After the reveal, the next press goes straight to the next question (the full leaderboard is skipped). */
   skipsLeaderboardNext: boolean;
@@ -219,6 +226,8 @@ export interface HostView {
   question?: QuestionView & { answerText: string; answer?: number; info?: string; answerEdited?: boolean; editable?: boolean; editValue?: number | string; hostText?: string };
   /** Show the team list on the TV. The host can hide it. */
   tvShowTeams: boolean;
+  /** The TV shows each question while it is asked. Off, it shows only the answer. */
+  tvShowQuestions: boolean;
   /** The host has put the join QR code up on the host and TV screens. */
   showJoin: boolean;
   /** What it costs to play ('' if nothing). */

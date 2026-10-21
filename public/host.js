@@ -61,7 +61,30 @@ let brandingOpen = false;
 const editingId = () => /^#edit\/([a-z0-9-]+)$/.exec(location.hash)?.[1];
 window.addEventListener('hashchange', () => render());
 
+/** The venues (branding profiles) to switch between, or null when this host has a single branding folder. */
+let venues = null;
+
+async function loadVenues() {
+  try {
+    const info = await api('GET', '/branding');
+    venues = info.profiles && info.profiles.length > 1 ? { list: info.profiles, active: info.active } : null;
+  } catch {
+    venues = null;
+  }
+}
+
+async function switchVenue(id) {
+  try {
+    await api('POST', '/branding/active', { id });
+    // Every page picks its colours and logo up when it loads, so load this one again.
+    location.reload();
+  } catch (error) {
+    showNotice(error.message);
+  }
+}
+
 async function loadLibrary() {
+  void loadVenues().then(render);
   try {
     library = { items: await api('GET', '/quizzes'), error: '' };
   } catch (error) {
@@ -91,7 +114,7 @@ function connect() {
     },
     onMessage(message) {
       if (message.t === 'state') {
-        if (message.view.phase === 'idle' && state?.phase !== 'idle' && message.view.library) void loadLibrary();
+        if (!TV && message.view.phase === 'idle' && state?.phase !== 'idle' && message.view.library) void loadLibrary();
         playSoundsFor(state, message.view);
         state = message.view;
         setDeadline(state.question?.remainingMs, state.question?.paused);
@@ -197,10 +220,25 @@ function advance() {
 }
 
 // Space, → and PageDown (what presentation clickers send) all move on.
+/** Escape closes whichever pop-up is open, the one on top first. Returns whether there was one. */
+function closeTopPopup() {
+  if (hostQrOpen) hostQrOpen = false;
+  else if (headStartOpen) headStartOpen = false;
+  else if (clipsOpen) clipsOpen = false;
+  else if (settingsOpen) settingsOpen = false;
+  else if (codesOpen) codesOpen = false;
+  else if (state?.showJoin && !TV) socket?.send({ t: 'show-join', shown: false });
+  else if (moreOpen || breakMenuOpen) {
+    moreOpen = false;
+    breakMenuOpen = false;
+  } else return false;
+  render();
+  return true;
+}
+
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && codesOpen) {
-    codesOpen = false;
-    render();
+  if (event.key === 'Escape' && closeTopPopup()) {
+    event.preventDefault();
     return;
   }
   if (TV || !state || state.phase === 'idle' || editingId() || event.target !== document.body) return;
@@ -310,6 +348,7 @@ function render() {
     codesOverlay(state),
     joinOverlay(state),
     hostQrOverlay(state),
+    headStartOverlay(state),
     clipsOverlay(),
     settingsOverlay(),
     notice ? h('div', { class: 'notice', role: 'alert' }, notice) : '',
@@ -325,8 +364,10 @@ const NETWORK_LABELS = {
   down: '⚠️ Internet link down',
 };
 
-function networkPill(network) {
+function networkPill(network, compact = false) {
   const key = network.mode === 'lan' ? 'lan' : network.state;
+  // On a phone the pill is just its emoji, with the words as the tooltip and for screen readers.
+  if (compact) return h('span', { class: `network-pill compact ${key}`, role: 'img', 'aria-label': NETWORK_LABELS[key].replace(/^\S+\s/, ''), title: `${NETWORK_LABELS[key].replace(/^\S+\s/, '')}${network.message ? `: ${network.message}` : ''}` }, NETWORK_LABELS[key].split(' ')[0]);
   return h('span', { class: `network-pill ${key}`, title: network.message ?? '' }, NETWORK_LABELS[key]);
 }
 
@@ -335,11 +376,47 @@ function joinText(s) {
   return (s.shortLinks?.join ?? s.joinUrl).replace(/^https?:\/\//, '');
 }
 
+/** Copies text to the clipboard. Plain http addresses (the laptop's Wi-Fi address) have no clipboard API, so fall back to a hidden text box. */
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const box = h('textarea', { value: text, readonly: true, style: 'position:fixed;left:-9999px;top:0' });
+    document.body.append(box);
+    box.select();
+    let ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch {
+      ok = false;
+    }
+    box.remove();
+    return ok;
+  }
+}
+
+/** A small button that copies `getText()` and says so for a moment. Host screen only. */
+function copyButton(getText, label = 'Copy link') {
+  if (TV) return null;
+  const button = h('button', {
+    type: 'button',
+    class: 'copy-link',
+    title: 'Copy to the clipboard',
+    onclick: async () => {
+      const ok = await copyText(getText());
+      button.textContent = ok ? '✓ Copied' : 'Press Ctrl+C';
+      setTimeout(() => { button.textContent = `📋 ${label}`; }, 1500);
+    },
+  }, `📋 ${label}`);
+  return button;
+}
+
 /** The short links on the host screen, for reading out or typing into the TV. */
 function shortLinksNote(s) {
   if (TV || !s.shortLinks) return null;
   const { join, tv } = s.shortLinks;
-  return h('p', { class: 'short-links muted' }, '🔗 Short links: ', join ? ['teams ', h('strong', {}, join.replace(/^https?:\/\//, ''))] : null, join && tv ? ' · ' : null, tv ? ['TV page ', h('strong', {}, tv.replace(/^https?:\/\//, ''))] : null);
+  return h('p', { class: 'short-links muted' }, '🔗 Short links: ', join ? ['teams ', h('strong', {}, join.replace(/^https?:\/\//, '')), ' ', copyButton(() => join)] : null, join && tv ? ' · ' : null, tv ? ['TV page ', h('strong', {}, tv.replace(/^https?:\/\//, '')), ' ', copyButton(() => tv)] : null);
 }
 
 /** Shown across the top while the testing switch is on: nobody needs the key to run this quiz. */
@@ -464,7 +541,8 @@ function libraryTools(total) {
         render();
       },
     }),
-    h(
+    // A phone has room for one column either way, so there is nothing to switch between.
+    isPhone() ? null : h(
       'div',
       { class: 'view-switch', role: 'group', 'aria-label': 'How to show the quizzes' },
       h('button', { type: 'button', class: libraryMode === 'tiles' ? 'active' : '', 'aria-pressed': String(libraryMode === 'tiles'), title: 'Tiles', onclick: () => setLibraryMode('tiles') }, '▦ Tiles'),
@@ -495,10 +573,19 @@ function libraryView(s) {
       'header',
       { class: 'library-bar' },
       brandLogo('brand-logo small'),
+      hostBadge(),
       h('h1', {}, 'Your quizzes'),
       networkPill(s.network),
       h('span', { class: 'spacer' }),
       h('button', { type: 'button', onclick: openClips, title: 'Play sound clips whenever you like' }, '🎵 Clips'),
+      venues
+        ? h(
+            'label',
+            { class: 'venue-switch', title: 'The venue whose logo and colours every screen shows' },
+            '🍺 ',
+            h('select', { 'aria-label': 'Venue', onchange: (e) => switchVenue(e.target.value) }, venues.list.map((v) => h('option', { value: v.id, selected: v.id === venues.active }, v.label))),
+          )
+        : null,
       h('a', { class: 'button', href: '#branding' }, 'Branding'),
       h('button', { type: 'button', onclick: openSettings, title: 'Where your quizzes are kept' }, '⚙ Settings'),
       isPhone() ? null : h('button', { type: 'button', onclick: () => { hostQrOpen = true; render(); }, title: 'A QR code to open this host page on your phone' }, '📲 Host on my phone'),
@@ -552,7 +639,7 @@ function libraryView(s) {
             shown.length === 0 ? h('p', { class: 'muted' }, `No quizzes match “${libraryFilter.trim()}”.`) : null,
             h(
             'ul',
-            { class: `quiz-cards${libraryMode === 'list' ? ' as-list' : ''}` },
+            { class: `quiz-cards${libraryMode === 'list' && !isPhone() ? ' as-list' : ''}` },
             shown.map((q) =>
               h(
                 'li',
@@ -576,12 +663,15 @@ function libraryView(s) {
                     : h('button', { class: 'primary', disabled: q.problems > 0, onclick: () => runQuiz(q.id) }, 'Run ▶'),
                   h('a', { class: 'button', href: `#edit/${q.id}` }, 'Edit'),
                   h('button', { onclick: act(() => api('POST', `/quizzes/${q.id}/duplicate`)) }, 'Duplicate'),
-                  h('a', { class: 'button', href: `/api/quizzes/${q.id}/export.zip?key=${encodeURIComponent(key)}` }, 'Export'),
-                  h(
-                    'button',
-                    { class: 'danger', onclick: act(async () => confirm(`Delete "${q.title}"?`) && (await api('DELETE', `/quizzes/${q.id}`))) },
-                    'Delete',
-                  ),
+                  // On a phone the card keeps to running and editing; exporting and deleting are laptop jobs.
+                  isPhone() ? null : h('a', { class: 'button', href: `/api/quizzes/${q.id}/export.zip?key=${encodeURIComponent(key)}` }, 'Export'),
+                  isPhone()
+                    ? null
+                    : h(
+                        'button',
+                        { class: 'danger', onclick: act(async () => confirm(`Delete "${q.title}"?`) && (await api('DELETE', `/quizzes/${q.id}`))) },
+                        'Delete',
+                      ),
                 ),
               ),
             ),
@@ -763,6 +853,11 @@ function soundButton() {
   );
 }
 
+/** A label so the host's controls are never mistaken for the TV screen. */
+function hostBadge() {
+  return h('span', { class: 'host-badge', title: 'This is the host screen: the controls. The TV screen is a separate page.' }, '🎛 HOST');
+}
+
 function topBar(s) {
   if (TV) {
     return h(
@@ -780,17 +875,15 @@ function topBar(s) {
       { class: 'phone-top' },
       h(
         'header',
-        { class: 'host-bar' },
-        h('div', { class: 'bar-id' }, h('span', { class: 'quiz-title', title: s.quizTitle }, s.quizTitle), h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Room ', h('strong', {}, s.roomCode)])),
-        networkPill(s.network),
-        soundButton(),
+        { class: 'host-bar phone-head' },
+        h('div', { class: 'phone-head-row' }, hostBadge(), h('span', { class: 'quiz-title', title: s.quizTitle }, s.quizTitle), soundButton()),
+        h('div', { class: 'phone-head-row' }, networkPill(s.network, true), s.joiningLocked ? h('span', { class: 'join-hint' }, h('strong', { title: 'Closed to new teams' }, '🔒 Closed to new teams')) : null),
       ),
       h(
         'div',
         { class: 'phone-actions' },
         s.pendingTeams?.length ? h('button', { type: 'button', class: 'pending-pill', onclick: () => socket.send({ t: 'admit-all' }) }, `⏳ ${s.pendingTeams.length} · Admit`) : null,
-        !TV && s.phase === 'reveal' && s.skipsLeaderboardNext ? h('button', { onclick: () => socket.send({ t: 'leaderboard' }) }, 'Board') : null,
-        breakControl(s),
+        breakControl(s, true),
         moreControl(s),
         h('button', { class: 'primary next', onclick: advance, disabled: s.phase === 'finished' || (s.phase === 'lobby' && !s.canStart) }, nextLabel(s)),
       ),
@@ -802,11 +895,12 @@ function topBar(s) {
     s.canEnd
       ? h('button', { type: 'button', class: 'logo-home', title: 'Back to your quizzes', 'aria-label': 'Back to your quizzes', onclick: () => endQuiz(s) }, brandLogo('brand-logo small'))
       : brandLogo('brand-logo small'),
+    hostBadge(),
     h(
       'div',
       { class: 'bar-id' },
       h('span', { class: 'quiz-title', title: s.quizTitle }, s.quizTitle),
-      h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Join ', h('strong', {}, joinText(s)), ' · Room ', h('strong', {}, s.roomCode)]),
+      h('span', { class: 'join-hint' }, s.joiningLocked ? h('strong', {}, '🔒 Closed to new teams') : ['Join ', h('strong', {}, joinText(s)), ' ', copyButton(() => s.shortLinks?.join ?? s.joinUrl, 'Copy'), ' · Room ', h('strong', {}, s.roomCode)]),
     ),
     networkPill(s.network),
     soundButton(),
@@ -847,8 +941,8 @@ function stage(s) {
           {},
           TV ? brandBlock() : null,
           h('h1', {}, 'Scan to join'),
-          h('p', { class: 'big' }, joinText(s)),
-          h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
+          h('p', { class: 'big' }, joinText(s), TV ? null : [' ', copyButton(() => s.shortLinks?.join ?? s.joinUrl)]),
+          h('p', { class: 'room-code-line' }, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
           h('p', { class: 'muted' }, 'One phone per team.'),
           TV ? [entryFeeBanner(s), prizeList(s.prizes, true)] : h('div', { class: 'lobby-extras' }, entryFeeEditor(s), prizesEditor(s)),
           TV
@@ -901,6 +995,19 @@ function stage(s) {
     case 'closed':
     case 'reveal': {
       const reveal = s.phase === 'reveal';
+      // The host keeps questions off the TV: it shows the countdown, and the question again only with the answer.
+      if (TV && q.hidden && !reveal) {
+        return h(
+          'div',
+          { class: 'question-stage question-hidden' },
+          h('div', { class: 'question-top' }, questionMeta(q), s.phase === 'open' ? h('span', { class: 'countdown big', 'data-countdown': true }) : h('span', { class: 'phase-label' }, s.phase === 'closed' ? "Time's up" : '')),
+          q.paused ? h('p', { class: 'paused-banner', role: 'status' }, '⏸ Paused') : null,
+          q.type === 'music' && !q.audio ? h('p', { class: 'music-badge' }, '🎵 Music round: listen up') : null,
+          h('h1', { class: 'hidden-question-title' }, s.phase === 'closed' ? 'Answers are in' : 'Look at your phone'),
+          h('p', { class: 'muted center big' }, `Question ${q.index + 1} of ${q.total}`),
+          answerProgress(s),
+        );
+      }
       return h(
         'div',
         { class: 'question-stage' },
@@ -1000,7 +1107,7 @@ function answerReview(s, q) {
     h('strong', { class: 'answer-review-text' }, q.answerText),
     q.answerEdited ? h('span', { class: 'chip plain' }, 'changed') : null,
     edit,
-    h('span', { class: 'muted small' }, 'Only you can see this until you press Reveal answer.'),
+    h('span', { class: 'muted small answer-review-note' }, 'Only you can see this until you press Reveal answer.'),
   );
 }
 
@@ -1025,7 +1132,9 @@ let moreOpen = false;
 /** Rarely used actions, tucked into a menu so the top bar stays on one line. */
 function moreControl(s) {
   const items = [
+    ...(isPhone() && s.phase === 'reveal' && s.skipsLeaderboardNext ? [['🏆 Show leaderboard', () => socket.send({ t: 'leaderboard' })]] : []),
     ...(isPhone() ? [['🎵 Clips', openClips]] : [['📲 Host on my phone', () => { hostQrOpen = true; }]]),
+    ...(isPhone() ? [['📋 Copy join link', async () => showNotice((await copyText(s.shortLinks?.join ?? s.joinUrl)) ? 'Join link copied.' : 'Could not copy the link.')]] : []),
     ['📱 Show join QR code', () => socket.send({ t: 'show-join', shown: true })],
     ...(s.canEndRound ? [['⏭ End round', () => endRound(s)]] : []),
     ...(s.canEnd ? [[s.phase === 'finished' ? '⏎ Back to quizzes' : '⏹ End quiz', () => endQuiz(s)]] : []),
@@ -1036,14 +1145,14 @@ function moreControl(s) {
   return h(
     'span',
     { class: 'break-menu-wrap more-menu-wrap' },
-    h('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': String(moreOpen), title: 'More actions', onclick: () => { moreOpen = !moreOpen; render(); } }, '⋯ More'),
+    h('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': String(moreOpen), title: 'More actions', 'aria-label': 'More actions', onclick: () => { moreOpen = !moreOpen; render(); } }, isPhone() ? '⋯' : '⋯ More'),
     moreOpen
       ? h('div', { class: 'break-menu', role: 'menu' }, items.map(([label, run]) => h('button', { role: 'menuitem', onclick: () => { moreOpen = false; run(); render(); } }, label)))
       : null,
   );
 }
 
-function breakControl(s) {
+function breakControl(s, compact = false) {
   if (TV || s.onBreak || !['lobby', 'reveal', 'leaderboard'].includes(s.phase)) return null;
   const start = (minutes) => {
     breakMenuOpen = false;
@@ -1052,7 +1161,7 @@ function breakControl(s) {
   return h(
     'span',
     { class: 'break-menu-wrap' },
-    h('button', { 'aria-haspopup': 'true', 'aria-expanded': String(breakMenuOpen), onclick: () => { breakMenuOpen = !breakMenuOpen; render(); }, title: 'Show a break screen with fun facts' }, '☕ Break'),
+    h('button', { 'aria-haspopup': 'true', 'aria-expanded': String(breakMenuOpen), onclick: () => { breakMenuOpen = !breakMenuOpen; render(); }, title: 'Show a break screen with fun facts', 'aria-label': 'Break' }, compact ? '☕' : '☕ Break'),
     breakMenuOpen
       ? h(
           'div',
@@ -1709,6 +1818,8 @@ function clipsOverlay() {
   const needle = clipFilter.trim().toLowerCase();
   const shown = (clipList ?? []).filter((c) => !needle || c.title.toLowerCase().includes(needle));
   const playHereOn = clipsPlayHere();
+  // On a phone remote (play-here off) the clip's name is itself the button that plays it on the TV.
+  const tapToPlay = isPhone() && !playHereOn;
   return h(
     'div',
     { class: 'codes-overlay clips-overlay', role: 'dialog', 'aria-label': 'Clips', onclick: (e) => e.target === e.currentTarget && closeClips() },
@@ -1746,10 +1857,12 @@ function clipsOverlay() {
           h(
             'li',
             { class: playingClip === clip.name ? 'playing' : '' },
-            h('span', { class: 'clip-name' }, clip.title),
+            tapToPlay
+              ? h('button', { type: 'button', class: 'clip-tap', title: 'Play on the TV screen (its 🔊 sound must be on)', onclick: () => socket.send({ t: 'play-clip', name: clip.name }) }, clip.title)
+              : h('span', { class: 'clip-name' }, clip.title),
             playHereOn ? h('button', { type: 'button', class: 'primary', onclick: () => playHere(clip), title: 'Play on this device' }, playingClip === clip.name ? '⏸ Stop' : '▶ Play') : null,
-            h('button', { type: 'button', class: playHereOn ? '' : 'primary', onclick: () => socket.send({ t: 'play-clip', name: clip.name }), title: 'Play on the TV screen (its 🔊 sound must be on)' }, playHereOn ? '📺 TV' : '📺 Play'),
-            h('button', { type: 'button', class: 'kick', 'aria-label': `Delete ${clip.title}`, title: 'Delete this clip', onclick: async () => {
+            tapToPlay ? null : h('button', { type: 'button', class: playHereOn ? '' : 'primary', onclick: () => socket.send({ t: 'play-clip', name: clip.name }), title: 'Play on the TV screen (its 🔊 sound must be on)' }, playHereOn ? '📺 TV' : '📺 Play'),
+            isPhone() ? null : h('button', { type: 'button', class: 'kick', 'aria-label': `Delete ${clip.title}`, title: 'Delete this clip', onclick: async () => {
               if (!confirm(`Delete the clip “${clip.title}”?`)) return;
               try {
                 await api('DELETE', `/clips/${encodeURIComponent(clip.name)}`);
@@ -1805,8 +1918,49 @@ function joinOverlay(s) {
       h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }),
       h('h1', {}, 'Scan to join'),
       h('p', { class: 'big' }, joinText(s)),
+      copyButton(() => s.shortLinks?.join ?? s.joinUrl),
       h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
       TV ? null : h('button', { type: 'button', onclick: close }, 'Hide QR code'),
+    ),
+  );
+}
+
+let headStartOpen = false;
+
+/** Head starts: seconds taken off a team's answer time, so a slower player (a young child, say) can still win the speed points. */
+function headStartOverlay(s) {
+  if (TV || !headStartOpen) return null;
+  const close = () => {
+    headStartOpen = false;
+    render();
+  };
+  const teams = [...s.teams].sort((a, b) => a.name.localeCompare(b.name));
+  const set = (team, value) => socket.send({ t: 'head-start', teamId: team.id, seconds: Math.max(0, Math.min(30, Number(value) || 0)) });
+  return h(
+    'div',
+    { class: 'codes-overlay', role: 'dialog', 'aria-label': 'Head starts', onclick: (e) => e.target === e.currentTarget && close() },
+    h(
+      'div',
+      { class: 'codes-card' },
+      h('div', { class: 'codes-head' }, h('h2', {}, '⏱ Head starts'), h('button', { type: 'button', onclick: close }, 'Close')),
+      h('p', { class: 'muted' }, 'A head start is taken off a team’s answer time when working out who was fastest, so a slower player can still win the speed points. Giving one team 5 seconds has the same effect as adding 5 seconds to every other team. It applies to answers given from now on, and the team still has only the normal time to answer.'),
+      teams.length === 0 ? h('p', { class: 'muted' }, 'No teams yet.') : null,
+      h(
+        'ul',
+        { class: 'codes-list head-start-list' },
+        teams.map((t) =>
+          h(
+            'li',
+            { class: t.connected ? '' : 'offline' },
+            h('span', { class: 'dot' }),
+            avatar(t.name, t.photo, 36),
+            h('span', { class: 'codes-name' }, t.name),
+            h('input', { type: 'number', min: '0', max: '30', step: '0.5', inputmode: 'decimal', class: 'head-start-input', 'data-keep': `hs-${t.id}`, 'aria-label': `Head start for ${t.name}, in seconds`, value: String(t.headStart || 0), onchange: (e) => set(t, e.target.value) }),
+            h('span', { class: 'muted' }, 's'),
+          ),
+        ),
+      ),
+      teams.some((t) => t.headStart > 0) ? h('button', { type: 'button', onclick: () => teams.forEach((t) => t.headStart > 0 && set(t, 0)) }, 'Clear all head starts') : null,
     ),
   );
 }
@@ -1856,6 +2010,7 @@ function teamsPanel(s) {
           h('span', { class: 'name' }, team.name),
           !TV && team.photo ? h('button', { class: 'remove-photo', title: `Remove ${team.name}'s photo`, 'aria-label': `Remove ${team.name}'s photo`, onclick: () => confirm(`Remove ${team.name}'s photo?`) && socket.send({ t: 'remove-photo', teamId: team.id }) }, '🚫') : null,
           !TV && team.code ? h('span', { class: 'team-code-small', title: 'Team code: lets this team carry on from another phone' }, team.code) : null,
+          !TV && team.headStart > 0 ? h('span', { class: 'head-start-badge', title: `${team.name} has a ${team.headStart} second head start` }, `⏱ ${team.headStart}s`) : null,
           s.phase === 'open' && team.answered ? h('span', { class: 'tick', 'aria-label': 'answered' }, '✓') : null,
           h('span', { class: 'score' }, team.score),
           TV ? null : h(
@@ -1947,10 +2102,19 @@ function teamsPanel(s) {
       ? null
       : h(
           'label',
+          { class: 'check photos-toggle', title: 'Off: the TV shows the countdown but not the question, so a delay between the TV and the phones cannot help anyone. The answer still shows on the TV.' },
+          h('input', { type: 'checkbox', checked: s.tvShowQuestions, onchange: (e) => socket.send({ t: 'tv-questions', visible: e.target.checked }) }),
+          ' Show questions on the TV',
+        ),
+    TV
+      ? null
+      : h(
+          'label',
           { class: 'check photos-toggle', title: 'Let teams add a photo that shows on the screens' },
           h('input', { type: 'checkbox', checked: s.photosEnabled, onchange: (e) => socket.send({ t: 'photos', enabled: e.target.checked }) }),
           ' Team photos',
         ),
+    TV ? null : h('button', { type: 'button', class: 'codes-button', onclick: () => { headStartOpen = true; render(); }, title: 'Take seconds off a slower player’s answer time, so they can still win the speed points' }, '⏱ Head starts'),
     TV ? null : h('button', { type: 'button', class: 'codes-button', onclick: () => { codesOpen = true; render(); } }, '🔑 Team codes'),
   );
 }

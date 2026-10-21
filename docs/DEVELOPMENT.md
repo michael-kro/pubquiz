@@ -9,14 +9,7 @@
 
 ## Packaging
 
-**Single-file programs** (no Node needed on the host's computer):
-
-```sh
-npm run build:binaries                  # all five into dist/, with dist/SHA256SUMS
-node scripts/build-binaries.mjs linux-x64   # or just the ones you name
-```
-
-Targets: `macos-arm64`, `macos-x64`, `linux-x64`, `linux-arm64`, `windows-x64`. They are 60–90 MB each (they include a JavaScript runtime, [Bun](https://bun.sh)) with the pages and sample quiz baked in. They aren't signed, so macOS and Windows warn on first run (see the getting-started guide). Needs internet the first time, to fetch each platform's runtime.
+The app ships as the Docker image (built for Intel/AMD and Apple-silicon/Raspberry Pi on each release) and as the source. There are no downloadable single-file programs: they could not be signed without a paid developer certificate, so every user got a security warning.
 
 **Docker:**
 
@@ -48,3 +41,11 @@ The server is TypeScript run directly by Node (no build step). The browser pages
 ## Trying things without your real quizzes
 
 `npm run try` starts the quiz with a brand-new, empty library and settings in temporary folders, on port 3001 (so it can run beside your real one), and deletes them when you stop. `npm run try -- --keep` keeps the folders. To choose the folders yourself, set `PUBQUIZ_HOME` (quizzes, clips, branding, saved games) and `PUBQUIZ_CONFIG_DIR` (the app's own settings and downloaded helper), or pass `--quizzes <folder>`. These work with the downloaded programs too, for example `PUBQUIZ_HOME=/tmp/trial ./pubquiz-macos-arm64`.
+
+## Continuous integration
+
+Every push and pull request to `main` or `develop` runs `.github/workflows/ci.yml`: typecheck and the fast tests on Node 22.18 and 24, the load test on its own (with one retry), `npm audit` for the shipped dependencies, a secret scan of the whole history, and a lint of the workflow files. Run the same checks locally with `npm run check`. The plan for what comes next (Semgrep, CodeQL, image scanning, browser tests and DAST) is in `docs/plans/ci-and-security.md`.
+
+Security scanning (`.github/workflows/security.yml`) adds Semgrep with this app's own rules (`semgrep-rules/`, tested with `semgrep --test semgrep-rules/`), CodeQL, and hadolint and Trivy on the Docker image, on every push and pull request and weekly. `test/host-only.test.ts` makes every new WebSocket message type be classified as host-only or open. To run Semgrep yourself: `docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep semgrep scan --config semgrep-rules/pubquiz.yml --config p/typescript --config p/javascript .`
+
+Dynamic scanning (`.github/workflows/dast.yml`) runs OWASP ZAP against the app: a quick passive scan on every pull request, and an active scan nightly. Both start the app in a container on a throwaway library with a random host key, so nothing real is ever attacked. Tune what counts as a failure in `.zap/rules.tsv`. To run the passive scan yourself: `bash scripts/ci-start-app.sh` (then export `PUBQUIZ_HOST_KEY` from the library's `.host-key`) and `bash scripts/ci-zap.sh baseline`.

@@ -9,7 +9,7 @@ import { handleApi } from './api.ts';
 import { readPublicFile } from './assets.ts';
 import { Game, type Team } from './game.ts';
 import type { Library } from './library.ts';
-import type { BrandingStore } from './branding.ts';
+import type { BrandingSource } from './branding.ts';
 import { ClipError, ClipStore, MAX_CLIP_BYTES } from './clips.ts';
 import { changeLibraryDir, defaultLibraryDir, SettingsError, type FolderChoice } from './settings.ts';
 import { clientAddress, isLocalRequest, TokenBucket, WindowCounter } from './limits.ts';
@@ -54,8 +54,14 @@ const PAGE_HEADERS = {
   'x-frame-options': 'DENY',
   'content-security-policy':
     "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; " +
-    "connect-src 'self' ws: wss:; media-src 'self' https: http:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+    "connect-src 'self' ws: wss:; media-src 'self' https: http:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",  // No camera, microphone or location for anything on the page, except the same-origin camera (a team's photo).
+  'permissions-policy': 'camera=(self), microphone=(), geolocation=(), payment=(), usb=()',
+  'cross-origin-opener-policy': 'same-origin',
+  'cross-origin-resource-policy': 'same-origin',
 };
+
+/** What an error page carries, so it is typed and as locked down as any other response. */
+const NOT_FOUND_HEADERS = { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', ...PAGE_HEADERS };
 
 export interface SessionOptions {
   path: string;
@@ -83,7 +89,7 @@ export interface ServerOptions {
   /** Called when the host key is changed from the host screen, so it can be saved. */
   onHostKeyChange?(key: string): void;
   /** Name, colours and logo for every page. */
-  branding?: BrandingStore;
+  branding?: BrandingSource;
   /** The Wi-Fi network teams can join, shown as a QR code beside the join code (for a travel router or hotspot). */
   wifi?: { ssid: string; password?: string };
   /** Let teams add a photo (the host can still switch it off). Default on. */
@@ -230,9 +236,21 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     const view = hostView();
     if (view.phase === 'idle') return view;
     const revealed = ['reveal', 'leaderboard', 'finished'].includes(view.phase);
+    // With questions kept off the TV, it shows nothing of the question until the answer is revealed. (A music clip still plays.)
+    const keepOff = !view.tvShowQuestions && !revealed;
     return {
       ...view,
-      question: view.question && !revealed ? { ...view.question, answerText: '', answer: undefined, info: undefined, hostText: undefined } : view.question,
+      question: view.question && !revealed
+        ? {
+            ...view.question,
+            answerText: '',
+            answer: undefined,
+            info: undefined,
+            hostText: undefined,
+            ...(keepOff ? { hidden: true, text: '', image: undefined, options: undefined, items: undefined, category: undefined, uncover: undefined } : {}),
+          }
+        : view.question,
+      distribution: keepOff ? undefined : view.distribution,
       review: revealed ? view.review : undefined,
       // A list of guesses with how far off each was gives the answer away.
       guesses: revealed ? view.guesses : undefined,
@@ -620,6 +638,17 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (hostOnly()) game?.setShowJoin(msg.shown);
         return;
 
+      case 'head-start': {
+        if (!hostOnly()) return;
+        const result = game?.setHeadStart(msg.teamId, msg.seconds);
+        if (result && !result.ok) send(conn, { t: 'error', message: result.error });
+        return;
+      }
+
+      case 'tv-questions':
+        if (hostOnly()) game?.setTvShowQuestions(msg.visible);
+        return;
+
       case 'tv-teams':
         if (hostOnly()) game?.setTvShowTeams(msg.visible);
         return;
@@ -837,7 +866,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       }
       // Playing a clip: the host, or the TV (which has its own key).
       if (!(isHost || keyIs(screenKey, key))) {
-        res.writeHead(404).end('Not found');
+        res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
         return true;
       }
       const clip = await clips.read(decodeURIComponent(pathname.slice('/clip/'.length)));
@@ -894,7 +923,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       }
       const logo = await branding?.logo();
       if (!logo) {
-        res.writeHead(404).end('Not found');
+        res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
         return;
       }
       res.writeHead(200, {
@@ -931,7 +960,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       const id = pathname.slice('/team-photo/'.length);
       const photo = active && active.game.photosEnabled && active.game.getTeam(id) ? active.photos.get(id) : undefined;
       if (!photo) {
-        res.writeHead(404).end('Not found');
+        res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
         return;
       }
       res.writeHead(200, {
@@ -953,13 +982,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
     // Is a quiz running? The home page uses this to say so, and to carry on by itself once it starts.
     if (pathname === '/status.json') {
-      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store', ...PAGE_HEADERS });
       res.end(JSON.stringify({ running: Boolean(active), title: active?.quiz.title ?? '' }));
       return;
     }
 
     if (pathname === '/healthz') {
-      res.writeHead(200, { 'content-type': 'text/plain', 'cache-control': 'no-store' });
+      res.writeHead(200, { 'content-type': 'text/plain', 'cache-control': 'no-store', ...PAGE_HEADERS });
       res.end(instanceId);
       return;
     }
@@ -968,7 +997,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       // The Wi-Fi password is in the code, so only the host and TV screens (which show it anyway) may fetch it.
       const key = url.searchParams.get('key') ?? undefined;
       if (!options.wifi || !((isHostKey(key) && hostAllowed(req)) || keyIs(screenKey, key))) {
-        res.writeHead(404).end('Not found');
+        res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
         return;
       }
       const svg = await QRCode.toString(wifiQrText(options.wifi.ssid, options.wifi.password), { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
@@ -979,7 +1008,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
     if (pathname === '/results.csv') {
       if (!isHostKey(url.searchParams.get('key') ?? undefined) || !hostAllowed(req) || !active) {
-        res.writeHead(404).end('Not found');
+        res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
         return;
       }
       res.writeHead(200, {
@@ -1014,7 +1043,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     if (pathname.startsWith('/media/')) {
       const media = active?.quiz.media.get(pathname.slice('/media/'.length));
       if (!media) {
-        res.writeHead(404).end('Not found');
+        res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
         return;
       }
       const headers = {
@@ -1053,7 +1082,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     }
     const body = await readPublicFile(relativePath);
     if (!body) {
-      res.writeHead(404).end('Not found');
+      res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
       return;
     }
     res.writeHead(200, {

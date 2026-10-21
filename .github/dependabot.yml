@@ -1,0 +1,31 @@
+# Keeps dependencies, the Docker base image and the workflow actions up to date, in a few grouped pull requests.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    # Wait a week before proposing a brand-new release, so a compromised release is noticed first.
+    cooldown:
+      default-days: 7
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # Wait a week before proposing a brand-new release, so a compromised release is noticed first.
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ['*']
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    # Wait a week before proposing a brand-new release, so a compromised release is noticed first.
+    cooldown:
+      default-days: 7
