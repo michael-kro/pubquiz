@@ -4,7 +4,7 @@ Run a live pub quiz from your laptop. Teams join on their own phones by scanning
 
 ## Quick start
 
-1. **Install [Docker](https://www.docker.com/products/docker-desktop/)** (or run from source, below).
+1. **Install [Docker](https://www.docker.com/products/docker-desktop/).**
 2. **Start it:**
    ```sh
    mkdir -p ~/PubQuiz
@@ -17,8 +17,6 @@ Run a live pub quiz from your laptop. Teams join on their own phones by scanning
 3. **Open the host link**, press **Add a sample quiz to try**, then **Run ▶**.
 4. **Put the QR code on the TV**: **TV ↗** opens a page for it. Teams scan the code, type a team name, and they are in.
 5. **Run the quiz** with the yellow button (or Space): **Start quiz → Close question → Reveal answer → Next question**.
-
-**From source** (Node.js 22.18 or newer): `git clone https://github.com/michael-kro/pubquiz.git`, then `npm install` and `npm start` in that folder. From the same folder, `docker compose up -d` also works.
 
 There is no downloadable program: one that opens without a warning on macOS and Windows needs a paid signing certificate, and this is a free project.
 
@@ -37,7 +35,7 @@ Quizzes, pictures, sound clips, branding, saved games and results all live in on
 
 - [Host guide](docs/HOST-GUIDE.md): everything the host screen does, hosting from your phone, how phones connect, and what to do when something goes wrong.
 - [Writing a quiz](docs/QUIZ-FORMAT.md), and [writing one with AI](docs/AI-QUIZ-GUIDE.md).
-- [Development](docs/DEVELOPMENT.md): code layout, tests, Docker, CI and security scanning.
+- [Development](docs/DEVELOPMENT.md): running from source, code layout, tests, Docker, CI and security scanning.
 - [Releasing](docs/RELEASING.md): a release every two weeks; `feature/` and `fix/` branches off `develop`, `hotfix/` off `main`; every change is a pull request that passes CI and adds a line to [CHANGELOG.md](CHANGELOG.md).
 
 ## Licence
