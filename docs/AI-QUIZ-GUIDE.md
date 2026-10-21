@@ -33,7 +33,7 @@ Everything is plain YAML. Indentation matters, and **text with a colon, a quote 
 
 ## Question types
 
-Every question has `type` and `text` (required). Optional on any question: `seconds` (5 to 300, default 20), `points` (default 100), `info` (a fun fact shown with the answer, up to 300 characters), `image` (a file name or web address), `audio` (a clip the host plays).
+Every question has `type` and `text` (required). Optional on any question: `seconds` (5 to 300, default 20), `points` (default 10), `info` (a fun fact shown with the answer, up to 300 characters), `image` (a file name or web address), `audio` (a clip the host plays).
 
 | type | what to write | notes |
 |---|---|---|
@@ -87,6 +87,6 @@ prints `OK: "Friday Night Quiz", 5 rounds, 50 questions (…)` or exactly what i
 
 ## Other ways to build a quiz
 
-- **From the question bank:** about 1,150 ready-made questions across 20 topics are built in; pick them in the editor's **Question bank** panel, or ask the AI to write a quiz and then swap in bank questions.
+- **From the question bank:** about 1,150 ready-made questions in 19 topics are built in; pick them in the editor's **Question bank** panel, or ask the AI to write a quiz and then swap in bank questions.
 - **Fun facts for the break screen:** a `facts:` list in the quiz, or leave it out to use the built-in facts.
 - **A music round from a track list:** `node scripts/music-round.ts tracks.txt out-folder "Name that tune"`, with one `Artist - Title` per line.

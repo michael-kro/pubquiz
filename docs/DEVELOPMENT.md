@@ -1,51 +1,50 @@
-# Development, packaging and how it stays fair
+# Development
 
-## Hardening and load testing
-
-- Teams are limited to a burst of messages, then a steady rate; a connection that floods is dropped. Wrong room codes and wrong team codes are limited per address (through the internet link, per visitor), and the host PIN has its own lockout.
-- Team names have invisible and text-flipping characters removed, and swearing is blocked (`--no-name-filter` turns the word filter off).
-- Every page is sent with a content policy, no referrer and no framing, so the host key in the host link can't leak.
-- `node scripts/loadtest.ts` plays a whole quiz with 30 simulated teams on a slow, jittery network where connections keep dropping, and checks every score on every phone and on the host screen. `--help` lists the options. A smaller version runs in `npm test`.
-
-## Packaging
-
-The app ships as the Docker image (built for Intel/AMD and Apple-silicon/Raspberry Pi on each release) and as the source. There are no downloadable single-file programs: they could not be signed without a paid developer certificate, so every user got a security warning.
-
-**Docker:**
+TypeScript run directly by Node (no build step); the browser pages in `public/` are plain JavaScript modules. Needs Node.js 22.18 or newer.
 
 ```sh
-docker compose up -d               # uses ~/PubQuiz (PUBQUIZ_LIBRARY=/other/folder to change it)
-docker compose logs pubquiz        # prints the host link
+git clone https://github.com/michael-kro/pubquiz.git && cd pubquiz
+npm install
+npm start                                # the quiz library and editor
+npm start -- examples/sample-quiz.yaml   # one quiz file straight away
+npm run dev                              # restarts on changes, using the sample quiz
+npm run check                            # typecheck + tests
+npm run try                              # a throwaway library and settings on port 3001, deleted on exit (--keep keeps them)
 ```
 
-Quizzes, saved games and results live in the `pubquiz-data` volume. Settings are environment variables in [compose.yaml](../compose.yaml): `PUBQUIZ_HOST_PIN`, `PUBQUIZ_LAN`, `PUBQUIZ_PUBLIC_HOST`, `PUBQUIZ_PUBLIC_URL`. The internet link works from inside the container. For local-Wi-Fi mode in Docker, set `PUBQUIZ_LAN=1` and `PUBQUIZ_PUBLIC_HOST` to the computer's address on the venue Wi-Fi.
+`PUBQUIZ_HOME` (the library) and `PUBQUIZ_CONFIG_DIR` (settings and the downloaded `cloudflared`) choose the folders; `--quizzes <folder>` does the same for the library.
 
-## How timing stays fair
-
-Each phone times its own answer, from the moment the question appears on its screen, so a slow connection never costs a team points. The server checks that figure against what it saw (the time since it sent the question, less the phone's measured round trip) and uses its own figure if the phone's doesn't fit, so a doctored page can't claim an instant answer.
-
-## Development
-
-```sh
-npm run dev        # restarts on changes, using the sample quiz
-npm run check      # typecheck + tests
-```
-
-The server is TypeScript run directly by Node (no build step). The browser pages in `public/` are plain JavaScript modules.
+## Where things are
 
 - `server/game.ts`: the quiz state machine, scoring and per-team views. The server owns all state and timing.
-- `server/server.ts`: HTTP for the pages and QR code, plus the WebSocket protocol (`server/protocol.ts`).
-- `server/quiz.ts`: YAML loading and validation.
-- `test/`: unit tests, and an end-to-end test that plays a quiz over real WebSockets.
+- `server/server.ts`: HTTP for the pages and QR codes, and the WebSocket protocol (`server/protocol.ts`).
+- `server/quiz.ts`: YAML loading and validation. `server/bank.ts` and `server/facts.ts`: the built-in questions and break-screen facts.
+- `server/branding.ts`, `clips.ts`, `photos.ts`, `session.ts`, `tunnel.ts`: venues, the soundboard, team photos, save and resume, the internet link.
+- `public/host.js` (host screen and TV), `play.js` (team phone), `editor.js`, `branding.js`, `bank-picker.js`, `common.js`.
+- `test/`: unit tests and end-to-end tests over real WebSockets; `test/slow/` is the load test.
+- `scripts/`: `check-quiz.ts` and `validate-bank.ts` check files; `loadtest.ts`, `stress.ts` and `sim-rounds.ts` play simulated nights; `music-round.ts` builds a round from a track list; `ci-*.sh` back the scanning workflow.
 
-## Trying things without your real quizzes
+## Tests
 
-`npm run try` starts the quiz with a brand-new, empty library and settings in temporary folders, on port 3001 (so it can run beside your real one), and deletes them when you stop. `npm run try -- --keep` keeps the folders. To choose the folders yourself, set `PUBQUIZ_HOME` (quizzes, clips, branding, saved games) and `PUBQUIZ_CONFIG_DIR` (the app's own settings and downloaded helper), or pass `--quizzes <folder>`. These work with the downloaded programs too, for example `PUBQUIZ_HOME=/tmp/trial ./pubquiz-macos-arm64`.
+`npm test` runs the fast suite, then the load test: a whole quiz with 30 simulated phones on a slow, jittery network where connections keep dropping, checking every score on every phone. `node scripts/loadtest.ts --help` runs bigger versions. `test/host-only.test.ts` fails until every new WebSocket message type is classified as host-only or open, and then checks that teams, the TV and strangers are refused the host-only ones.
 
-## Continuous integration
+## How it stays fair and safe
 
-Every push and pull request to `main` or `develop` runs `.github/workflows/ci.yml`: typecheck and the fast tests on Node 22.18 and 24, the load test on its own (with one retry), `npm audit` for the shipped dependencies, a secret scan of the whole history, and a lint of the workflow files. Run the same checks locally with `npm run check`. The plan for what comes next (Semgrep, CodeQL, image scanning, browser tests and DAST) is in `docs/plans/ci-and-security.md`.
+- Each phone times its own answer from when the question appears; the server checks that against what it saw and uses its own figure if the phone's does not fit. A slow connection is not penalised, and a doctored page cannot claim an instant answer.
+- Connections are rate-limited and dropped if they flood; wrong room codes, team codes and host PINs are limited per address.
+- Team names lose invisible and text-flipping characters, and swearing is blocked.
+- Every response carries a content security policy, no referrer, no framing and a permissions policy, so the host key in the host link cannot leak. Keys and PINs are compared in constant time.
 
-Security scanning (`.github/workflows/security.yml`) adds Semgrep with this app's own rules (`semgrep-rules/`, tested with `semgrep --test semgrep-rules/`), CodeQL, and hadolint and Trivy on the Docker image, on every push and pull request and weekly. `test/host-only.test.ts` makes every new WebSocket message type be classified as host-only or open. To run Semgrep yourself: `docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep semgrep scan --config semgrep-rules/pubquiz.yml --config p/typescript --config p/javascript .`
+## Docker
 
-Dynamic scanning (`.github/workflows/dast.yml`) runs OWASP ZAP against the app: a quick passive scan on every pull request, and an active scan nightly. Both start the app in a container on a throwaway library with a random host key, so nothing real is ever attacked. Tune what counts as a failure in `.zap/rules.tsv`. To run the passive scan yourself: `bash scripts/ci-start-app.sh` (then export `PUBQUIZ_HOST_KEY` from the library's `.host-key`) and `bash scripts/ci-zap.sh baseline`.
+`docker compose up -d` builds and runs the image with `~/PubQuiz` as the library (`PUBQUIZ_LIBRARY` to change it) and a `pubquiz-data` volume for settings and `cloudflared`. Settings are environment variables in [compose.yaml](../compose.yaml). The image is built in two stages, runs as `node` and ships without npm. Each release publishes it to `ghcr.io/michael-kro/pubquiz` for amd64 and arm64.
+
+## CI and security scanning
+
+Every push and pull request to `main` or `develop` runs:
+
+- `ci.yml`: typecheck and tests on Node 22.18 and 24, the load test (with one retry), `npm audit`, a secret scan of the whole history (gitleaks) and a workflow lint.
+- `security.yml`: Semgrep with the standard rule packs plus this app's own rules in `semgrep-rules/` (test them with `semgrep --test semgrep-rules/`), CodeQL, and hadolint and Trivy on the image. Also weekly.
+- `dast.yml`: an OWASP ZAP passive scan of the running app, started on a throwaway library with a random key (`scripts/ci-start-app.sh` and `scripts/ci-zap.sh`, tuned in `.zap/rules.tsv`). An active scan runs nightly.
+
+Dependabot proposes weekly updates. What is planned but not built is in `docs/plans/`.

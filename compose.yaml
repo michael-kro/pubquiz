@@ -1,5 +1,4 @@
 # docker compose up -d     then     docker compose logs pubquiz     for the host link.
-# With HTTPS on port 443 (a certificate for your own name, see docs/HTTPS.md):  docker compose --profile https up -d
 services:
   pubquiz:
     # Build from this folder, or use the published image instead: image: ghcr.io/michael-kro/pubquiz:latest
@@ -30,22 +29,5 @@ services:
       PUBQUIZ_PUBLIC_URL: ""
     restart: unless-stopped
 
-  # Optional: HTTPS on port 443 in front of the quiz. Start it with:  docker compose --profile https up -d
-  caddy:
-    profiles: ["https"]
-    image: caddy:2
-    ports:
-      - "${HTTP_PORT:-80}:80"
-      - "${HTTPS_PORT:-443}:443"
-    environment:
-      QUIZ_DOMAIN: ${QUIZ_DOMAIN:-quiz.internal}
-    volumes:
-      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-    depends_on:
-      - pubquiz
-    restart: unless-stopped
-
 volumes:
   pubquiz-data:
-  caddy-data:
