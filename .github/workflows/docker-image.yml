@@ -41,6 +41,8 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
+          # Always start from the newest base image, so a release never ships a stale one by accident.
+          pull: true
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

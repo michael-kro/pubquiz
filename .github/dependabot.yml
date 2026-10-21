@@ -28,6 +28,10 @@ updates:
         patterns: ['*']
   - package-ecosystem: docker
     directory: /
+    # A new Node major is a deliberate move (odd numbers are not LTS), not a weekly pull request.
+    ignore:
+      - dependency-name: node
+        update-types: ['version-update:semver-major']
     # Pull requests go to develop, like every other change; main only gets releases.
     target-branch: develop
     schedule:
