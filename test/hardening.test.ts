@@ -100,6 +100,52 @@ test('an oversized WebSocket frame closes that connection and nothing else', asy
   await server.close();
 });
 
+test('the TV is sent nothing that gives the answer away before the reveal, for every question type', async () => {
+  // Found by the fuzz test: number, nearest and letter questions carried the host's editable answer (editValue) in
+  // the TV's view while the question was open. The TV page never showed it, but anyone with the TV link could read it.
+  const secrets = { letter: 'Zyxwvu', number: '7777777', nearest: '424242', 'multiple-choice': 'ONLYRIGHT', music: 'SECRETTUNE', buzzer: 'SECRETBUZZ' };
+  const tvQuiz = parseQuiz(`
+title: TV secrets
+readOut: false
+rounds:
+  - name: R
+    questions:
+      - { type: letter, text: Q1, answer: Zyxwvu Secretname, seconds: 60 }
+      - { type: number, text: Q2, answer: 7777777, seconds: 60 }
+      - { type: nearest, text: Q3, answer: 424242, seconds: 60 }
+      - { type: multiple-choice, text: Q4, options: [a, ONLYRIGHT, c], answer: 1, seconds: 60 }
+      - { type: music, text: Q5, accept: [SECRETTUNE], seconds: 60 }
+      - { type: buzzer, text: Q6, answer: SECRETBUZZ, seconds: 60 }
+`);
+  const server = await start({ quiz: tvQuiz, closeEarly: false });
+  const host = await Client.connect(server.port);
+  host.send({ t: 'host', key: server.hostKey });
+  const tv = await Client.connect(server.port);
+  tv.send({ t: 'screen', key: server.screenKey });
+  await tv.state('lobby');
+  for (const [i, q] of tvQuiz.questions.entries()) {
+    host.send({ t: 'advance' });
+    const open = await tv.state('open', (v) => v.question?.index === i);
+    host.send({ t: 'advance' });
+    const closed = await tv.state('closed', (v) => v.question?.index === i);
+    for (const view of [open, closed]) {
+      const raw = JSON.stringify(view);
+      const secret = secrets[q.type as keyof typeof secrets];
+      // Multiple-choice options are shown by design; everything else must stay hidden, and the letter must not appear as a lone value.
+      if (q.type !== 'multiple-choice') assert.ok(!raw.includes(secret), `${q.type} (${view.phase}): the TV was sent the answer: ${raw.slice(0, 300)}`);
+      assert.equal(view.question.editValue, undefined, `${q.type} (${view.phase}): no editable answer on the TV`);
+      assert.equal(view.question.answer, undefined, `${q.type} (${view.phase}): no answer index on the TV`);
+      assert.equal(view.question.answerText, '', `${q.type} (${view.phase}): no answer text on the TV`);
+      assert.equal(view.question.hostText, undefined);
+    }
+    host.send({ t: 'advance' }); // reveal
+    await tv.state('reveal', (v) => v.question?.index === i);
+    if (q.type === 'buzzer') continue;
+  }
+  for (const c of [host, tv]) await c.close();
+  await server.close();
+});
+
 test('every page carries headers that stop the host key leaking or the page being framed', async () => {
   const server = await start();
   // Error pages too: a 404 is typed and locked down like everything else.

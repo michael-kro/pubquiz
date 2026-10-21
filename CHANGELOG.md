@@ -5,6 +5,7 @@
 ## 0.1.5 — 2026-10-21
 
 - **Fix (security):** a single WebSocket frame over 4 KB, from anyone who could reach the join page, crashed the whole server. The connection is now closed and the quiz carries on. Found by the new fuzz test; a regression test covers it.
+- **Fix (security):** for letter, number and closest-wins questions, the data sent to the TV before the reveal included the host's editable copy of the answer. The TV never showed it, but anyone with the TV link could have read it. Also found by the fuzz test; a test now checks every question type.
 
 ## 0.1.4 — 2026-10-21
 

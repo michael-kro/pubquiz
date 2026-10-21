@@ -247,6 +247,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
             answer: undefined,
             info: undefined,
             hostText: undefined,
+            // The host's editable copy of the answer (letter, number, nearest) is the answer too. (answerEdited, a yes/no, stays.)
+            editValue: undefined,
+            editable: undefined,
             ...(keepOff ? { hidden: true, text: '', image: undefined, options: undefined, items: undefined, category: undefined, uncover: undefined } : {}),
           }
         : view.question,
