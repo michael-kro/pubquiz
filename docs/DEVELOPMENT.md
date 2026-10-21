@@ -21,12 +21,14 @@ npm run try                              # a throwaway library and settings on p
 - `server/quiz.ts`: YAML loading and validation. `server/bank.ts` and `server/facts.ts`: the built-in questions and break-screen facts.
 - `server/branding.ts`, `clips.ts`, `photos.ts`, `session.ts`, `tunnel.ts`: venues, the soundboard, team photos, save and resume, the internet link.
 - `public/host.js` (host screen and TV), `play.js` (team phone), `editor.js`, `branding.js`, `bank-picker.js`, `common.js`.
-- `test/`: unit tests and end-to-end tests over real WebSockets; `test/slow/` is the load test.
+- `test/`: unit tests and end-to-end tests over real WebSockets; `test/slow/` is the load test and the fuzzers; `test/browser/` is the Playwright screen tour.
 - `scripts/`: `check-quiz.ts` and `validate-bank.ts` check files; `loadtest.ts`, `stress.ts` and `sim-rounds.ts` play simulated nights; `music-round.ts` builds a round from a track list; `ci-*.sh` back the scanning workflow.
 
 ## Tests
 
 `npm test` runs the fast suite, then the load test: a whole quiz with 30 simulated phones on a slow, jittery network where connections keep dropping, checking every score on every phone. `node scripts/loadtest.ts --help` runs bigger versions. `test/host-only.test.ts` fails until every new WebSocket message type is classified as host-only or open, and then checks that teams, the TV and strangers are refused the host-only ones. `test/slow/fuzz-ws.test.ts` fuzzes the WebSocket protocol as every role (junk, oversized and binary frames, floods, well-formed messages at the wrong moment, wrong-role commands) and checks the server stays up, no setting changes, no answer leaks early and the quiz can still be finished; `test/slow/fuzz-http.test.ts` does the same to every upload (quiz import, pictures, audio, clips, logo, team photos): malformed, mislabelled, oversized and escaping files, zip bombs, lying content-lengths and junk JSON, with the right key, the wrong one and none; the server must never answer 500, accept nothing without the key, write nothing outside its folders and still work afterwards. Both are seeded, so `FUZZ_SEED` replays a run and `FUZZ_ITERATIONS=2000` makes a long one.
+
+`npm run test:browser` (after `npx playwright install chromium` once) is the screen tour: a real browser plays the sample quiz, every question type, a wager round and a break, while watching the host screen on a laptop and on a phone, the TV and a team's phone, and visits the library, the editor, branding and every pop-up on the way. It fails if any page throws or logs an error, if anything sticks out sideways or a main button is pushed off the screen, if Escape does not close a pop-up, or if the quiz cannot be finished. Every state is screenshotted into `test-results/tour/`, which CI keeps as an artifact, so a layout change can be eyeballed on every screen at once.
 
 ## How it stays fair and safe
 
@@ -43,7 +45,7 @@ npm run try                              # a throwaway library and settings on p
 
 Every push and pull request to `main` or `develop` runs:
 
-- `ci.yml`: typecheck and tests on Node 22.18 and 24, the load test (with one retry), `npm audit`, a secret scan of the whole history (gitleaks) and a workflow lint.
+- `ci.yml`: typecheck and tests on Node 22.18 and 24, the load test and the fuzzers (with one retry), the screen tour (its screenshots are the `screen-tour` artifact of the run), `npm audit`, a secret scan of the whole history (gitleaks) and a workflow lint.
 - `security.yml`: Semgrep with the standard rule packs plus this app's own rules in `semgrep-rules/` (test them with `semgrep --test semgrep-rules/`), CodeQL, and hadolint and Trivy on the image. Also weekly.
 - `dast.yml`: an OWASP ZAP passive scan of the running app, started on a throwaway library with a random key (`scripts/ci-start-app.sh` and `scripts/ci-zap.sh`, tuned in `.zap/rules.tsv`). Nightly: ZAP's active scan and nuclei's misconfiguration and exposure templates (`scripts/ci-nuclei.sh`, failing on medium severity or above).
 

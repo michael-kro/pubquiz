@@ -12,11 +12,12 @@
     "try": "node scripts/try-fresh.mjs",
     "dev": "node --watch server/main.ts examples/sample-quiz.yaml",
     "test": "npm run test:fast && npm run test:slow",
-    "test:fast": "PUBQUIZ_POINTS_UNIT=1000 PUBQUIZ_SCORING_DEFAULT=speed PUBQUIZ_ADMISSION_DEFAULT=off PUBQUIZ_READOUT_DEFAULT=off node --test --test-timeout=60000 --test-force-exit \"test/*.test.ts\"",
-    "test:slow": "PUBQUIZ_POINTS_UNIT=1000 PUBQUIZ_SCORING_DEFAULT=speed PUBQUIZ_ADMISSION_DEFAULT=off PUBQUIZ_READOUT_DEFAULT=off node --test --test-timeout=120000 --test-force-exit \"test/slow/*.test.ts\"",
+    "test:fast": "PUBQUIZ_POINTS_UNIT=1000 PUBQUIZ_SCORING_DEFAULT=speed PUBQUIZ_ADMISSION_DEFAULT=off PUBQUIZ_PHONES_ONLY_DEFAULT=off PUBQUIZ_READOUT_DEFAULT=off node --test --test-timeout=60000 --test-force-exit \"test/*.test.ts\"",
+    "test:slow": "PUBQUIZ_POINTS_UNIT=1000 PUBQUIZ_SCORING_DEFAULT=speed PUBQUIZ_ADMISSION_DEFAULT=off PUBQUIZ_PHONES_ONLY_DEFAULT=off PUBQUIZ_READOUT_DEFAULT=off node --test --test-timeout=120000 --test-force-exit \"test/slow/*.test.ts\"",
     "typecheck": "tsc",
     "check": "npm run typecheck && npm test",
-    "docker:build": "docker build -t pubquiz ."
+    "docker:build": "docker build -t pubquiz .",
+    "test:browser": "playwright test"
   },
   "license": "MIT",
   "engines": {
@@ -30,6 +31,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.5",
     "@types/qrcode": "^1.5.6",
     "@types/ws": "^8.18.2",

@@ -1623,6 +1623,12 @@ function entryFeeEditor(s) {
       h('input', { type: 'checkbox', checked: s.requireAdmission, onchange: (e) => socket.send({ t: 'require-admission', on: e.target.checked }) }),
       ' Teams wait to be admitted (tick once they have paid)',
     ),
+    h(
+      'label',
+      { class: 'check', title: 'A laptop or desktop browser opening the join link is turned away, so nobody plays with a big screen and a search engine beside them. Phones and tablets are fine.' },
+      h('input', { type: 'checkbox', checked: s.phonesOnly, onchange: (e) => socket.send({ t: 'phones-only', on: e.target.checked }) }),
+      ' 📱 Teams must join from a phone',
+    ),
   );
 }
 
@@ -2116,6 +2122,14 @@ function teamsPanel(s) {
           { class: 'check photos-toggle', title: 'New teams wait on their phone until you press Admit, so you can check they have paid.' },
           h('input', { type: 'checkbox', checked: s.requireAdmission, onchange: (e) => socket.send({ t: 'require-admission', on: e.target.checked }) }),
           ' Teams wait to be admitted (paid)',
+        ),
+    TV
+      ? null
+      : h(
+          'label',
+          { class: 'check photos-toggle', title: 'A laptop or desktop browser opening the join link is turned away. Phones and tablets are fine.' },
+          h('input', { type: 'checkbox', checked: s.phonesOnly, onchange: (e) => socket.send({ t: 'phones-only', on: e.target.checked }) }),
+          ' 📱 Teams must join from a phone',
         ),
     // On the start screen the "lock when it starts" box is enough; this one appears once the quiz is under way (or if it is already locked).
     TV || (s.phase === 'lobby' && !s.joiningLocked)

@@ -11,6 +11,8 @@ import { scoreAnswer } from './scoring.ts';
 /** The most a team can be given as a head start. */
 const MAX_HEAD_START_SECONDS = 30;
 const ADMISSION_DEFAULT = process.env['PUBQUIZ_ADMISSION_DEFAULT'] !== 'off';
+/** Teams must join from a phone (or tablet): a laptop opening the join link is turned away. Off for tests and simulations. */
+const PHONES_ONLY_DEFAULT = process.env['PUBQUIZ_PHONES_ONLY_DEFAULT'] !== 'off';
 const READ_OUT_DEFAULT = process.env['PUBQUIZ_READOUT_DEFAULT'] !== 'off';
 
 export const MAX_TEAMS = 30;
@@ -103,6 +105,7 @@ export interface GameSnapshot {
   prizes?: string[];
   entryFee?: string;
   requireAdmission?: boolean;
+  phonesOnly?: boolean;
   pending?: { id: string; token: string; code: string; name: string; answers: [number, Answer][] }[];
   closeEarly?: boolean;
   readShown?: number;
@@ -214,6 +217,8 @@ export class Game {
   entryFee = '';
   /** Teams wait in `pending` until the host admits them (after they've paid). */
   requireAdmission = ADMISSION_DEFAULT;
+  /** Only phones and tablets may join; a desktop browser is turned away (checked by the server when a team joins). */
+  phonesOnly = PHONES_ONLY_DEFAULT;
   readonly pending = new Map<string, Team>();
   /** Optional prizes for 1st, 2nd and 3rd ('' when not set). */
   prizes: string[] = ['', '', ''];
@@ -438,6 +443,12 @@ export class Game {
   setRequireAdmission(on: boolean): void {
     this.requireAdmission = on;
     if (!on) this.admitAll();
+    this.changed();
+  }
+
+  /** Teams already in are not affected; this only decides who may join or rejoin from now on. */
+  setPhonesOnly(on: boolean): void {
+    this.phonesOnly = on;
     this.changed();
   }
 
@@ -1018,6 +1029,7 @@ export class Game {
       prizes: this.prizes,
       entryFee: this.entryFee,
       requireAdmission: this.requireAdmission,
+      phonesOnly: this.phonesOnly,
       pending: [...this.pending.values()].map((t) => ({ id: t.id, token: t.token, code: t.code, name: t.name, answers: [] })),
       closeEarly: this.closeEarly,
       readShown: this.readShown,
@@ -1056,6 +1068,7 @@ export class Game {
     game.prizes = snapshot.prizes ?? game.prizes;
     game.entryFee = snapshot.entryFee ?? game.entryFee;
     game.requireAdmission = snapshot.requireAdmission ?? ADMISSION_DEFAULT;
+    game.phonesOnly = snapshot.phonesOnly ?? PHONES_ONLY_DEFAULT;
     for (const t of snapshot.pending ?? []) game.pending.set(t.id, { ...t, connected: false, answers: new Map() });
     game.startOnLastAnswer = snapshot.startOnLastAnswer ?? game.startOnLastAnswer;
     game.closeEarly = snapshot.closeEarly ?? game.closeEarly;
@@ -1742,6 +1755,7 @@ export class Game {
       showJoin: this.showJoin,
       entryFee: this.entryFee,
       requireAdmission: this.requireAdmission,
+      phonesOnly: this.phonesOnly,
       pendingTeams: [...this.pending.values()].map((t) => ({ id: t.id, name: t.name, code: t.code, connected: t.connected })),
       readOut: this.readOut,
       startOnLastAnswer: this.startOnLastAnswer,

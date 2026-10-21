@@ -12,8 +12,9 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('host'), key: z.string().max(200) }),
   z.object({ t: z.literal('screen'), key: z.string().max(200) }),
   // The room code is optional: there is only ever one quiz running, so phones that just open the home page join it.
-  z.object({ t: z.literal('join'), room: z.string().max(20).optional(), name: z.string().max(200) }),
-  z.object({ t: z.literal('rejoin'), token: z.string().max(200).optional(), code: z.string().max(20).optional() }),
+  // `phone`: the page's own view of its device (a touch screen), which lets a tablet in desktop mode pass the phones-only check.
+  z.object({ t: z.literal('join'), room: z.string().max(20).optional(), name: z.string().max(200), phone: z.boolean().optional() }),
+  z.object({ t: z.literal('rejoin'), token: z.string().max(200).optional(), code: z.string().max(20).optional(), phone: z.boolean().optional() }),
   z.object({
     t: z.literal('answer'),
     value: z.union([z.number().int(), z.string().max(200), z.array(z.number().int()).max(10)]),
@@ -46,6 +47,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('admit-all') }),
   z.object({ t: z.literal('set-entry-fee'), fee: z.string().max(80) }),
   z.object({ t: z.literal('require-admission'), on: z.boolean() }),
+  z.object({ t: z.literal('phones-only'), on: z.boolean() }),
   z.object({ t: z.literal('set-prizes'), prizes: z.array(z.string().max(120)).max(3) }),
   z.object({ t: z.literal('lock-on-start'), on: z.boolean() }),
   z.object({ t: z.literal('start-on-last'), on: z.boolean() }),
@@ -234,6 +236,8 @@ export interface HostView {
   entryFee: string;
   /** New teams wait for the host to admit them. */
   requireAdmission: boolean;
+  /** Only phones and tablets may join; a desktop browser is turned away. */
+  phonesOnly: boolean;
   /** Teams that have joined and are waiting to be admitted (host screen only). */
   pendingTeams: { id: string; name: string; code: string; connected: boolean }[];
   /** Read-out mode: the host announces multiple-choice answers before starting the timer. */
@@ -300,6 +304,6 @@ export type ServerMessage =
   | { t: 'host-key'; key: string }
   | { t: 'play-clip'; name: string; title: string }
   | { t: 'stop-clips' }
-  | { t: 'error'; message: string }
+  | { t: 'error'; message: string; code?: 'phones-only' }
   | { t: 'kicked' }
   | { t: 'replaced' };

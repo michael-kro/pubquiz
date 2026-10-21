@@ -138,12 +138,25 @@ export interface QuizServer {
   close(): Promise<void>;
 }
 
+/**
+ * Whether a joining team is on a phone or tablet: its browser says so (every phone browser does), or the page reports
+ * a touch screen (an iPad asking for desktop sites looks like a Mac to the server). A deterrent against playing with a
+ * laptop and a search engine, not a lock: anyone can pretend, and that is documented.
+ */
+export function looksLikePhone(userAgent: string, pageSaysPhone?: boolean): boolean {
+  return /\b(Mobi|Android|iPhone|iPad|iPod|Tablet|Silk|Kindle|webOS|Windows Phone)\b/i.test(userAgent) || pageSaysPhone === true;
+}
+
+const PHONES_ONLY_ERROR = { t: 'error', code: 'phones-only', message: '📱 Open this on your phone. The quiz master has asked that teams play from a phone: scan the code on the screen with your phone camera.' } as const;
+
 interface Connection {
   ws: WebSocket;
   role?: 'host' | 'team' | 'screen';
   address: string;
   /** The connection came from the machine running the quiz itself. */
   local: boolean;
+  /** The browser's User-Agent header, for the phones-only check when a team joins. */
+  userAgent: string;
   messages: TokenBucket;
   dropped: number;
   teamId?: string;
@@ -494,6 +507,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (conn.role) return send(conn, { t: 'error', message: 'Already joined.' });
         if (!active || !game) return send(conn, { t: 'error', message: 'No quiz is running right now. Ask the quiz master.' });
         if (joinGuesses.blocked(conn.address)) return send(conn, { t: 'error', message: 'Too many wrong tries. Wait a minute and try again.' });
+        if (game.phonesOnly && !looksLikePhone(conn.userAgent, msg.phone)) return send(conn, PHONES_ONLY_ERROR);
         // With no room code the phone just opened the home page, and joins the one quiz that is running.
         // A code that is given (an old link, say) must still match.
         const room = (msg.room ?? '').trim().toUpperCase();
@@ -513,6 +527,8 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (msg.code !== undefined && joinGuesses.blocked(conn.address)) {
           return send(conn, { t: 'error', message: 'Too many wrong tries. Wait a minute and try again.' });
         }
+        // A team cannot move to a laptop by carrying its code over.
+        if (game?.phonesOnly && !looksLikePhone(conn.userAgent, msg.phone)) return send(conn, PHONES_ONLY_ERROR);
         const team = game?.rejoin({ token: msg.token, code: msg.code });
         if (!team) {
           if (msg.token === undefined) joinGuesses.add(conn.address);
@@ -600,6 +616,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
       case 'require-admission':
         if (hostOnly()) game?.setRequireAdmission(msg.on);
+        return;
+
+      case 'phones-only':
+        if (hostOnly()) game?.setPhonesOnly(msg.on);
         return;
 
       case 'play-clip': {
@@ -1161,7 +1181,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       return;
     }
     perAddress.set(address, open + 1);
-    const conn: Connection = { ws, address, local: isLocalRequest(req), missedPings: 0, rtts: [], messages: new TokenBucket(MESSAGE_BURST, MESSAGES_PER_SECOND), dropped: 0 };
+    const conn: Connection = { ws, address, local: isLocalRequest(req), userAgent: String(req.headers['user-agent'] ?? ''), missedPings: 0, rtts: [], messages: new TokenBucket(MESSAGE_BURST, MESSAGES_PER_SECOND), dropped: 0 };
     connections.add(conn);
     ws.on('pong', () => {
       if (conn.pingSentAt === undefined) return;
