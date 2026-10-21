@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Continuous integration:** every push and pull request now runs typecheck and tests on Node 22.18 and 24, the load test, `npm audit`, a secret scan and a workflow lint; Dependabot keeps dependencies, actions and the Docker base image up to date. Plans for what comes next are in `docs/plans/`.
 - **Fixes from a full screen tour (host on a phone and a laptop, the TV and a team phone, every question type):** the host top bar fits on a 1280px-wide laptop; the More and Break menus on a phone are a sheet above the buttons instead of running off the edge; the TV page no longer makes two requests it is not allowed to; the host phone drops the room code and the Tiles/List switch.
 - **Host screen on a phone, tidied up:** the title has room, the network status is an emoji, the bottom bar never overflows (Break is an icon, Leaderboard moved under More), the question controls sit in a tidy grid, answer tiles are shorter, and the fastest-answer rows no longer squash the team name.
 - **Head starts:** give a slower player (a young child, say) a head start of up to 30 seconds. It is taken off that team's answer time when working out who was fastest, so they can still win the speed points. Host only, from the Options panel; it also survives a restart.
