@@ -3,6 +3,7 @@
 ## Unreleased
 
 - **Licence:** the project is under the MIT licence. See `LICENSE`.
+- **Fix:** closing the app straight after a quiz finishes no longer risks leaving the results file half-saved; shutdown now waits for it. (This also fixed a test that failed now and then on slower machines.)
 
 ## 0.1.3 — 2026-10-21
 
