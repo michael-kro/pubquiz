@@ -1,5 +1,5 @@
 # Static scanning: Semgrep (with this app's own rules), CodeQL, and the Docker image (hadolint and Trivy).
-# Stage 2 of docs/plans/ci-and-security.md. Also runs weekly, because new vulnerabilities are published against code that has not changed.
+# Also runs weekly, because new vulnerabilities are published against code that has not changed.
 name: Security
 
 on:
