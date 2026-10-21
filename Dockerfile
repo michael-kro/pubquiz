@@ -1,6 +1,6 @@
 # Pub quiz in a container. Build: docker build -t pubquiz .   Run: see compose.yaml or README.md.
 
-# Stage 1: install the server's packages. bun is only needed to build the single-file programs, not to run the server.
+# Stage 1: install the server's packages.
 FROM node:24-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./

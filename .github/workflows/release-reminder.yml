@@ -1,0 +1,28 @@
+# Opens a "Release vX.Y.0" issue with the checklist on the Friday before each fortnightly release Monday (see docs/RELEASING.md).
+name: Release reminder
+
+on:
+  schedule:
+    - cron: '30 7 * * 5'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Open the release issue now, even if it is not a freeze Friday'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Open the release issue if this is a freeze Friday
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          FORCE: ${{ inputs.force && '1' || '0' }}
+        run: bash scripts/release-reminder.sh

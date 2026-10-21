@@ -6,19 +6,15 @@ Run a pub quiz from your laptop. Teams join on their phones by scanning a QR cod
 
 Pick one:
 
-- **A downloaded file** (no other software needed): `pubquiz-macos-arm64` (Apple silicon Mac), `pubquiz-macos-x64` (Intel Mac), `pubquiz-windows-x64.exe`, `pubquiz-linux-x64` or `pubquiz-linux-arm64`. Build them with `npm run build:binaries` (see the README).
-- **From the source folder**, if you have Node.js 22.18 or newer: `npm install`, then `npm start`.
-- **Docker**: `docker compose up -d`, then `docker compose logs pubquiz` for the host link. It uses your `~/PubQuiz` folder, the same one the downloaded program uses. (Or the ready-made image: see the README.)
+- **Docker** (nothing else to install, no warnings): `docker run -d --name pubquiz -p 3000:3000 -v ~/PubQuiz:/data/quizzes -v pubquiz-data:/data ghcr.io/michael-kro/pubquiz:latest`, then `docker logs pubquiz` for the host link. The README has the details for Linux and Windows.
+- **From the source folder**, if you have Node.js 22.18 or newer: `git clone https://github.com/michael-kro/pubquiz.git`, then `npm install` and `npm start`.
+- **Docker Compose** from a copy of the source: `docker compose up -d`, then `docker compose logs pubquiz` for the host link.
 
-These files are not signed (Apple charges $99 a year for a developer account and Windows certificates cost money too, so this free project hasn't paid for them), so your computer may warn about them the first time. Nothing is wrong with the files: it just can't vouch for who made them. Docker and running from the source folder need no warning.
-
-
-- **Mac:** open Terminal, type `chmod +x ` (with a space), drag the file in, press Enter. Then drag the file in again and press Enter to run it. If macOS says it can't verify the developer, open System Settings → Privacy & Security and choose **Open Anyway**.
-- **Windows:** double-click it. If SmartScreen appears, choose **More info → Run anyway**.
+There is no downloadable program to double-click: it would have to be signed with a paid developer certificate to avoid warnings from macOS and Windows, and this is a free project.
 
 ## 2. Open your quizzes
 
-Run the program. Your browser opens the **host screen** with **Your quizzes**. Your quizzes are kept in a `PubQuiz` folder in your home folder.
+Start the program and open the host link (from the source folder your browser opens it for you). You see the **host screen** with **Your quizzes**. Your quizzes are kept in a `PubQuiz` folder in your home folder.
 
 - No quizzes yet? Press **Add a sample quiz to try**.
 - **New quiz** opens the editor. Add a question, pick its type, tick the right answer. It saves as you type, and anything that needs fixing is flagged in red.
