@@ -49,11 +49,12 @@ test('over HTTP and the socket: only the host manages clips, the TV is sent the 
 
   // Playing: the host or the TV may fetch the file, nobody else; ranges work.
   const play = `${base}/clip/${clip.name}`;
-  assert.equal((await fetch(`${play}?key=wrong`)).status, 404);
-  const whole = await fetch(`${play}?key=${server.hostKey}`);
+  assert.equal((await fetch(play, { headers: { 'x-host-key': 'wrong' } })).status, 404);
+  assert.equal((await fetch(`${play}?key=${server.hostKey}`)).status, 404, 'a key in the address is not accepted');
+  const whole = await fetch(play, { headers: { 'x-host-key': server.hostKey } });
   assert.deepEqual([whole.status, whole.headers.get('content-type')], [200, 'audio/mpeg']);
   assert.deepEqual(Buffer.from(await whole.arrayBuffer()), MP3);
-  const part = await fetch(`${play}?key=${server.screenKey}`, { headers: { range: 'bytes=0-9' } });
+  const part = await fetch(play, { headers: { 'x-screen-key': server.screenKey, range: 'bytes=0-9' } });
   assert.equal(part.status, 206);
   assert.equal((await part.arrayBuffer()).byteLength, 10);
 
@@ -71,14 +72,15 @@ test('over HTTP and the socket: only the host manages clips, the TV is sent the 
   host.send({ t: 'play-clip', name: clip.name });
   const told = await tv.waitFor((m) => m.t === 'play-clip');
   assert.equal(told.title, 'Hasta la vista');
-  assert.equal((await fetch(base + told.url)).status, 200, 'the link the TV is given works');
+  assert.equal(told.name, clip.name, 'the TV is told which clip, and fetches it with its own key');
+  assert.equal((await fetch(play, { headers: { 'x-screen-key': server.screenKey } })).status, 200);
   host.send({ t: 'play-clip', name: 'missing.mp3' });
   assert.match((await host.waitFor((m) => m.t === 'error')).message, /gone/);
   host.send({ t: 'stop-clips' });
   await tv.waitFor((m) => m.t === 'stop-clips');
 
   assert.equal((await fetch(`${base}/api/clips/${clip.name}`, { method: 'DELETE', headers: auth })).status, 200);
-  assert.equal((await fetch(`${play}?key=${server.hostKey}`)).status, 404);
+  assert.equal((await fetch(play, { headers: { 'x-host-key': server.hostKey } })).status, 404);
   for (const c of [host, tv, ann]) await c.close();
   await server.close();
 });

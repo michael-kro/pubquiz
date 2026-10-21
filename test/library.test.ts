@@ -40,7 +40,7 @@ class Api {
   }
 
   async bytes(path: string): Promise<Uint8Array> {
-    const res = await fetch(`${this.base}${path}?key=${this.key}`);
+    const res = await fetch(`${this.base}${path}`, { headers: { 'x-host-key': this.key } });
     assert.equal(res.status, 200);
     return new Uint8Array(await res.arrayBuffer());
   }
@@ -51,6 +51,7 @@ test('the API needs the host key', async () => {
   const res = await fetch(`${api.base}/quizzes`);
   assert.equal(res.status, 401);
   assert.equal((await fetch(`${api.base}/quizzes?key=wrong`)).status, 401);
+  assert.equal((await fetch(`${api.base}/quizzes?key=${api.key}`)).status, 401, 'even the right key is not accepted in the address');
   assert.equal((await api.call('GET', '/quizzes')).status, 200);
   await server.close();
 });

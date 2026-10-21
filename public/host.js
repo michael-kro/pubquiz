@@ -18,6 +18,8 @@ document.body.classList.toggle('phone', isPhone());
 if (TV) document.documentElement.style.fontSize = 'clamp(13px, min(1.12vw, 1.9vh), 36px)';
 const KEY_STORAGE = 'pubquiz.host-key';
 const params = new URLSearchParams(location.search);
+// The key rides in the fragment (#key=…), which browsers never send to any server or proxy. ?key= still works for old links.
+const hashParams = new URLSearchParams(location.hash.slice(1));
 
 function storedKey() {
   try {
@@ -28,7 +30,7 @@ function storedKey() {
 }
 
 // The host link carries the key. Without it, a host can type the PIN (if the program was started with one).
-let key = params.get('key') ?? (TV ? null : storedKey());
+let key = hashParams.get('key') ?? params.get('key') ?? (TV ? null : storedKey());
 let needPin = false;
 let pinError = '';
 
@@ -54,6 +56,54 @@ async function api(method, path, body) {
     throw error;
   }
   return data;
+}
+
+// Things only a key may fetch (clips, the QR codes with secrets in them, results, exports) are fetched with the key in a
+// header and shown from a blob URL, so the key is never part of any address that a proxy or a log could see.
+const blobUrls = new Map();
+const pendingBlobs = new Set();
+
+async function fetchWithKey(path) {
+  const res = await fetch(path, { headers: { [TV ? 'x-screen-key' : 'x-host-key']: key ?? '' } });
+  if (!res.ok) throw new Error(`Could not load that (${res.status}).`);
+  return res;
+}
+
+async function blobUrlFor(path) {
+  const url = URL.createObjectURL(await (await fetchWithKey(path)).blob());
+  const old = blobUrls.get(path);
+  if (old) URL.revokeObjectURL(old);
+  blobUrls.set(path, url);
+  return url;
+}
+
+/** For an <img> inside a render: the cached blob URL, or '' while it loads (the page is redrawn when it arrives). */
+function imageWithKey(path) {
+  if (blobUrls.has(path)) return blobUrls.get(path);
+  if (!pendingBlobs.has(path)) {
+    pendingBlobs.add(path);
+    blobUrlFor(path)
+      .then(() => render())
+      .catch(() => {})
+      .finally(() => pendingBlobs.delete(path));
+  }
+  return '';
+}
+
+async function playWithKey(audio, path) {
+  audio.src = await blobUrlFor(path);
+  await audio.play();
+}
+
+async function downloadWithKey(path, fallbackName) {
+  const res = await fetchWithKey(path);
+  const name = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? fallbackName;
+  const url = URL.createObjectURL(await res.blob());
+  const link = h('a', { href: url, download: name });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 const isBrandingPage = () => !TV && location.hash === '#branding';
@@ -123,8 +173,7 @@ function connect() {
         preload(state.preloadImage);
         if (!TV) rememberKey();
       } else if (message.t === 'play-clip' && TV) {
-        tvClip.src = message.url;
-        void tvClip.play().catch(() => {});
+        void playWithKey(tvClip, `/clip/${encodeURIComponent(message.name)}`).catch(() => {});
         showClipToast(`🔊 ${message.title}`);
       } else if (message.t === 'stop-clips' && TV) {
         tvClip.pause();
@@ -157,7 +206,7 @@ function rememberKey() {
     return;
   }
   // Once the browser has it, the secret needn't sit in the address bar (screenshots, shoulder-surfers).
-  if (params.has('key')) history.replaceState(null, '', location.pathname + location.hash);
+  if (params.has('key') || hashParams.has('key')) history.replaceState(null, '', location.pathname);
 }
 
 function forgetKey() {
@@ -452,8 +501,10 @@ function openEditor(id) {
   app.replaceChildren(h('section', { class: 'screen center' }, h('p', { class: 'muted' }, 'Opening the editor…')));
   mountEditor(app, {
     id,
-    hostKey: key,
     api,
+    blobUrlFor,
+    downloadWithKey,
+    notice: showNotice,
     onExit() {
       location.hash = '';
       void loadLibrary();
@@ -664,7 +715,7 @@ function libraryView(s) {
                   h('a', { class: 'button', href: `#edit/${q.id}` }, 'Edit'),
                   h('button', { onclick: act(() => api('POST', `/quizzes/${q.id}/duplicate`)) }, 'Duplicate'),
                   // On a phone the card keeps to running and editing; exporting and deleting are laptop jobs.
-                  isPhone() ? null : h('a', { class: 'button', href: `/api/quizzes/${q.id}/export.zip?key=${encodeURIComponent(key)}` }, 'Export'),
+                  isPhone() ? null : h('button', { type: 'button', onclick: () => downloadWithKey(`/api/quizzes/${q.id}/export.zip`, `${q.id}.zip`).catch((error) => showNotice(error.message)) }, 'Export'),
                   isPhone()
                     ? null
                     : h(
@@ -904,7 +955,7 @@ function topBar(s) {
     ),
     networkPill(s.network),
     soundButton(),
-    h('a', { class: 'button', href: `/screen?key=${encodeURIComponent(s.screenKey)}`, target: '_blank', rel: 'noopener', title: 'Open this on the TV or projector' }, 'TV ↗'),
+    h('a', { class: 'button', href: `/screen#key=${encodeURIComponent(s.screenKey)}`, target: '_blank', rel: 'noopener', title: 'Open this on the TV or projector' }, 'TV ↗'),
     breakControl(s),
     h('button', { type: 'button', onclick: openClips, title: 'Play sound clips whenever you like' }, '🎵 Clips'),
     s.pendingTeams?.length ? h('button', { type: 'button', class: 'pending-pill', title: 'Let in every team that is waiting', onclick: () => socket.send({ t: 'admit-all' }) }, `⏳ ${s.pendingTeams.length} waiting · Admit`) : null,
@@ -932,7 +983,7 @@ function stage(s) {
           ? h(
               'div',
               { class: 'qr-pair' },
-              h('figure', { class: 'qr-step' }, h('img', { class: 'qr', src: `/wifi-qr.svg?key=${encodeURIComponent(TV ? key : s.screenKey)}`, alt: `QR code to join the ${s.wifi.ssid} Wi-Fi network` }), h('figcaption', {}, h('strong', {}, '1. Join the Wi-Fi'), h('br'), s.wifi.ssid, s.wifi.password ? h('br') : null, s.wifi.password ? `Password: ${s.wifi.password}` : null)),
+              h('figure', { class: 'qr-step' }, h('img', { class: 'qr', src: imageWithKey('/wifi-qr.svg'), alt: `QR code to join the ${s.wifi.ssid} Wi-Fi network` }), h('figcaption', {}, h('strong', {}, '1. Join the Wi-Fi'), h('br'), s.wifi.ssid, s.wifi.password ? h('br') : null, s.wifi.password ? `Password: ${s.wifi.password}` : null)),
               h('figure', { class: 'qr-step' }, h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }), h('figcaption', {}, h('strong', {}, '2. Open the quiz'))),
             )
           : h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }),
@@ -1069,7 +1120,7 @@ function stage(s) {
           ? h(
               'p',
               { class: 'center' },
-              h('a', { class: 'button', href: `/results.csv?key=${encodeURIComponent(key)}`, download: '' }, 'Download results (CSV)'),
+              h('button', { type: 'button', onclick: () => downloadWithKey('/results.csv', 'results.csv').catch((error) => showNotice(error.message)) }, 'Download results (CSV)'),
             )
           : null,
       );
@@ -1740,10 +1791,11 @@ let clipFilter = '';
 let clipBusy = '';
 const soundboard = new Audio();
 let playingClip = '';
+/** The clip the soundboard was last asked to play (its src is a blob URL, which says nothing). */
+let soundboardClip = '';
 for (const event of ['play', 'pause', 'ended']) {
   soundboard.addEventListener(event, () => {
-    if (event !== 'play') playingClip = '';
-    else playingClip = decodeURIComponent((soundboard.src.match(/\/clip\/([^?]+)/) ?? [])[1] ?? '');
+    playingClip = event === 'play' ? soundboardClip : '';
     if (clipsOpen) render();
   });
 }
@@ -1774,8 +1826,8 @@ function playHere(clip) {
     soundboard.pause();
     return;
   }
-  soundboard.src = `/clip/${encodeURIComponent(clip.name)}?key=${encodeURIComponent(key)}`;
-  void soundboard.play().catch(() => showNotice('The browser blocked the sound. Click anywhere on the page, then try again.'));
+  soundboardClip = clip.name;
+  playWithKey(soundboard, `/clip/${encodeURIComponent(clip.name)}`).catch(() => showNotice('The browser blocked the sound. Click anywhere on the page, then try again.'));
 }
 
 async function uploadClips(files) {
@@ -1897,7 +1949,7 @@ function hostQrOverlay(s) {
       'div',
       { class: 'codes-card join-card' },
       h('h2', {}, 'Host from your phone'),
-      h('img', { class: 'qr', src: `/host-qr.svg?key=${encodeURIComponent(key)}&v=${s.qrVersion ?? 0}`, alt: 'QR code for the host page' }),
+      h('img', { class: 'qr', src: imageWithKey(`/host-qr.svg?v=${s.qrVersion ?? 0}`), alt: 'QR code for the host page' }),
       h('p', { class: 'muted' }, 'Scan this with your phone camera. ', s.openHost ? '' : 'The code contains the host key, so keep it to yourself. '),
       h('p', { class: 'muted' }, s.network?.mode === 'tunnel' && s.network.state === 'up' ? 'It uses the internet link, so it works on any network.' : 'It uses this laptop’s Wi-Fi address, so the phone must be on the same Wi-Fi.'),
       h('button', { type: 'button', onclick: close }, 'Close'),
