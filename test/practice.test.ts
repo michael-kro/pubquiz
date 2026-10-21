@@ -392,3 +392,47 @@ test('CSV exports for an attempt and for a learner, and the host can read progre
   assert.equal((await call(server, 'GET', '/api/practice/learners/Ida/progress', undefined, '')).status, 401);
   await server.close();
 });
+
+// Stage 3: hints, explanations and topics.
+
+test('hints come one at a time and are counted; explain beats info; progress is by topic when a question has one', async () => {
+  const { dir, server } = await setup();
+  await mkdir(join(dir, 'revise'), { recursive: true });
+  await writeFile(
+    join(dir, 'revise', 'quiz.yaml'),
+    `title: Revision
+rounds:
+  - name: Maths
+    questions:
+      - { type: multiple-choice, text: "3/4 of 20?", options: ["12", "15", "16"], answer: 1, topic: Fractions, hint: ["Find a quarter first.", "A quarter of 20 is 5."], explain: "A quarter of 20 is 5; three of those is 15.", info: "Fun fact." }
+      - { type: true-false, text: "7 is prime.", answer: true, topic: Primes }
+      - { type: number, text: "9 x 9?", answer: 81 }
+`,
+  );
+  const act = async (action: string, body?: unknown) => (await call(server, 'POST', `/api/practice/learners/Kit/current/${action}`, body ?? {})).json;
+  let view = (await call(server, 'POST', '/api/practice/learners/Kit/sessions', { quizId: 'revise', mode: 'learn' })).json.current;
+  assert.equal(view.question.hints, 2);
+  assert.deepEqual(view.question.hintsShown, []);
+  view = (await act('hint')).current;
+  assert.deepEqual(view.question.hintsShown, ['Find a quarter first.']);
+  view = (await act('hint')).current;
+  assert.deepEqual(view.question.hintsShown, ['Find a quarter first.', 'A quarter of 20 is 5.']);
+  assert.equal((await call(server, 'POST', '/api/practice/learners/Kit/current/hint', {})).status, 400, 'no more hints');
+  view = (await act('answer', { value: 1 })).current;
+  assert.equal(view.question.feedback.info, 'A quarter of 20 is 5; three of those is 15.', 'explain, not the fun fact');
+  view = (await act('next')).current;
+  assert.deepEqual(view.question.options, ['True', 'False'], 'true/false is played as multiple choice');
+  assert.equal(view.question.hints, 0);
+  assert.equal((await call(server, 'POST', '/api/practice/learners/Kit/current/hint', {})).status, 400, 'no hint on this one');
+  view = (await act('answer', { value: 1 })).current; // false: wrong
+  await act('next');
+  await act('answer', { value: 81 });
+  const r = await act('finish');
+  assert.deepEqual(r.byRound, [{ round: 'Fractions', right: 1, total: 1 }, { round: 'Primes', right: 0, total: 1 }, { round: 'Maths', right: 1, total: 1 }], 'topics where given, the round otherwise');
+  assert.equal(r.review[0].hintsUsed, 2);
+  assert.equal(r.review[1].hintsUsed, undefined);
+  const progress = (await call(server, 'GET', '/api/practice/learners/Kit/progress')).json;
+  assert.equal(progress.topics[0].round, 'Primes');
+  assert.equal(progress.hardest[0].round, 'Primes');
+  await server.close();
+});

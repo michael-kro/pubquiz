@@ -62,6 +62,12 @@ const common = {
   category: text.max(60).optional(),
   /** Shown with the answer once it's revealed: a fun fact, or where it comes from. */
   info: z.string().trim().min(1).max(300).optional(),
+  /** For practice: what this question is about (finer than the round), for progress by topic. */
+  topic: text.max(60).optional(),
+  /** For practice: why the answer is right, shown after the question (instead of `info`, which is more for fun). */
+  explain: z.string().trim().min(1).max(600).optional(),
+  /** For practice: a nudge, or up to three that get more specific, shown one at a time when asked. */
+  hint: z.union([z.string().trim().min(1).max(300), z.array(z.string().trim().min(1).max(300)).min(1).max(3)], { error: 'must be a sentence or a list of up to three' }).optional(),
 };
 
 const number = z.number({ error: 'must be a number' }).finite('must be a number').refine((n) => Math.abs(n) <= 1e12, 'is too big');
@@ -86,6 +92,8 @@ const QuestionSchema = z.discriminatedUnion('type', [
       message: 'must be the position of one of the options, counting from 0',
       path: ['answer'],
     }),
+  // True or false: written with `answer: true/false`, played as a two-option multiple choice.
+  z.object({ type: z.literal('true-false'), ...common, answer: z.boolean({ error: 'must be true or false' }) }).strict(),
   // `uncover`: the picture starts hidden behind black tiles that drop away as the time runs out.
   z.object({ type: z.literal('picture'), ...common, image: text, accept, uncover: z.boolean().optional() }).strict(),
   z.object({ type: z.literal('music'), ...common, accept }).strict(),
@@ -133,7 +141,7 @@ const QuestionSchema = z.discriminatedUnion('type', [
       message: 'items must all be different',
       path: ['items'],
     }),
-], { error: 'type must be one of: multiple-choice, picture, music, ordering, letter' });
+], { error: 'type must be one of: multiple-choice, true-false, picture, music, ordering, letter, number, nearest, buzzer' });
 
 /** The keys of the grouped letter keypad: single letters, except the rare ones: QV and XZ. */
 export const LETTER_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'T', 'U', 'QV', 'W', 'Y', 'XZ'];
@@ -183,7 +191,9 @@ export const QuizFile = z
   })
   .strict();
 
-export type Question = z.infer<typeof QuestionSchema> & {
+type QuestionData = z.infer<typeof QuestionSchema>;
+/** A question as played. True/false questions are written that way but played as multiple choice, so they do not appear here. */
+export type Question = Exclude<QuestionData, { type: 'true-false' }> & {
   /** What a right answer is worth. */
   points: number;
   round: string;
@@ -205,6 +215,18 @@ export type Question = z.infer<typeof QuestionSchema> & {
   revealAudioUrl?: string;
 };
 export type QuestionType = Question['type'];
+
+/** The hints a question offers, in order (none for most). */
+export function hintsOf(q: { hint?: string | string[] }): string[] {
+  return Array.isArray(q.hint) ? q.hint : q.hint ? [q.hint] : [];
+}
+
+/** True/false becomes a two-option multiple choice, so every screen and the marking already know what to do with it. */
+function asPlayed(q: QuestionData): Exclude<QuestionData, { type: 'true-false' }> {
+  if (q.type !== 'true-false') return q;
+  const { answer, ...rest } = q;
+  return { ...rest, type: 'multiple-choice', options: ['True', 'False'], answer: answer ? 0 : 1 };
+}
 
 export interface Media {
   data: Buffer;
@@ -319,7 +341,7 @@ function quizFromData(file: QuizFileData): Quiz {
     leaderboard: file.scoring.leaderboard,
     rounds: file.rounds.map((round) => round.name),
     questions: file.rounds.flatMap((round, roundIndex) =>
-      round.questions.map((q) => ({
+      round.questions.map(asPlayed).map((q) => ({
         ...q,
         ...(q.type === 'letter' ? { letter: firstLetter(q.answer, q.letter) } : {}),
         points: q.points ?? ((round.mode ?? file.scoring.mode) === 'rank' ? RANK_POINTS : DEFAULT_POINTS),

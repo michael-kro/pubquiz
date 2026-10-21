@@ -7,7 +7,12 @@ import { mkdir, readdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { answerText, isRight, itemsInPlace, validateAnswer } from './marking.ts';
 import type { AnswerValue } from './protocol.ts';
-import { ORDERING_ITEMS, type Question, type Quiz } from './quiz.ts';
+import { hintsOf, ORDERING_ITEMS, type Question, type Quiz } from './quiz.ts';
+
+/** What a question is about, for progress: its topic if it has one, else its round. */
+const topicOf = (q: Question) => q.topic ?? q.round;
+/** The explanation after a question: `explain` if written, else the fun fact. */
+const explanationOf = (q: Question) => q.explain ?? q.info;
 
 export class PracticeError extends Error {
   readonly status: number;
@@ -94,6 +99,8 @@ export interface PracticeSession {
   deadline?: string;
   kind?: 'review' | 'exam';
   summary?: SessionSummary;
+  /** How many hints were asked for, by question index. */
+  hints?: Record<string, number>;
 }
 
 export interface Learner {
@@ -148,6 +155,9 @@ export interface PracticeView {
     audioUrl?: string;
     flagged: boolean;
     skipped: boolean;
+    /** How many hints there are, and the ones asked for so far. */
+    hints: number;
+    hintsShown: string[];
     /** What the learner answered, as shown back to them. */
     given?: { value: AnswerValue; label: string };
     /** In learn mode, once answered: was it right, the answer and the explanation. */
@@ -171,7 +181,8 @@ export interface PracticeResults {
   elapsedMs: number;
   byRound: { round: string; right: number; total: number }[];
   /** Every question, in the order asked, for review. */
-  review: { index: number; round: string; text: string; type: Question['type']; given?: string; answer: string; info?: string; correct: boolean; skipped: boolean; flagged: boolean }[];
+  /** `round` is the question's topic when it has one. */
+  review: { index: number; round: string; text: string; type: Question['type']; given?: string; answer: string; info?: string; correct: boolean; skipped: boolean; flagged: boolean; hintsUsed?: number }[];
   /** Question indices that were wrong or skipped, for "retry the ones I missed". */
   missed: number[];
 }
@@ -306,9 +317,11 @@ export function view(session: PracticeSession, quiz: Quiz): PracticeView {
       ...(qq.audioUrl ? { audioUrl: mediaUrl(session.quizId, qq.audioUrl) } : {}),
       flagged: session.flagged.includes(index),
       skipped: session.skipped.includes(index),
+      hints: hintsOf(q).length,
+      hintsShown: hintsOf(q).slice(0, session.hints?.[index] ?? 0),
       ...(answer ? { given: { value: answer.value, label: givenLabel(q, answer.value) } } : {}),
       ...(answer && session.mode === 'learn'
-        ? { feedback: { correct: answer.correct, answer: answerText(q), ...(q.info ? { info: q.info } : {}), ...(detailFor(q, answer.value, answer.correct) ? { detail: detailFor(q, answer.value, answer.correct) } : {}) } }
+        ? { feedback: { correct: answer.correct, answer: answerText(q), ...(explanationOf(q) ? { info: explanationOf(q) } : {}), ...(detailFor(q, answer.value, answer.correct) ? { detail: detailFor(q, answer.value, answer.correct) } : {}) } }
         : {}),
     },
   };
@@ -342,7 +355,22 @@ export function revealForSelfMarking(session: PracticeSession, quiz: Quiz): { an
   const index = current(session);
   const q = index === undefined ? undefined : quiz.questions[index];
   if (!q || q.type !== 'buzzer') throw new PracticeError('Only a buzzer question is marked by you.');
-  return { answer: q.answer, ...(q.info ? { info: q.info } : {}) };
+  return { answer: q.answer, ...(explanationOf(q) ? { info: explanationOf(q) } : {}) };
+}
+
+/** Shows the next hint for the current question, if it has one left. */
+export function hint(session: PracticeSession, quiz: Quiz): void {
+  if (session.finishedAt) throw new PracticeError('This session is finished.');
+  const index = current(session);
+  if (index === undefined) throw new PracticeError('There is no question to help with.');
+  const q = quiz.questions[index];
+  if (!q) throw new PracticeError('There is no question to help with.');
+  const hints = hintsOf(q);
+  const shown = session.hints?.[index] ?? 0;
+  if (!hints.length) throw new PracticeError('This question has no hint.');
+  if (shown >= hints.length) throw new PracticeError('That was the last hint.');
+  touch(session);
+  (session.hints ??= {})[index] = shown + 1;
 }
 
 export function move(session: PracticeSession, delta: 1 | -1): void {
@@ -402,7 +430,7 @@ export function updateReview(learner: Learner, session: PracticeSession, quiz: Q
       if (item.box >= GRADUATE_BOX) delete review[key];
       else item.due = new Date(now + REVIEW_DELAYS_MS[item.box]!).toISOString();
     } else {
-      review[key] = { quizId: session.quizId, quizTitle: quiz.title, index, text: q.text, round: q.round, box: 0, due: at, misses: (item?.misses ?? 0) + 1, rights: item?.rights ?? 0, lastAt: at };
+      review[key] = { quizId: session.quizId, quizTitle: quiz.title, index, text: q.text, round: topicOf(q), box: 0, due: at, misses: (item?.misses ?? 0) + 1, rights: item?.rights ?? 0, lastAt: at };
     }
   }
 }
@@ -486,21 +514,22 @@ export function results(session: PracticeSession, quiz: Quiz): PracticeResults {
     const correct = a?.correct ?? false;
     if (correct) right++;
     else missed.push(index);
-    const r = rounds.get(q.round) ?? { right: 0, total: 0 };
+    const r = rounds.get(topicOf(q)) ?? { right: 0, total: 0 };
     r.total++;
     if (correct) r.right++;
-    rounds.set(q.round, r);
+    rounds.set(topicOf(q), r);
     review.push({
       index,
-      round: q.round,
+      round: topicOf(q),
       text: q.text,
       type: q.type,
       ...(a ? { given: givenLabel(q, a.value) } : {}),
       answer: answerText(q),
-      ...(q.info ? { info: q.info } : {}),
+      ...(explanationOf(q) ? { info: explanationOf(q) } : {}),
       correct,
       skipped: !a,
       flagged: session.flagged.includes(index),
+      ...(session.hints?.[index] ? { hintsUsed: session.hints[index] } : {}),
     });
   }
   const total = session.order.length;
