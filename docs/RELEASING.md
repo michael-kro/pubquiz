@@ -34,4 +34,4 @@ For something released that cannot wait (a crash during a quiz, a wrong score, a
 
 ## Settings on GitHub
 
-Branch protection on `main` and `develop` is recommended: require a pull request and the CI checks (`Types and tests`, `Load test`, `Dependency audit`, `Secret scan`, `Semgrep`, `CodeQL`, `Docker image`, `ZAP baseline scan`), and block force pushes. Scheduled jobs (the weekly security scan, the nightly ZAP scan, the release reminder) and Dependabot run from `main`.
+Branch protection on `main` and `develop` is recommended: require a pull request and the CI checks (`Types and tests`, `Load test`, `Screen tour`, `Dependency audit`, `Secret scan`, `Semgrep`, `CodeQL`, `Docker image`, `ZAP baseline scan`), and block force pushes. Scheduled jobs (the weekly security scan, the nightly ZAP scan, the release reminder) and Dependabot run from `main`.

@@ -28,7 +28,7 @@ Checked locally before pushing: the steps run clean in Node 22.18 and 24 contain
 - **OWASP ZAP baseline scan** (passive, a few minutes) on every pull request and push to `develop` or `main`. The job builds the image, starts it on a throwaway library with a random host key (`scripts/ci-start-app.sh`), and scans it signed in as the host (`scripts/ci-zap.sh`: the key goes on every request as the `x-host-key` header, and ZAP's browser spider explores the host page and the API). Findings are tuned in `.zap/rules.tsv`: missing security headers fail the build, a few informational or deliberate ones are ignored with the reason written beside them. The HTML and JSON reports are kept as an artifact.
 - **ZAP full (active) scan** nightly and on demand (Actions tab, "DAST", choose `full`). It attacks the throwaway copy only.
 - What the first scans found and fixed: error pages and `/status.json` and `/healthz` had no security headers or content type; the page headers lacked Permissions-Policy and the cross-origin opener and resource policies. They now have them, and a test covers it.
-- **Still to do:** turn the screen tour (a script that plays a whole quiz while watching the host on a phone and a laptop, the TV and a team phone) into a Playwright test that fails on JavaScript errors or sideways scrolling, and keeps the screenshots as artifacts.
+- **Screen tour — DONE:** `test/browser/tour.spec.ts` (Playwright) plays a whole quiz while watching the host on a phone and a laptop, the TV and a team phone, fails on JavaScript errors, sideways scrolling, off-screen buttons or a pop-up Escape does not close, and keeps the screenshots as the `screen-tour` artifact of the CI job.
 
 ## Stage 4: nightly and release
 

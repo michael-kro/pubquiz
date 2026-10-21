@@ -287,6 +287,7 @@ body.tv .lobby { min-height: 0; padding-top: 2vh; }
 .host-bar {
   grid-area: bar;
   display: flex;
+  flex-wrap: wrap; /* With wide system fonts or the admission pill showing, the buttons may not fit one line: they wrap rather than run off the screen. */
   align-items: center;
   gap: 12px;
   padding: 10px 18px;
@@ -294,7 +295,7 @@ body.tv .lobby { min-height: 0; padding-top: 2vh; }
 }
 .host-bar > * { flex-shrink: 0; }
 .host-bar button, .host-bar .button { white-space: nowrap; padding: 8px 12px; }
-.host-bar .primary.next { padding: 10px 20px; }
+.host-bar .primary.next { padding: 10px 20px; margin-left: auto; } /* stays at the right edge, also when the bar has wrapped */
 .bar-id { flex: 1 1 0 !important; min-width: 120px; display: grid; gap: 2px; line-height: 1.2; }
 .bar-id .quiz-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bar-id .join-hint { flex: none; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -1059,3 +1060,6 @@ body.phone .phone-actions .break-menu button { min-height: 48px; font-size: 1rem
 /* The host's phone is a remote: no room code (teams just scan or open the link), and a smaller QR code so the start controls sit higher. */
 body.phone .room-code-line { display: none; }
 body.phone .lobby .qr, body.phone:not(.tv) .lobby .qr { width: min(52vw, 220px); }
+/* With a Wi-Fi code as well, the two codes share the width side by side; they must never push the page wider than the phone. */
+body.phone .lobby .qr-pair { gap: 16px; }
+body.phone .lobby .qr-pair .qr, body.phone:not(.tv) .lobby .qr-pair .qr { width: min(40vw, 160px); }
