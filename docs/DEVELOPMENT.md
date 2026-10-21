@@ -48,3 +48,7 @@ The server is TypeScript run directly by Node (no build step). The browser pages
 ## Trying things without your real quizzes
 
 `npm run try` starts the quiz with a brand-new, empty library and settings in temporary folders, on port 3001 (so it can run beside your real one), and deletes them when you stop. `npm run try -- --keep` keeps the folders. To choose the folders yourself, set `PUBQUIZ_HOME` (quizzes, clips, branding, saved games) and `PUBQUIZ_CONFIG_DIR` (the app's own settings and downloaded helper), or pass `--quizzes <folder>`. These work with the downloaded programs too, for example `PUBQUIZ_HOME=/tmp/trial ./pubquiz-macos-arm64`.
+
+## Continuous integration
+
+Every push and pull request to `main` or `develop` runs `.github/workflows/ci.yml`: typecheck and the fast tests on Node 22.18 and 24, the load test on its own (with one retry), `npm audit` for the shipped dependencies, a secret scan of the whole history, and a lint of the workflow files. Run the same checks locally with `npm run check`. The plan for what comes next (Semgrep, CodeQL, image scanning, browser tests and DAST) is in `docs/plans/ci-and-security.md`.

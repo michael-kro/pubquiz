@@ -1,0 +1,87 @@
+# Checks that run on every push and pull request: types, tests, dependency audit, secret scan.
+# Stage 1 of docs/plans/ci-and-security.md. Later stages add Semgrep, CodeQL, image scanning and DAST.
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Types and tests (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 22.18 is the oldest Node the app supports (engines in package.json); 24 is what the Docker image uses.
+        node: ['22.18', '24']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      # No install scripts: the tests do not need the bun binary, and running fewer scripts is safer.
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm run test:fast
+
+  load-test:
+    name: Load test (30 simulated phones)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # It drops and reconnects phones on purpose and is the one test that depends on machine speed,
+      # so it runs on its own and gets one more try before it fails the build.
+      - run: |
+          for attempt in 1 2; do
+            if npm run test:slow; then exit 0; fi
+            echo "Load test failed on attempt $attempt"
+          done
+          exit 1
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      # Only what ships to users (not the build tools). High and critical advisories fail the build.
+      - run: npm audit --omit=dev --audit-level=high
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Scans the whole history, because this repo's history was scrubbed once already and should stay clean.
+      - name: gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:latest git --no-banner --redact -v /repo
+
+  workflows:
+    name: Lint workflows
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest -color
