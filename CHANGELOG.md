@@ -7,6 +7,9 @@
 - **Local HTTPS removed:** the optional Caddy service (`docker compose --profile https`), its config and the HTTPS guide are gone. The internet link already gives phones and the TV a real HTTPS certificate, and the local certificate only ever worked on the laptop that trusted it.
 
 - **Travel router guidance removed:** the router setup guide and the router-box research note are gone, and the troubleshooting guide no longer suggests a travel router (the internet link works from 4G or any Wi-Fi; a phone hotspot or the venue Wi-Fi remain the offline options).
+- **Licence:** the project is under the MIT licence. See `LICENSE`.
+- **Fix:** closing the app straight after a quiz finishes no longer risks leaving the results file half-saved; shutdown now waits for it. (This also fixed a test that failed now and then on slower machines.)
+
 ## 0.1.3 — 2026-10-21
 
 - **No more downloadable programs:** the five single-file programs (Mac, Windows, Linux) are gone. They were unsigned, so every user got an operating system warning, and they carried a second copy of the pages to maintain. Run the Docker image or the source instead; the README quick start is now built on Docker. Removed `npm run build:binaries`, the build script, the embedded-files code and the `bun` dependency.

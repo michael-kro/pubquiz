@@ -294,6 +294,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   }
 
   /** Keeps the final scores as a CSV next to the quiz, so they survive the host closing the page. */
+  /** Results files being written right now, so shutting down can wait for them instead of leaving a half-saved file. */
+  const resultsWrites = new Set<Promise<void>>();
+
   async function saveResults(sessionPath: string, game: Game): Promise<void> {
     const stamp = new Date().toISOString().slice(0, 10);
     const prefix = basename(sessionPath).replace(/session\.json$/, '');
@@ -342,7 +345,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         current.saver?.schedule();
         if (game.phase === 'finished' && session && !current.resultsWritten) {
           current.resultsWritten = true;
-          void saveResults(session.path, game);
+          const writing = saveResults(session.path, game);
+          resultsWrites.add(writing);
+          void writing.finally(() => resultsWrites.delete(writing));
         }
         scheduleBroadcast();
       },
@@ -1200,6 +1205,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         active?.game.dispose();
         await active?.saver?.flush();
         await active?.photos.flush();
+        await Promise.all([...resultsWrites]);
         for (const conn of connections) conn.ws.terminate();
         await new Promise<void>((done) => wss.close(() => done()));
         await new Promise<void>((done) => httpServer.close(() => done()));
