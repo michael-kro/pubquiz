@@ -53,6 +53,17 @@ Open the host link on your phone, or press **📲 Host on my phone** for a QR co
 
 **Branding** sets a name, tagline, two colours and a logo for every page; text colours are worked out so everything stays readable, and the panel warns if the accent is hard to see. Each venue is a profile: the tabs at the top of the panel switch between them, **+ New venue** adds one (optionally copied from the current one), and the 🍺 drop-down on the quizzes screen switches venue in one click. Profiles are folders under `branding/` in your library.
 
+## Practice mode
+
+For one person revising for a test (the 11+, SATs, a driving theory test) rather than a room full of teams. **🎓 Practice** on the host screen shows a link and a QR code for a separate page with its own key; give it to the learner, not to teams, since it shows the answers. It works wherever the join link works, including over the internet link.
+
+- The learner types a name, picks any quiz in your library, how many questions and whether to mix them up, and either **Learn as I go** (the answer, and the `info` line if the question has one, straight after each question) or **Test myself** (marked at the end).
+- No timer stops anything; a small clock just shows time spent. They can go **Back**, **Skip**, **Flag** a question to look at again, and stop and **Carry on** later. Buzzer questions become "show me the answer, did I have it?".
+- At the end: a percentage, a breakdown by round, every question with the right answer, and **Retry the ones I missed**. Past attempts are listed under **Before**.
+- Each learner's history is a file under `practice/` in your library. Nothing leaves the machine. **⋯ More → New host key** also changes the practice link.
+
+Write `info:` lines for the explanations, and check AI-written questions by hand: a wrong answer does more harm in practice than in a pub.
+
 ## How phones connect
 
 By default the quiz gets a free public `https://` link from Cloudflare (no account needed) and the QR code points to it, so teams can use 4G or any Wi-Fi, and pub Wi-Fi that stops devices seeing each other does not matter. The first run downloads Cloudflare's `cloudflared` (checksum-verified). The host screen shows **🌐 Internet link** when it is ready, usually within 15 seconds; until then the QR code uses the local address. The link has a **new address after every restart**, and after it drops and comes back: teams already in rejoin by themselves, latecomers scan the new code.
