@@ -168,18 +168,19 @@ test('HTTP upload fuzzing: malformed, mislabelled and oversized files to every u
   /** Sends one request and records how it went. */
   const send = async (target: string, method: string, path: string, headers: Headers, body?: Buffer, authorised = isAuthorised(headers)): Promise<Outcome> => {
     let outcome: Outcome;
+    const plain = Object.fromEntries(Object.entries(headers)); // without the marker, which fetch would refuse
     try {
-      if (body && gen.chance(0.1)) {
+      if (body && target !== 'check' && gen.chance(0.1)) {
         const declared = gen.pick([0, 1, Math.floor(body.length / 2), body.length * 2 + 1, 2 ** 31, -1]);
-        outcome = { target: `${target}-lying-length`, authorised, ...(await rawRequest(method, path, headers, body, declared)) };
+        outcome = { target: `${target}-lying-length`, authorised, ...(await rawRequest(method, path, plain, body, declared)) };
       } else {
-        const res = await fetch(base + path, { method, headers, body: body as unknown as BodyInit, signal: AbortSignal.timeout(20_000) });
+        const res = await fetch(base + path, { method, headers: plain, body: body as unknown as BodyInit, signal: AbortSignal.timeout(20_000) });
         outcome = { target, authorised, status: res.status, body: (await res.text()).slice(0, 2000) };
       }
     } catch (error) {
       // A reset connection is fine (the server may hang up on a body it will not read); a timeout is not.
       assert.notEqual((error as Error).name, 'TimeoutError', `${target} ${path}: the server stopped answering`);
-      outcome = { target, authorised, status: 0, body: '' };
+      outcome = { target, authorised, status: 0, body: `(no answer: ${(error as Error).message} ${(error as Error & { cause?: Error }).cause?.message ?? ''})` };
     }
     outcomes.push(outcome);
     (statuses[outcome.target] ??= {})[outcome.status] = (statuses[outcome.target]![outcome.status] ?? 0) + 1;
@@ -268,7 +269,7 @@ test('HTTP upload fuzzing: malformed, mislabelled and oversized files to every u
   }
 
   // The app still works: a real import, a real picture, a real clip, a real photo from a fresh team.
-  const host = { 'x-host-key': server.hostKey };
+  const host: Headers = { 'x-host-key': server.hostKey, [RIGHT]: true };
   const imported = await send('check', 'POST', `/api/import${query({ name: 'bundle.zip' })}`, host, Buffer.from(zipSync({ 'quiz.yaml': Buffer.from(QUIZ), 'images/a.png': PNG })));
   assert.equal(imported.status, 201, `a real import still works: ${imported.body}`);
   assert.equal((await send('check', 'POST', `/api/quizzes/${quizId}/images?name=a.png`, host, PNG)).status, 201, 'a real picture still works');
