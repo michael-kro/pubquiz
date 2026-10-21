@@ -40,6 +40,24 @@ let picking = preselectQuiz; // quiz id whose options are open
 let options = { mode: 'learn', count: 'all', shuffle: false, timeLimit: 'none' };
 let progressData = null;
 let timeUpSent = false; // exam simulation: the page asked for the paper to be taken in
+let displayOpen = false;
+
+// How the page looks: bigger text, an easier-to-read font, no clock. Kept on this device.
+const DISPLAY_STORAGE = 'pubquiz.practice.display';
+let display = { size: 'normal', easyFont: false, noClock: false };
+try {
+  display = { ...display, ...JSON.parse(stored(DISPLAY_STORAGE) ?? '{}') };
+} catch {
+  // Defaults.
+}
+function applyDisplay() {
+  document.body.classList.toggle('pr-text-lg', display.size === 'large');
+  document.body.classList.toggle('pr-text-xl', display.size === 'larger');
+  document.body.classList.toggle('pr-font-easy', display.easyFont);
+  document.body.classList.toggle('pr-no-clock', display.noClock);
+  store(DISPLAY_STORAGE, JSON.stringify(display));
+}
+applyDisplay();
 let busy = false;
 let error = '';
 let notice = '';
@@ -344,7 +362,28 @@ function topBar(extra) {
     'div',
     { class: 'pr-top' },
     h('div', { class: 'pr-who' }, h('span', { class: 'muted small' }, 'Practising as '), h('strong', {}, learner), ' ', h('button', { class: 'link-button small', onclick: () => { learner = ''; store(LEARNER_STORAGE, null); overview = null; screen = 'learner'; act(async () => { learners = await api('GET', '/learners'); }); } }, 'change')),
-    extra ?? null,
+    h('div', { class: 'pr-top-right' }, extra ?? null, displayButton()),
+  );
+}
+
+/** "Aa": text size, an easier-to-read font, and no clock. */
+function displayButton() {
+  const option = (label, checked, onchange, type = 'checkbox', name) => h('label', { class: 'pr-choice' }, h('input', { type, name, checked, onchange }), h('span', {}, label));
+  return h(
+    'div',
+    { class: 'pr-display-wrap' },
+    h('button', { type: 'button', class: 'pr-display-btn', title: 'Text size and font', 'aria-haspopup': 'true', 'aria-expanded': String(displayOpen), onclick: () => { displayOpen = !displayOpen; render(); } }, 'Aa'),
+    displayOpen
+      ? h(
+          'div',
+          { class: 'pr-display-menu', role: 'dialog', 'aria-label': 'Display' },
+          h('p', { class: 'small muted' }, 'Text size'),
+          ...[['normal', 'Normal'], ['large', 'Large'], ['larger', 'Larger']].map(([value, label]) => option(label, display.size === value, () => { display.size = value; applyDisplay(); render(); }, 'radio', 'pr-size')),
+          option('Easier-to-read font', display.easyFont, (e) => { display.easyFont = e.target.checked; applyDisplay(); render(); }),
+          option('Hide the clock', display.noClock, (e) => { display.noClock = e.target.checked; applyDisplay(); render(); }),
+          h('button', { type: 'button', class: 'small', onclick: () => { displayOpen = false; render(); } }, 'Done'),
+        )
+      : null,
   );
 }
 
@@ -364,8 +403,8 @@ function questionScreen() {
       'div',
       { class: 'pr-top' },
       h('button', { class: 'link-button', onclick: () => { screen = 'home'; render(); } }, '‹ Quizzes'),
-      h('div', { class: 'pr-meta' }, h('strong', {}, `${v.position + 1} of ${v.total}`), ' · ', timer),
-      h('button', { class: `pr-flag${q.flagged ? ' on' : ''}`, title: 'Flag this one to look at again', 'aria-pressed': String(q.flagged), onclick: () => doAction('flag') }, q.flagged ? '★ Flagged' : '☆ Flag'),
+      h('div', { class: 'pr-meta' }, h('strong', {}, `${v.position + 1} of ${v.total}`), h('span', { class: 'pr-clock' }, ' · ', timer)),
+      h('div', { class: 'pr-top-right' }, h('button', { class: `pr-flag${q.flagged ? ' on' : ''}`, title: 'Flag this one to look at again', 'aria-pressed': String(q.flagged), onclick: () => doAction('flag') }, q.flagged ? '★ Flagged' : '☆ Flag'), displayButton()),
     ),
     h('div', { class: 'pr-progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(v.total), 'aria-valuenow': String(v.answered) }, h('span', { style: `width:${(100 * v.answered) / v.total}%` })),
     h(
@@ -376,6 +415,8 @@ function questionScreen() {
       q.imageUrl ? h('img', { class: 'question-image pr-image', src: imageWithKey(q.imageUrl), alt: '' }) : null,
       q.audioUrl ? h('audio', { controls: true, preload: 'none', src: imageWithKey(q.audioUrl) }) : null,
       q.skipped && !answered ? h('p', { class: 'muted small' }, 'You skipped this one. You can still answer it.') : null,
+      q.hintsShown.length ? h('ol', { class: 'pr-hints' }, q.hintsShown.map((text) => h('li', {}, '💡 ', text))) : null,
+      q.hints > q.hintsShown.length && !feedback ? h('p', { class: 'pr-hint-row' }, h('button', { type: 'button', class: 'link-button', disabled: busy, onclick: () => doAction('hint') }, q.hintsShown.length ? `Another hint (${q.hints - q.hintsShown.length} left)` : `💡 Hint${q.hints > 1 ? ` (1 of ${q.hints})` : ''}`)) : null,
       feedback ? feedbackCard(q) : answerInput(q, answered && v.mode === 'learn'),
       v.mode === 'test' && answered ? h('p', { class: 'muted small center' }, 'Your answer: ', h('strong', {}, q.given.label), '. Answer again to change it.') : null,
     ),
@@ -524,6 +565,7 @@ function resultsScreen() {
           { class: item.correct ? 'right' : 'wrong' },
           h('p', { class: 'pr-review-q' }, h('span', { class: 'mark', 'aria-label': item.correct ? 'right' : 'wrong' }, item.correct ? '✓' : '✗'), ' ', item.text, item.flagged ? h('span', { class: 'muted small' }, ' ★') : null),
           item.correct ? null : h('p', { class: 'muted small' }, item.skipped ? 'Skipped' : `You said: ${item.given}`),
+          item.hintsUsed ? h('p', { class: 'muted small' }, `💡 ${item.hintsUsed} ${item.hintsUsed === 1 ? 'hint' : 'hints'} used`) : null,
           h('p', { class: 'small' }, item.type === 'ordering' ? 'Order: ' : 'Answer: ', h('strong', {}, item.answer)),
           item.info ? h('p', { class: 'pr-info small' }, '💡 ', item.info) : null,
         ),

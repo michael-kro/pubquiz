@@ -1107,6 +1107,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
           case 'back': practice.move(session, -1); break;
           case 'skip': practice.skip(session); break;
           case 'flag': practice.toggleFlag(session); break;
+          case 'hint': practice.hint(session, quiz); break;
           case 'reveal': return void json(200, practice.revealForSelfMarking(session, quiz)), true;
           case 'finish': close(session, quiz); await practiceStore.save(learner); return void json(200, practice.results(session, quiz)), true;
           case 'abandon': learner.sessions = learner.sessions.filter((s) => s !== session); break;

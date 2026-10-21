@@ -5,6 +5,7 @@ import { h, LETTERS } from './common.js';
 
 const TYPES = {
   'multiple-choice': 'Multiple choice',
+  'true-false': 'True or false',
   picture: 'Picture',
   music: 'Music',
   ordering: 'Put in order',
@@ -34,10 +35,11 @@ function normalise(text) {
 }
 
 function blankQuestion(type = 'multiple-choice', from = {}) {
-  const keep = { text: from.text ?? '', seconds: from.seconds, points: from.points, image: from.image, info: from.info };
+  const keep = { text: from.text ?? '', seconds: from.seconds, points: from.points, image: from.image, info: from.info, topic: from.topic, explain: from.explain, hint: from.hint };
   for (const k of Object.keys(keep)) if (keep[k] === undefined) delete keep[k];
   const typed = {
     'multiple-choice': { options: ['', '', '', ''], answer: 0 },
+    'true-false': { answer: true },
     picture: { accept: [''] },
     music: { accept: [''] },
     ordering: { items: Array(ORDERING_ITEMS).fill('') },
@@ -517,6 +519,23 @@ export async function mountEditor(container, { id, api, blobUrlFor, downloadWith
 
   function typeFields(q) {
     switch (q.type) {
+      case 'true-false':
+        return field(
+          'The statement is',
+          h(
+            'div',
+            { class: 'list-editor tf-choice' },
+            [true, false].map((value) =>
+              h(
+                'label',
+                { class: 'check' },
+                h('input', { type: 'radio', name: `answer-${q.key}`, checked: q.answer === value, onchange: () => { q.answer = value; changed(); } }),
+                value ? ' True' : ' False',
+              ),
+            ),
+          ),
+          'answer',
+        );
       case 'multiple-choice':
         return field(
           'Options (tick the right one)',
@@ -748,6 +767,32 @@ export async function mountEditor(container, { id, api, blobUrlFor, downloadWith
         q.info = v.trim() ? v : undefined;
         changed();
       }, { maxlength: '300' }), 'info'),
+      // For practice mode: what it is about, why the answer is right, and a nudge or three.
+      h(
+        'details',
+        { class: 'practice-fields', open: Boolean(q.topic || q.explain || q.hint) },
+        h('summary', {}, '🎓 For practice (optional)'),
+        field('Topic (progress is shown by topic; the round name if left blank)', textInput(q.topic, (v) => {
+          q.topic = v.trim() ? v : undefined;
+          changed();
+        }, { maxlength: '60', placeholder: 'e.g. Fractions' }), 'topic'),
+        field('Explanation (why the answer is right, shown after the question in practice)', h('textarea', {
+          rows: 2,
+          maxlength: '600',
+          oninput: (e) => {
+            q.explain = e.target.value.trim() ? e.target.value : undefined;
+            changed();
+          },
+        }, q.explain ?? ''), 'explain'),
+        field('Hints (one per line, up to three, given one at a time when asked)', h('textarea', {
+          rows: 2,
+          oninput: (e) => {
+            const lines = e.target.value.split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 3);
+            q.hint = lines.length === 0 ? undefined : lines.length === 1 ? lines[0] : lines;
+            changed();
+          },
+        }, Array.isArray(q.hint) ? q.hint.join('\n') : (q.hint ?? '')), 'hint'),
+      ),
       q.type === 'nearest' || q.type === 'buzzer' ? null : h(
         'label',
         { class: 'check' },
@@ -980,6 +1025,10 @@ export async function mountEditor(container, { id, api, blobUrlFor, downloadWith
         case 'multiple-choice':
           return h('div', { class: 'options' }, q.options.map((o, i) =>
             h('div', { class: `option opt-${i}${i === q.answer ? ' chosen' : ''}` }, h('span', { class: 'letter' }, LETTERS[i]), h('span', {}, o || '…')),
+          ));
+        case 'true-false':
+          return h('div', { class: 'options' }, ['True', 'False'].map((o, i) =>
+            h('div', { class: `option opt-${i}${(q.answer ? 0 : 1) === i ? ' chosen' : ''}` }, h('span', { class: 'letter' }, LETTERS[i]), h('span', {}, o)),
           ));
         case 'buzzer':
           return h('div', { class: 'center' }, h('div', { class: 'big-buzzer', style: 'width:150px;margin:12px auto;font-size:1.3rem' }, 'BUZZ!'));

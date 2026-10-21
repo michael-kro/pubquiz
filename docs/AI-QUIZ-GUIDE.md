@@ -38,6 +38,7 @@ Every question has `type` and `text` (required). Optional on any question: `seco
 | type | what to write | notes |
 |---|---|---|
 | `multiple-choice` | `options:` 2 to 6 choices, `answer:` the right one's position **counting from 0** | The most reliable type. Vary which position is right. |
+| `true-false` | `answer: true` or `answer: false` | Write the statement as `text`. Keep roughly half true. |
 | `letter` | `answer:` the full answer, for example `John Lennon` | Teams tap the **first letter** of the answer on a keypad. A leading "The", "A" or "An" is ignored (`The Beatles` is a B). For people, write the first name first (`John Lennon` is a J). If the answer starts with a number or symbol, add `letter: B` to say which letter to tap. |
 | `number` | `answer:` a number, optional `tolerance:` (give or take) | Exact numbers: years, counts. |
 | `nearest` | `answer:` a number | The closest guess wins. Good for "how many/how tall" bonus questions. |
@@ -47,6 +48,14 @@ Every question has `type` and `text` (required). Optional on any question: `seco
 | `buzzer` | `answer:` (for the host), optional `penalty:` | Teams race to buzz; the host judges. |
 
 Typed answers (`accept`) ignore capitals, punctuation, accents, a leading "the" and small typos, so list the main ways to write it: `accept: [Queen]`, `accept: [Bohemian Rhapsody, Bohemian Rhapsody by Queen]`.
+
+### For a practice or revision quiz
+
+If the quiz is for one learner revising (the 11+, SATs, a driving theory test) rather than a pub, add to every question: `topic` (a few words, e.g. `Fractions`, used to show progress by topic), `explain` (one or two sentences on **why** the answer is right, up to 600 characters) and `hint` (one nudge, or a list of up to three that get more specific, that do not give the answer away). Use `true-false` and `multiple-choice` mostly; keep `nearest` and `buzzer` for pub nights. Every answer must be checked: a wrong answer teaches the wrong thing.
+
+```yaml
+- { type: multiple-choice, text: "What is 3/4 of 20?", options: ["12", "15", "16"], answer: 1, topic: Fractions, hint: ["Find a quarter first.", "A quarter of 20 is 5."], explain: "A quarter of 20 is 5, and three quarters is three of those: 15." }
+```
 
 ### Examples of each type
 

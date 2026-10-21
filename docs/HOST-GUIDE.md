@@ -66,7 +66,10 @@ For one person revising for a test (the 11+, SATs, a driving theory test) rather
 - **For a parent or teacher:** the **🎓 Practice** pop-up on the host screen lists the learners; pick one for their attempts, weakest topics and most-missed questions, and a CSV.
 - Each learner's history is a file under `practice/` in your library. Nothing leaves the machine. **⋯ More → New host key** also changes the practice link.
 
-Write `info:` lines for the explanations, and check AI-written questions by hand: a wrong answer does more harm in practice than in a pub.
+- **Hints and explanations:** a question with `hint` offers **💡 Hint**, one at a time (the results say how many were used); `explain` is shown after the question instead of `info`; `topic` groups progress finer than rounds. The editor has these under **🎓 For practice** on each question, and [AI-QUIZ-GUIDE.md](AI-QUIZ-GUIDE.md) tells an AI to write them. `true-false` questions are good for revision.
+- **Aa** on the practice page: larger text, an easier-to-read font, and no clock at all.
+
+Check AI-written questions by hand: a wrong answer does more harm in practice than in a pub.
 
 ## How phones connect
 

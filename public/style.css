@@ -1162,3 +1162,23 @@ body.practice .reorder-item .move { font-size: 0.9rem; }
 .practice-attempts .link-button { padding: 0; font-weight: 700; }
 .pr-attempts .pr-bar { grid-template-columns: minmax(160px, 2fr) 1fr auto; }
 .pr-attempts .pr-bar-name { white-space: normal; }
+/* Practice stage 3: hints and display options. */
+.pr-hints { margin: 0 0 10px; padding-left: 18px; display: grid; gap: 4px; }
+.pr-hints li { background: #ffffff10; padding: 6px 10px; border-radius: 8px; list-style: none; margin-left: -18px; }
+.pr-hint-row { margin: 0 0 10px; }
+.pr-top-right { display: flex; align-items: center; gap: 8px; }
+.pr-display-wrap { position: relative; }
+.pr-display-btn { background: var(--surface); font-weight: 800; padding: 6px 10px; }
+.pr-display-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; background: var(--surface-2); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; min-width: 220px; box-shadow: 0 12px 32px #000a; text-align: left; }
+.pr-display-menu p { margin: 0; }
+.pr-display-menu input { width: auto; margin: 0; }
+.pr-display-menu .pr-choice { align-items: center; }
+body.pr-text-lg { font-size: 112.5%; }
+body.pr-text-xl { font-size: 125%; }
+body.pr-font-easy, body.pr-font-easy button, body.pr-font-easy input { font-family: Verdana, 'Trebuchet MS', Arial, sans-serif; letter-spacing: 0.02em; word-spacing: 0.08em; }
+body.pr-font-easy { line-height: 1.6; }
+body.pr-no-clock .pr-clock { display: none; }
+.practice-fields { margin: 10px 0; padding: 8px 12px; border-radius: 10px; background: #ffffff08; }
+.practice-fields summary { cursor: pointer; font-weight: 600; }
+.practice-fields textarea { width: 100%; font: inherit; font-size: 1rem; padding: 0.6em 0.8em; border-radius: var(--radius); border: 2px solid var(--surface-2); background: var(--surface); color: var(--text); resize: vertical; }
+.tf-choice { display: flex; gap: 18px; }
