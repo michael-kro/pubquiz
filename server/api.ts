@@ -205,7 +205,9 @@ export async function handleApi(req: IncomingMessage, res: ServerResponse, url: 
     sendJson(res, 404, { error: 'Not found.' });
   } catch (error) {
     if (error instanceof LibraryError || error instanceof BrandingError) sendJson(res, error.status, { error: error.message });
-    else {
+    else if (req.destroyed) {
+      // The client hung up part-way through its upload; nothing to answer and nothing wrong here.
+    } else {
       console.error(error);
       sendJson(res, 500, { error: 'Something went wrong.' });
     }

@@ -37,7 +37,8 @@ Checked locally before pushing: the steps run clean in Node 22.18 and 24 contain
 - **Base image security fixes — DONE:** the Dockerfile applies Debian's updates at build time (`apt-get upgrade`), the release build always pulls the newest base image, and Dependabot no longer proposes Node major versions.
 - **Release job — DONE:** the image is published with an SBOM and build provenance in the registry, plus a signed GitHub attestation (`gh attestation verify`). (The downloadable programs were dropped, so there is nothing else to build.)
 - **Container and runtime — DONE:** read-only container, all capabilities dropped, no privilege escalation; `npm ci --ignore-scripts` in the build; Node runs with `--disallow-code-generation-from-strings`; WebSocket upgrades from other websites are refused.
-- **Still to do:** the host and TV keys out of URLs (fragment links), and fuzzing of the HTTP uploads (zip import, photos, clips).
+- **HTTP upload fuzzing — DONE:** `test/slow/fuzz-http.test.ts` sends malformed, mislabelled, oversized and escaping files (and lying content-lengths and junk JSON) to the import, pictures, audio, clips, logo and photo uploads, with and without the key.
+- **Still to do:** the host and TV keys out of URLs (fragment links).
 
 ## Keeping noise down
 
