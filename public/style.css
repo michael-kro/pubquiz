@@ -1182,3 +1182,6 @@ body.pr-no-clock .pr-clock { display: none; }
 .practice-fields summary { cursor: pointer; font-weight: 600; }
 .practice-fields textarea { width: 100%; font: inherit; font-size: 1rem; padding: 0.6em 0.8em; border-radius: var(--radius); border: 2px solid var(--surface-2); background: var(--surface); color: var(--text); resize: vertical; }
 .tf-choice { display: flex; gap: 18px; }
+/* Quiz cards: the actions after Run are icons, the word in the tooltip. */
+.card-actions .icon-button { min-width: 44px; padding: 8px 12px; font-size: 1.15rem; line-height: 1; text-align: center; }
+.card-actions .icon-button.danger { font-size: 1.1rem; }
