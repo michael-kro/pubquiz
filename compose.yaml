@@ -32,6 +32,9 @@ services:
       # No internet at the venue? Set PUBQUIZ_LAN to 1 and PUBQUIZ_PUBLIC_HOST to this computer's
       # address on the venue Wi-Fi (e.g. 192.168.1.20), so the QR code points at the right place.
       PUBQUIZ_LAN: "0"
+      # Close the internet link by itself after this many hours (0 = never). A quiz night needs it for an
+      # evening, not till morning; the host screen can open a new one at any time.
+      PUBQUIZ_TUNNEL_HOURS: "${PUBQUIZ_TUNNEL_HOURS:-0}"
       PUBQUIZ_PUBLIC_HOST: ""
       # Already have a public address for this (your own name over HTTPS, a VPS, Tailscale Funnel)? Put it here instead.
       PUBQUIZ_PUBLIC_URL: ""

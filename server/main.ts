@@ -29,6 +29,8 @@ Options:
   -p, --port <n>         Port to listen on (default 3000)
       --lan              Local Wi-Fi only: no internet link
       --tunnel <name>    Internet link to use: cloudflare (default) or ngrok
+      --tunnel-hours <n> Close the internet link by itself after this many hours (e.g. 6); the host can open
+                         a new one from the host screen. Default: never
       --short-links      Ask is.gd for a short address for the internet link (it is sent to is.gd; the host link never is)
       --public-url <url> Use your own public address instead (e.g. a VPS or Tailscale Funnel)
       --public-host <h>  Address to put in the local join link (default: this laptop's Wi-Fi address)
@@ -102,6 +104,7 @@ async function main(): Promise<void> {
       fresh: { type: 'boolean', default: false },
       lan: { type: 'boolean', default: false },
       tunnel: { type: 'string', default: 'cloudflare' },
+      'tunnel-hours': { type: 'string' },
       'public-url': { type: 'string' },
       quizzes: { type: 'string' },
       'host-pin': { type: 'string' },
@@ -125,6 +128,8 @@ async function main(): Promise<void> {
   const port = Number(values.port);
   if (!Number.isInteger(port) || port < 0 || port > 65535) fail(`Invalid port: ${values.port}`);
   if (!['cloudflare', 'ngrok'].includes(values.tunnel)) fail(`Unknown --tunnel "${values.tunnel}". Use cloudflare or ngrok.`);
+  const tunnelHours = values['tunnel-hours'] === undefined ? 0 : Number(values['tunnel-hours']);
+  if (!Number.isFinite(tunnelHours) || tunnelHours < 0 || tunnelHours > 168) fail(`--tunnel-hours must be a number of hours from 0 (never) to 168, not "${values['tunnel-hours']}".`);
   const publicUrl = values['public-url']?.replace(/\/+$/, '');
   if (publicUrl && !/^https?:\/\//.test(publicUrl)) fail('--public-url must start with https:// (or http://).');
 
@@ -227,6 +232,17 @@ Press Ctrl+C to stop.
         const res = await fetch(`${url}/healthz`, { signal: AbortSignal.timeout(5000) });
         return (await res.text()) === quizServer.instanceId;
       },
+      ...(tunnelHours > 0
+        ? {
+            maxUptimeMs: tunnelHours * 3_600_000,
+            onExpire() {
+              const hours = tunnelHours === 1 ? '1 hour' : `${tunnelHours} hours`;
+              quizServer.setShortLinks(undefined);
+              quizServer.setNetwork({ mode: 'lan', tunnelAvailable: true, message: `The internet link was closed after ${hours} (--tunnel-hours). Teams on it have lost the quiz; press "Use the internet link" to open a new one, or carry on over local Wi-Fi.` });
+              console.log(`Internet link closed after ${hours} (--tunnel-hours). The host screen can open a new one.`);
+            },
+          }
+        : {}),
       onStatus(status: NetworkStatus) {
         quizServer.setNetwork(status);
         if (status.state !== 'up') quizServer.setShortLinks(undefined);

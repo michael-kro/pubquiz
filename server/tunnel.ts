@@ -18,6 +18,8 @@ export interface NetworkStatus {
   message?: string;
   /** Local mode chosen by the host, with an internet link available to switch back to. */
   tunnelAvailable?: boolean;
+  /** When the link will be closed by itself (--tunnel-hours), if that is set. */
+  expiresAt?: string;
 }
 
 export interface RunningTunnel {
@@ -220,6 +222,10 @@ export interface TunnelManagerOptions {
   startCheckIntervalMs?: number;
   /** Gives up on a tunnel that never becomes reachable, and starts a new one. */
   reachTimeoutMs?: number;
+  /** Closes the link by itself this long after start() (a quiz night does not need it open till morning). */
+  maxUptimeMs?: number;
+  /** Called once the link has been closed for that reason, so the host can be told and offered a new one. */
+  onExpire?: () => void;
 }
 
 /**
@@ -232,6 +238,9 @@ export class TunnelManager {
   private providerName = 'tunnel';
   private healthTimer: NodeJS.Timeout | undefined;
   private retryTimer: NodeJS.Timeout | undefined;
+  private expiryTimer: NodeJS.Timeout | undefined;
+  /** When the link is due to close by itself: set at start(), kept across restarts within that window. */
+  private expiresAt: number | undefined;
   private attempt = 0;
   private generation = 0;
   private active = false;
@@ -245,6 +254,7 @@ export class TunnelManager {
     this.stop();
     this.active = true;
     this.attempt = 0;
+    this.expiresAt = this.options.maxUptimeMs ? Date.now() + this.options.maxUptimeMs : undefined;
     void this.connect();
   }
 
@@ -253,8 +263,21 @@ export class TunnelManager {
     this.generation++;
     clearInterval(this.healthTimer);
     clearTimeout(this.retryTimer);
+    clearTimeout(this.expiryTimer);
     this.tunnel?.stop();
     this.tunnel = undefined;
+  }
+
+  /** Once the link is up, arranges for it to close when its time is up. */
+  private scheduleExpiry(current: () => boolean): void {
+    if (this.expiresAt === undefined) return;
+    clearTimeout(this.expiryTimer);
+    this.expiryTimer = setTimeout(() => {
+      if (!current()) return;
+      this.stop();
+      this.options.onExpire?.();
+    }, Math.max(0, this.expiresAt - Date.now()));
+    this.expiryTimer.unref();
   }
 
   private report(status: Omit<NetworkStatus, 'mode' | 'provider'>): void {
@@ -289,8 +312,9 @@ export class TunnelManager {
         return;
       }
       this.attempt = 0;
-      this.report({ state: 'up', publicUrl: tunnel.url });
+      this.report({ state: 'up', publicUrl: tunnel.url, ...(this.expiresAt ? { expiresAt: new Date(this.expiresAt).toISOString() } : {}) });
       this.watchHealth(tunnel.url, current);
+      this.scheduleExpiry(current);
     } catch (error) {
       if (current()) this.retry((error as Error).message);
     }

@@ -83,6 +83,7 @@ By default the quiz gets a free public `https://` link from Cloudflare (no accou
 | `--public-host <address>` (`PUBQUIZ_PUBLIC_HOST`) | The laptop's address in the local join link |
 | `--public-url <url>` (`PUBQUIZ_PUBLIC_URL`) | Your own public address instead (a VPS, Tailscale Funnel) |
 | `--tunnel ngrok` | ngrok instead of Cloudflare (needs ngrok installed and signed in) |
+| `--tunnel-hours <n>` (`PUBQUIZ_TUNNEL_HOURS`) | Close the internet link by itself after that many hours, e.g. `6`: a quiz night needs it for an evening, not till morning. The host screen says when it will close and can open a new one at any time. Default: never |
 | `--short-links` (`PUBQUIZ_SHORT_LINKS=1`) | Ask is.gd for a short address (is.gd currently refuses Cloudflare's) |
 | `--wifi-ssid <name>` `--wifi-password <pw>` | A second QR code for joining a Wi-Fi network, such as a hotspot |
 | `--port <n>` (`PUBQUIZ_PORT`) | Another port |

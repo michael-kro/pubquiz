@@ -384,7 +384,8 @@ function render() {
     return;
   }
   if (state.phase === 'idle') {
-    keepFocus(() => draw(openHostWarning(state), libraryView(state), hostQrOverlay(state), practiceOverlay(), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : null));
+    // The network banner shows here too: an internet link that closed by itself should be explained wherever the host is looking.
+    keepFocus(() => draw(openHostWarning(state), networkBanner(state), libraryView(state), hostQrOverlay(state), practiceOverlay(), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : null));
     return;
   }
   keepFocus(() => draw(
@@ -418,9 +419,11 @@ const NETWORK_LABELS = {
 
 function networkPill(network, compact = false) {
   const key = network.mode === 'lan' ? 'lan' : network.state;
+  const closes = network.expiresAt && network.state === 'up' ? `Closes by itself at ${new Date(network.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '';
+  const detail = [network.message, closes].filter(Boolean).join(' · ');
   // On a phone the pill is just its emoji, with the words as the tooltip and for screen readers.
-  if (compact) return h('span', { class: `network-pill compact ${key}`, role: 'img', 'aria-label': NETWORK_LABELS[key].replace(/^\S+\s/, ''), title: `${NETWORK_LABELS[key].replace(/^\S+\s/, '')}${network.message ? `: ${network.message}` : ''}` }, NETWORK_LABELS[key].split(' ')[0]);
-  return h('span', { class: `network-pill ${key}`, title: network.message ?? '' }, NETWORK_LABELS[key]);
+  if (compact) return h('span', { class: `network-pill compact ${key}`, role: 'img', 'aria-label': NETWORK_LABELS[key].replace(/^\S+\s/, ''), title: `${NETWORK_LABELS[key].replace(/^\S+\s/, '')}${detail ? `: ${detail}` : ''}` }, NETWORK_LABELS[key].split(' ')[0]);
+  return h('span', { class: `network-pill ${key}`, title: detail }, NETWORK_LABELS[key]);
 }
 
 /** The address to show people: the short link if there is one, else the full one, without the https://. */
@@ -491,8 +494,8 @@ function networkBanner(s) {
   if (n.mode === 'lan' && n.tunnelAvailable) {
     return h(
       'div',
-      { class: 'network-banner calm' },
-      h('span', {}, "Local Wi-Fi only: teams' phones must be on the same Wi-Fi as this laptop."),
+      { class: `network-banner${n.message ? '' : ' calm'}`, role: n.message ? 'alert' : undefined },
+      h('span', {}, n.message ? h('strong', {}, n.message, ' ') : null, "Local Wi-Fi only: teams' phones must be on the same Wi-Fi as this laptop."),
       h('button', { onclick: () => socket.send({ t: 'network', action: 'use-tunnel' }) }, 'Use the internet link'),
     );
   }

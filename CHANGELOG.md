@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **`--tunnel-hours <n>`** (`PUBQUIZ_TUNNEL_HOURS`): close the internet link by itself after that many hours (say 6), so a quiz night's link is not left open till morning. Off unless set. The host screen's network pill says when it will close, and once it has, a banner explains and **Use the internet link** opens a fresh one.
 - **Fix:** on the phone host, opening ☕ Break and then ⋯ (or the other way round) stacked both sheets at the bottom of the screen, which looked stuck; now one replaces the other.
 - The quizzes screen has a **⋯** menu for the less-used things: **📲 Host on my phone** and **🎓 Practice** live there now, so the bar stays short.
 - **Practice mode, stage 3:** questions can carry `topic`, `explain` and `hint` (the editor has them under **🎓 For practice**, and the AI quiz guide asks for them); practice shows hints one at a time, explanations after each question and progress by topic. A new `true-false` question type (played as a two-option multiple choice everywhere). **Aa** on the practice page: larger text, an easier-to-read font, and no clock.
