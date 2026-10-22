@@ -63,6 +63,18 @@ export class WindowCounter {
   }
 }
 
+/**
+ * True for a host name (with or without a port) that can only be a machine on this network: an address, localhost,
+ * a .local / .lan name or a single-word name. A public domain is never local, however it was pointed.
+ */
+export function looksLocalName(hostWithPort: string): boolean {
+  const host = hostWithPort.toLowerCase().replace(/:\d+$/, '');
+  if (host.startsWith('[')) return true; // an IPv6 address
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return true;
+  if (!host.includes('.')) return true;
+  return /\.(localhost|local|lan|home\.arpa|internal)$/.test(host);
+}
+
 const LOOPBACK = /^(::1|127\.\d+\.\d+\.\d+|::ffff:127\.\d+\.\d+\.\d+)$/;
 
 /**

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Hardening, from a hand-run penetration test:** a website whose domain was pointed at the laptop (DNS rebinding) can no longer open a connection, because the origin check now also requires a local-looking name; an address that sends 20 wrong host, TV or practice keys in a minute is paused for a minute; slow or half-open connections are dropped after about 10 seconds instead of a minute or more; a clip uploaded with a path in its file name gets a plain title.
+
 ## 0.2.0 — 2026-10-22
 
 - **Weekly releases, by themselves:** every Friday a workflow cuts the release from `develop` (version bumped, changelog dated), opens the pull request into `main` and merges it when green; a second workflow then tags, publishes the GitHub release, builds the image and opens the merge back into `develop`. `scripts/release.ts` does the changelog and version work, by hand too. The fortnightly reminder issue is gone.
