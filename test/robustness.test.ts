@@ -150,6 +150,10 @@ test('the server restarts mid-question and carries on: same room, same host link
   const aView = await a2.state('open');
   assert.equal(aView.score, scoresBefore);
   assert.equal(aView.myAnswerText, 'b', "A's answer from before the restart is kept");
+  assert.equal(aView.question.paused, true, 'the question comes back paused until the host resumes');
+  assert.equal((await host2.state('open')).question.pausedByRestart, true);
+  host2.send({ t: 'resume' });
+  await b2.state('open', (v: Message) => !v.question.paused);
   b2.send({ t: 'answer', value: 0 });
   await host2.state('closed');
   host2.send({ t: 'advance' });

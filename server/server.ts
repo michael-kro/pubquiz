@@ -167,6 +167,8 @@ interface Connection {
   messages: TokenBucket;
   dropped: number;
   teamId?: string;
+  /** A team's token that arrived while no quiz was running: tried again as soon as one is. */
+  waitingToken?: string;
   pingSentAt?: number;
   missedPings: number;
   /** Recent round-trip times in ms, newest last. */
@@ -404,6 +406,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     // A resumed game and its photo file are saved separately; make sure they agree about who has one.
     if (resume) for (const [teamId, version] of photos.versions()) game.setPhoto(teamId, version);
     await updateJoinUrl();
+    // Phones that tried to rejoin while nothing was running (after a restart) come straight back in.
+    for (const conn of connections) {
+      if (!conn.waitingToken || conn.role) continue;
+      const team = game.rejoin({ token: conn.waitingToken });
+      conn.waitingToken = undefined;
+      if (team) attachTeam(conn, team);
+    }
     broadcast();
   }
 
@@ -540,10 +549,15 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         }
         // A team cannot move to a laptop by carrying its code over.
         if (game?.phonesOnly && !looksLikePhone(conn.userAgent, msg.phone)) return send(conn, PHONES_ONLY_ERROR);
-        const team = game?.rejoin({ token: msg.token, code: msg.code });
+        if (!game) {
+          // Nothing running (the program restarted, say). Keep the token: when a quiz comes back, the team is let in by itself.
+          conn.waitingToken = msg.token;
+          return send(conn, { t: 'rejoin-failed', reason: 'no-quiz' });
+        }
+        const team = game.rejoin({ token: msg.token, code: msg.code });
         if (!team) {
           if (msg.token === undefined) joinGuesses.add(conn.address);
-          return send(conn, { t: 'rejoin-failed' });
+          return send(conn, { t: 'rejoin-failed', reason: 'unknown' });
         }
         attachTeam(conn, team);
         return;

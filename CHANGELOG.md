@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Fix, recovery after a crash or restart:** phones that reconnected before the host pressed **Resume** used to fall back to the join form and stay there; now they keep their place, show "The quiz is being restarted", and are let back in by themselves with their scores the moment the quiz resumes (a **Rejoin now** button is there as a fallback). A question that was open when the program stopped used to come back already closed, its clock having run on; it now comes back **paused** with the time it had left, the host screen says why, and **Resume** carries on.
 - The quiz cards' buttons after **Run** are icons now (✏️ edit, 📑 duplicate, ⬇ export, 🗑 delete, ↺ start over), with the word as the tooltip.
 - **Close the internet link by itself:** the network pill on the host screen now opens an internet-link panel with the address, when the link will close, a choice of 1 to 24 hours after which it closes by itself (remembered for next time; off unless set), and the switch to local Wi-Fi. Once a link has closed, a banner explains and **Use the internet link** opens a fresh one. Also `--tunnel-hours <n>` / `PUBQUIZ_TUNNEL_HOURS` for Docker and scripts.
 - **Fix:** on the phone host, opening ☕ Break and then ⋯ (or the other way round) stacked both sheets at the bottom of the screen, which looked stuck; now one replaces the other.

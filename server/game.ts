@@ -83,6 +83,8 @@ export interface GameSnapshot {
   version: 1;
   phase: Phase;
   questionIndex: number;
+  /** When this was taken: an open question is restored paused from this moment, so it keeps the time it had left. */
+  snapshotAt?: number;
   openedAt: number;
   endsAt: number;
   teams: { id: string; token: string; code: string; name: string; answers: [number, Answer][] }[];
@@ -194,6 +196,8 @@ export class Game {
   startOnLastAnswer = true;
   /** The host has closed the door: no new teams can join (teams already in can still rejoin). */
   joiningLocked = false;
+  /** The open question was paused because the program restarted, not by the host; cleared when the clock resumes. */
+  restoredPaused = false;
   /** What it costs to play, shown on the start screen ('' for free). */
   entryFee = '';
   /** Teams wait in `pending` until the host admits them (after they've paid). */
@@ -876,6 +880,7 @@ export class Game {
     if (this.pausedAt === undefined) return;
     const shift = this.now() - this.pausedAt;
     this.pausedAt = undefined;
+    this.restoredPaused = false;
     this.openedAt += shift;
     this.endsAt += shift;
     for (const [teamId, at] of this.sentAt) this.sentAt.set(teamId, at + shift);
@@ -953,6 +958,7 @@ export class Game {
       version: 1,
       phase: this.phase,
       questionIndex: this.questionIndex,
+      snapshotAt: this.now(),
       openedAt: this.openedAt,
       endsAt: this.endsAt,
       teams: [...this.teams.values()].map((t) => ({ id: t.id, token: t.token, code: t.code, name: t.name, answers: [...t.answers] })),
@@ -1023,7 +1029,13 @@ export class Game {
     for (const index of snapshot.skipped ?? []) game.skipped.add(index);
     for (const [index, order] of snapshot.displayOrders) game.displayOrders.set(index, order);
     for (const [index, marks] of snapshot.overrides) game.overrides.set(index, new Map(marks));
-    if (game.phase === 'open' && game.pausedAt === undefined) game.startTimer();
+    // A question that was open when the program stopped comes back paused, with the time it had left: the clock
+    // must not have run on while nobody could answer. The host presses Resume when the room is ready.
+    if (game.phase === 'open' && game.pausedAt === undefined) {
+      // Paused from the moment of the last save, so the time left is what was left then.
+      game.pausedAt = Math.min(snapshot.snapshotAt ?? game.now(), game.now());
+      game.restoredPaused = true;
+    }
     // A buzz that was still waiting out its short window when the program stopped is settled now.
     const buzzing = game.buzzStates.get(game.questionIndex);
     if (game.phase === 'open' && buzzing && !buzzing.current && buzzing.queue.length) game.settleBuzz(game.questionIndex);
@@ -1476,6 +1488,7 @@ export class Game {
       seconds: q.seconds,
       remainingMs: this.phase === 'open' ? Math.max(0, this.endsAt - (this.pausedAt ?? this.now())) : undefined,
       paused: this.phase === 'open' && this.pausedAt !== undefined ? true : undefined,
+      pausedByRestart: this.phase === 'open' && this.pausedAt !== undefined && this.restoredPaused ? true : undefined,
     };
   }
 

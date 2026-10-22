@@ -37,7 +37,7 @@ Teams on equal points are separated by their quicker total answer time.
 
 - **Joining:** teams scan the QR code, or open the address shown, and type a name: one phone per team. Swearing is blocked (`--no-name-filter` allows anything). **Max teams** is 30 by default. **📱 Teams must join from a phone** (ticked by default) turns away a laptop or desktop browser that opens the join link, so nobody plays with a big screen and a search engine beside them; phones and tablets are fine. It is a deterrent, not a lock: a determined cheat can pretend to be a phone. Untick it for a night where laptops are wanted (a quiz over a video call, say). **Lock the quiz when it starts** stops new teams once you press Start; **🔒 Lock joining now** does it at once.
 - **Entry fee and prizes** (start screen) show big on the TV and the phones. **Teams wait to be admitted (paid)** (ticked by default) holds new teams on a "Nearly there" screen until you press **Admit** or **Admit all**, so you can check they have paid; **×** turns one away.
-- **Rejoining:** a phone that loses signal or locks rejoins by itself with its score. A team that lost its page scans again and taps **Already joined? Rejoin with your team code**; the 6-character code is at the bottom of its screen and under **🔑 Team codes**.
+- **Rejoining:** a phone that loses signal or locks rejoins by itself with its score, and so does one that was waiting while the program restarted. A team that lost its page scans again and taps **Already joined? Rejoin with your team code**; the 6-character code is at the bottom of its screen and under **🔑 Team codes**.
 - **Team photos:** a team can add a photo (cropped, shrunk and checked by the server) that shows on the leaderboard, the TV and the podium. Untick **Team photos** to switch them off, hover over a team and press 🚫 to remove one, or start with `--no-photos`.
 - **⏱ Head starts:** give a slower player (a young child, say) up to 30 seconds. It is taken off that team's answer time when working out who was fastest, so they can still win the speed points. Set it before the question; a ⏱ badge shows beside the team.
 
@@ -111,6 +111,6 @@ By default the quiz gets a free public `https://` link from Cloudflare (no accou
 | A team closed its page | | Scan again and **Rejoin with your team code** |
 | Answers arrive late, or teams drop, on one Wi-Fi | Too many devices on it | Use the internet link so phones can use mobile data, and ask players to keep off the Wi-Fi for anything else |
 | Pictures load slowly | Big files referenced by hand | Pictures uploaded in the editor are shrunk for you; shrink others first (10 MB each at most) |
-| The laptop slept or the program closed | | Turn sleep off for the night. Start it again and press **Resume**: same room code, scores kept, phones rejoin |
+| The laptop slept or the program closed | | Turn sleep off for the night. Start it again and press **Resume**: same room code, scores and answers kept. Phones show "Reconnecting…" meanwhile and come back in by themselves, no retyping; a question that was open comes back **paused** with the time it had left, so press **Resume** (P) when the room is ready |
 
 **Fair timing:** each phone times its own answer and the server takes the connection delay off, so a slow connection is not penalised (up to 1.5 seconds).

@@ -138,6 +138,8 @@ export interface QuestionView {
   remainingMs?: number;
   /** The host has stopped the clock; remainingMs is frozen. */
   paused?: boolean;
+  /** Paused because the program was restarted with this question open, not by the host. */
+  pausedByRestart?: boolean;
 }
 
 /** The interval screen: shown everywhere while the host has the quiz on a break. */
@@ -302,7 +304,8 @@ export type ServerMessage =
   | { t: 'state'; view: TeamView | HostView | HostIdleView }
   | { t: 'quiz-ended' }
   | { t: 'joined'; token: string; teamName: string }
-  | { t: 'rejoin-failed' }
+  /** `no-quiz`: nothing is running right now (the program restarted, say); keep the token, the team will be let back in. `unknown`: the token or code means nothing here. */
+  | { t: 'rejoin-failed'; reason: 'no-quiz' | 'unknown' }
   | { t: 'host-key'; key: string }
   | { t: 'play-clip'; name: string; title: string }
   | { t: 'stop-clips' }

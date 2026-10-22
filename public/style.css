@@ -1194,3 +1194,7 @@ button.network-pill:hover { filter: brightness(1.15); }
 .network-hours { display: grid; gap: 6px; font-weight: 600; }
 .network-hours select { font: inherit; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); color: var(--text); border: 0; }
 .network-hours .muted { font-weight: 400; }
+/* A calm notice inside a form (the phone waiting to be let back in after a restart). */
+.notice-inline { background: var(--surface); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 10px; }
+.paused-banner.restart { background: var(--surface); }
+.restart-note { grid-column: 1 / -1; flex-basis: 100%; margin: 0 0 6px; padding: 8px 12px; border-radius: 10px; background: var(--surface); border-left: 4px solid var(--accent); font-size: 0.95rem; }
