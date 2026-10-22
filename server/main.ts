@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { BrandingProfiles, BrandingStore } from './branding.ts';
 import { Library } from './library.ts';
-import { chooseLibraryDir } from './settings.ts';
+import { chooseLibraryDir, MAX_TUNNEL_HOURS, readSavedTunnelHours, saveTunnelHours } from './settings.ts';
 import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
 import { createQuizServer, type QuizServer, type SessionOptions } from './server.ts';
 import { hashQuiz, readSession } from './session.ts';
@@ -29,8 +29,8 @@ Options:
   -p, --port <n>         Port to listen on (default 3000)
       --lan              Local Wi-Fi only: no internet link
       --tunnel <name>    Internet link to use: cloudflare (default) or ngrok
-      --tunnel-hours <n> Close the internet link by itself after this many hours (e.g. 6); the host can open
-                         a new one from the host screen. Default: never
+      --tunnel-hours <n> Close the internet link by itself after this many hours (e.g. 6). Also set by clicking the
+                         network pill on the host screen, which is remembered. Default: never
       --short-links      Ask is.gd for a short address for the internet link (it is sent to is.gd; the host link never is)
       --public-url <url> Use your own public address instead (e.g. a VPS or Tailscale Funnel)
       --public-host <h>  Address to put in the local join link (default: this laptop's Wi-Fi address)
@@ -128,8 +128,13 @@ async function main(): Promise<void> {
   const port = Number(values.port);
   if (!Number.isInteger(port) || port < 0 || port > 65535) fail(`Invalid port: ${values.port}`);
   if (!['cloudflare', 'ngrok'].includes(values.tunnel)) fail(`Unknown --tunnel "${values.tunnel}". Use cloudflare or ngrok.`);
-  const tunnelHours = values['tunnel-hours'] === undefined ? 0 : Number(values['tunnel-hours']);
-  if (!Number.isFinite(tunnelHours) || tunnelHours < 0 || tunnelHours > 168) fail(`--tunnel-hours must be a number of hours from 0 (never) to 168, not "${values['tunnel-hours']}".`);
+  // The command line sets it (and is remembered); otherwise what the host last chose on the host screen; otherwise never.
+  const tunnelHoursOption = values['tunnel-hours'] === undefined ? undefined : Number(values['tunnel-hours']);
+  if (tunnelHoursOption !== undefined && !(Number.isFinite(tunnelHoursOption) && tunnelHoursOption >= 0 && tunnelHoursOption <= MAX_TUNNEL_HOURS)) {
+    fail(`--tunnel-hours must be a number of hours from 0 (never) to ${MAX_TUNNEL_HOURS}, not "${values['tunnel-hours']}".`);
+  }
+  let tunnelHours = tunnelHoursOption ?? (await readSavedTunnelHours()) ?? 0;
+  if (tunnelHoursOption !== undefined) await saveTunnelHours(tunnelHoursOption).catch(() => {});
   const publicUrl = values['public-url']?.replace(/\/+$/, '');
   if (publicUrl && !/^https?:\/\//.test(publicUrl)) fail('--public-url must start with https:// (or http://).');
 
@@ -179,11 +184,19 @@ async function main(): Promise<void> {
       onNetworkAction(action) {
         if (action === 'use-lan') {
           tunnel?.stop();
-          server?.setNetwork({ mode: 'lan', tunnelAvailable: true });
+          server?.setNetwork({ mode: 'lan', tunnelAvailable: true, maxHours: tunnelHours });
           console.log('Switched to local Wi-Fi only.');
         } else if (tunnel) {
           tunnel.start();
         }
+      },
+      onTunnelHours(hours) {
+        tunnelHours = hours;
+        void saveTunnelHours(hours).catch(() => {});
+        tunnel?.setMaxUptime(hours ? hours * 3_600_000 : undefined);
+        // Not on the internet link right now: just show the new setting.
+        if (server && server.network.mode === 'lan') server.setNetwork({ ...server.network, maxHours: hours });
+        console.log(hours ? `The internet link will close by itself ${hours === 1 ? 'an hour' : `${hours} hours`} after opening.` : 'The internet link stays open until the program stops.');
       },
     });
   } catch (error) {
@@ -220,6 +233,8 @@ Press Ctrl+C to stop.
   const quizServer = server;
   if (publicUrl) {
     server.setNetwork({ mode: 'tunnel', state: 'up', provider: 'your own address', publicUrl });
+  } else if (values.lan) {
+    server.setNetwork({ mode: 'lan', maxHours: tunnelHours });
   } else if (!values.lan) {
     let lastState: string | undefined;
     tunnel = new TunnelManager({
@@ -232,19 +247,15 @@ Press Ctrl+C to stop.
         const res = await fetch(`${url}/healthz`, { signal: AbortSignal.timeout(5000) });
         return (await res.text()) === quizServer.instanceId;
       },
-      ...(tunnelHours > 0
-        ? {
-            maxUptimeMs: tunnelHours * 3_600_000,
-            onExpire() {
-              const hours = tunnelHours === 1 ? '1 hour' : `${tunnelHours} hours`;
-              quizServer.setShortLinks(undefined);
-              quizServer.setNetwork({ mode: 'lan', tunnelAvailable: true, message: `The internet link was closed after ${hours} (--tunnel-hours). Teams on it have lost the quiz; press "Use the internet link" to open a new one, or carry on over local Wi-Fi.` });
-              console.log(`Internet link closed after ${hours} (--tunnel-hours). The host screen can open a new one.`);
-            },
-          }
-        : {}),
+      ...(tunnelHours > 0 ? { maxUptimeMs: tunnelHours * 3_600_000 } : {}),
+      onExpire() {
+        const hours = tunnelHours === 1 ? 'an hour' : `${tunnelHours} hours`;
+        quizServer.setShortLinks(undefined);
+        quizServer.setNetwork({ mode: 'lan', tunnelAvailable: true, maxHours: tunnelHours, message: `The internet link was closed after ${hours}, as set. Teams on it have lost the quiz; press "Use the internet link" to open a new one, or carry on over local Wi-Fi.` });
+        console.log(`Internet link closed after ${hours}, as set. The host screen can open a new one.`);
+      },
       onStatus(status: NetworkStatus) {
-        quizServer.setNetwork(status);
+        quizServer.setNetwork({ ...status, maxHours: tunnelHours });
         if (status.state !== 'up') quizServer.setShortLinks(undefined);
         if (status.state === lastState && status.state !== 'down') return;
         lastState = status.state;

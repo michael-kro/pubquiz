@@ -75,6 +75,8 @@ Check AI-written questions by hand: a wrong answer does more harm in practice th
 
 By default the quiz gets a free public `https://` link from Cloudflare (no account needed) and the QR code points to it, so teams can use 4G or any Wi-Fi, and pub Wi-Fi that stops devices seeing each other does not matter. The first run downloads Cloudflare's `cloudflared` (checksum-verified). The host screen shows **🌐 Internet link** when it is ready, usually within 15 seconds; until then the QR code uses the local address. The link has a **new address after every restart**, and after it drops and comes back: teams already in rejoin by themselves, latecomers scan the new code.
 
+**The network pill** (🌐 Internet link / 📶 Local Wi-Fi, top of the host screen) opens the internet-link panel: the address with a copy button, when the link will close, **Close the internet link by itself** after 1 to 24 hours (a quiz night needs it for an evening, not till morning; remembered for next time), and the switch between the internet link and local Wi-Fi. When a link closes by itself a banner says so and **Use the internet link** opens a new one.
+
 **No internet at the venue?** Press **Switch to local Wi-Fi** (or start with `--lan`; in Docker `PUBQUIZ_LAN=1`) and put the phones on the same Wi-Fi as the laptop, or on the laptop's hotspot. Try a hotspot before the night: some do not let devices see each other, and most allow only a handful. If the QR code shows the wrong address (a laptop with several networks), set `--public-host` (`PUBQUIZ_PUBLIC_HOST`).
 
 | Option (Docker variable) | What it does |
@@ -83,7 +85,7 @@ By default the quiz gets a free public `https://` link from Cloudflare (no accou
 | `--public-host <address>` (`PUBQUIZ_PUBLIC_HOST`) | The laptop's address in the local join link |
 | `--public-url <url>` (`PUBQUIZ_PUBLIC_URL`) | Your own public address instead (a VPS, Tailscale Funnel) |
 | `--tunnel ngrok` | ngrok instead of Cloudflare (needs ngrok installed and signed in) |
-| `--tunnel-hours <n>` (`PUBQUIZ_TUNNEL_HOURS`) | Close the internet link by itself after that many hours, e.g. `6`: a quiz night needs it for an evening, not till morning. The host screen says when it will close and can open a new one at any time. Default: never |
+| `--tunnel-hours <n>` (`PUBQUIZ_TUNNEL_HOURS`) | Close the internet link by itself after that many hours, e.g. `6`. The same setting is under the network pill on the host screen (below), which is the usual way to set it. Default: never |
 | `--short-links` (`PUBQUIZ_SHORT_LINKS=1`) | Ask is.gd for a short address (is.gd currently refuses Cloudflare's) |
 | `--wifi-ssid <name>` `--wifi-password <pw>` | A second QR code for joining a Wi-Fi network, such as a hotspot |
 | `--port <n>` (`PUBQUIZ_PORT`) | Another port |

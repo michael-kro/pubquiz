@@ -115,6 +115,8 @@ export interface ServerOptions {
   publicHost?: string;
   /** Called when the host asks to switch between the internet link and local Wi-Fi. */
   onNetworkAction?: (action: 'use-lan' | 'use-tunnel') => void;
+  /** Called when the host sets after how many hours the internet link closes by itself (0: never). */
+  onTunnelHours?: (hours: number) => void;
   pingIntervalMs?: number;
 }
 
@@ -137,6 +139,7 @@ export interface QuizServer {
   startQuiz(quiz: Quiz, session?: SessionOptions): Promise<void>;
   endQuiz(): Promise<void>;
   setNetwork(status: NetworkStatus): void;
+  readonly network: NetworkStatus;
   /** Short addresses for the internet link (shown instead of the long one), or none. */
   setShortLinks(links: ShortLinks | undefined): void;
   close(): Promise<void>;
@@ -752,6 +755,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
       case 'network':
         if (hostOnly()) options.onNetworkAction?.(msg.action);
+        return;
+
+      case 'tunnel-hours':
+        if (hostOnly()) options.onTunnelHours?.(msg.hours);
         return;
 
       case 'kick': {
@@ -1468,6 +1475,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     setNetwork(status) {
       network = status;
       void updateJoinUrl().then(broadcast);
+    },
+    get network() {
+      return network;
     },
     setShortLinks(links) {
       shortLinks = links;

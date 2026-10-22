@@ -18,8 +18,10 @@ export interface NetworkStatus {
   message?: string;
   /** Local mode chosen by the host, with an internet link available to switch back to. */
   tunnelAvailable?: boolean;
-  /** When the link will be closed by itself (--tunnel-hours), if that is set. */
+  /** When the link will be closed by itself, if that is set. */
   expiresAt?: string;
+  /** The setting behind it: hours after opening (0: never), as the host can change it on the host screen. */
+  maxHours?: number;
 }
 
 export interface RunningTunnel {
@@ -241,6 +243,9 @@ export class TunnelManager {
   private expiryTimer: NodeJS.Timeout | undefined;
   /** When the link is due to close by itself: set at start(), kept across restarts within that window. */
   private expiresAt: number | undefined;
+  private windowStartedAt = 0;
+  /** The link that is up right now, so a changed limit can be re-reported and rescheduled. */
+  private up: { url: string; current: () => boolean } | undefined;
   private attempt = 0;
   private generation = 0;
   private active = false;
@@ -254,7 +259,8 @@ export class TunnelManager {
     this.stop();
     this.active = true;
     this.attempt = 0;
-    this.expiresAt = this.options.maxUptimeMs ? Date.now() + this.options.maxUptimeMs : undefined;
+    this.windowStartedAt = Date.now();
+    this.expiresAt = this.options.maxUptimeMs ? this.windowStartedAt + this.options.maxUptimeMs : undefined;
     void this.connect();
   }
 
@@ -266,18 +272,33 @@ export class TunnelManager {
     clearTimeout(this.expiryTimer);
     this.tunnel?.stop();
     this.tunnel = undefined;
+    this.up = undefined;
   }
 
   /** Once the link is up, arranges for it to close when its time is up. */
   private scheduleExpiry(current: () => boolean): void {
-    if (this.expiresAt === undefined) return;
     clearTimeout(this.expiryTimer);
+    if (this.expiresAt === undefined) return;
     this.expiryTimer = setTimeout(() => {
       if (!current()) return;
       this.stop();
       this.options.onExpire?.();
     }, Math.max(0, this.expiresAt - Date.now()));
     this.expiryTimer.unref();
+  }
+
+  /**
+   * Changes how long a link may stay open, from the host screen. The window still counts from when this link was
+   * opened; a link already past the new limit closes straight away. With no limit, a scheduled close is cancelled.
+   */
+  setMaxUptime(ms: number | undefined): void {
+    this.options.maxUptimeMs = ms;
+    if (!this.active) return;
+    this.expiresAt = ms ? this.windowStartedAt + ms : undefined;
+    if (this.up) {
+      this.report({ state: 'up', publicUrl: this.up.url, ...(this.expiresAt ? { expiresAt: new Date(this.expiresAt).toISOString() } : {}) });
+      this.scheduleExpiry(this.up.current);
+    }
   }
 
   private report(status: Omit<NetworkStatus, 'mode' | 'provider'>): void {
@@ -312,6 +333,7 @@ export class TunnelManager {
         return;
       }
       this.attempt = 0;
+      this.up = { url: tunnel.url, current };
       this.report({ state: 'up', publicUrl: tunnel.url, ...(this.expiresAt ? { expiresAt: new Date(this.expiresAt).toISOString() } : {}) });
       this.watchHealth(tunnel.url, current);
       this.scheduleExpiry(current);
@@ -351,6 +373,7 @@ export class TunnelManager {
     clearInterval(this.healthTimer);
     this.tunnel?.stop();
     this.tunnel = undefined;
+    this.up = undefined;
     const delays = this.options.retryDelaysMs ?? [2_000, 5_000, 10_000, 30_000];
     const delay = delays[Math.min(this.attempt++, delays.length - 1)]!;
     this.report({ state: 'down', message: `${reason} Retrying in ${Math.round(delay / 1000)} s.` });
