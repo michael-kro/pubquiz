@@ -717,7 +717,7 @@ function libraryView(s) {
                       ]
                     : h('button', { class: 'primary', disabled: q.problems > 0, onclick: () => runQuiz(q.id) }, 'Run ▶'),
                   h('a', { class: 'button icon-button', href: `#edit/${q.id}`, title: 'Edit', 'aria-label': `Edit "${q.title}"` }, '✏️'),
-                  h('button', { class: 'icon-button', title: 'Duplicate', 'aria-label': `Duplicate "${q.title}"`, onclick: act(() => api('POST', `/quizzes/${q.id}/duplicate`)) }, '⧉'),
+                  h('button', { class: 'icon-button', title: 'Duplicate', 'aria-label': `Duplicate "${q.title}"`, onclick: act(() => api('POST', `/quizzes/${q.id}/duplicate`)) }, '📑'),
                   // On a phone the card keeps to running and editing; exporting and deleting are laptop jobs.
                   isPhone() ? null : h('button', { type: 'button', class: 'icon-button', title: 'Export (a zip with the pictures)', 'aria-label': `Export "${q.title}"`, onclick: () => downloadWithKey(`/api/quizzes/${q.id}/export.zip`, `${q.id}.zip`).catch((error) => showNotice(error.message)) }, '⬇'),
                   isPhone()
