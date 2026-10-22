@@ -47,7 +47,7 @@ const HOST_ONLY_SAMPLES: Record<string, object> = {
   judge: { correct: true },
   kick: { teamId: 'x' },
   mark: { key: 'x', correct: true },
-  network: { action: 'use-lan' },
+  network: { action: 'use-tunnel' },
   'tunnel-hours': { hours: 6 },
   shutdown: {},
   'end-quiz': {},

@@ -304,7 +304,7 @@ body.tv .lobby { min-height: 0; padding-top: 2vh; }
 .quiz-title { font-weight: 800; font-size: 1.2rem; }
 .join-hint { flex: 1; color: var(--muted); }
 .network-pill { font-size: 0.9rem; font-weight: 600; padding: 4px 12px; border-radius: 999px; background: var(--surface-2); white-space: nowrap; }
-.network-pill.down { background: var(--wrong); color: #fff; }
+.network-pill.down, .network-pill.local { background: var(--wrong); color: #fff; }
 .network-pill.starting { color: var(--accent); }
 .network-banner {
   display: flex;
@@ -595,10 +595,6 @@ body.tv .lobby { min-height: 0; padding-top: 2vh; }
 .buzz-list .right { color: var(--right); font-weight: 800; }
 .buzz-list .wrong { color: var(--wrong); font-weight: 800; }
 
-.qr-pair { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; }
-.qr-step { margin: 0; text-align: center; }
-.qr-pair .qr { width: min(32vh, 300px); }
-.qr-step figcaption { margin-top: 10px; font-size: 1.15rem; }
 
 .time-up { font-weight: 800; color: var(--accent); }
 .mini-board { list-style: none; padding: 0; margin: 20px auto 0; max-width: 640px; display: grid; gap: 6px; }
@@ -844,7 +840,6 @@ body.tv .lobby { min-height: 0; padding-top: 2vh; }
 .lobby-extras { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; max-width: 660px; }
 body:not(.tv) .lobby { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 36px; min-height: 0; align-items: center; justify-content: start; padding-top: 8px; }
 body:not(.tv) .lobby .qr { width: min(38vh, 340px); }
-body:not(.tv) .lobby .qr-pair { flex-wrap: nowrap; }
 .lobby-extras .prizes-editor { margin: 8px 0; padding: 8px 12px 10px; }
 .lobby-extras .prizes-editor input[type=text], .lobby-extras .prizes-editor input:not([type]) { padding: 8px 10px; }
 @media (max-width: 1100px) { .lobby-extras { grid-template-columns: 1fr; } }
@@ -1060,9 +1055,6 @@ body.phone .phone-actions .break-menu button { min-height: 48px; font-size: 1rem
 /* The host's phone is a remote: no room code (teams just scan or open the link), and a smaller QR code so the start controls sit higher. */
 body.phone .room-code-line { display: none; }
 body.phone .lobby .qr, body.phone:not(.tv) .lobby .qr { width: min(52vw, 220px); }
-/* With a Wi-Fi code as well, the two codes share the width side by side; they must never push the page wider than the phone. */
-body.phone .lobby .qr-pair { gap: 16px; }
-body.phone .lobby .qr-pair .qr, body.phone:not(.tv) .lobby .qr-pair .qr { width: min(40vw, 160px); }
 
 /* Practice mode: one learner, a calm page that works on a phone, a tablet or a laptop. */
 body.practice { padding: 0; }
@@ -1199,3 +1191,6 @@ button.network-pill:hover { filter: brightness(1.15); }
 .paused-banner.restart { background: var(--surface); }
 .restart-note { grid-column: 1 / -1; flex-basis: 100%; margin: 0 0 6px; padding: 8px 12px; border-radius: 10px; background: var(--surface); border-left: 4px solid var(--accent); font-size: 0.95rem; }
 .network-card .shutdown-row { border-top: 1px solid var(--surface-2); padding-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* Shown where the join QR code goes while the internet link is still being set up. */
+.qr-waiting { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; background: var(--surface-2); color: var(--text); }

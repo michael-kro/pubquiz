@@ -18,7 +18,7 @@ chmod 600 "$LIB/.host-key"
 docker build --pull -t pubquiz:ci .
 docker rm -f pubquiz >/dev/null 2>&1 || true
 # No internet link (nothing for the scanner to reach but the app), and files owned by the runner so the app can write.
-docker run -d --name pubquiz --user "$(id -u):$(id -g)" -p 3000:3000 -e PUBQUIZ_LAN=1 -e PUBQUIZ_PUBLIC_HOST=localhost -v "$LIB:/data/quizzes" pubquiz:ci
+docker run -d --name pubquiz --user "$(id -u):$(id -g)" -p 127.0.0.1:3000:3000 -e PUBQUIZ_PUBLIC_URL=http://localhost:3000 -v "$LIB:/data/quizzes" pubquiz:ci
 
 for _ in $(seq 1 30); do
   if curl -fsS http://localhost:3000/healthz >/dev/null 2>&1; then echo "App is up"; exit 0; fi

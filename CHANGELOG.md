@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Breaking, no more plain HTTP on the local network:** the program now listens on the laptop itself only, and teams join through the HTTPS internet link, the one way in. Local Wi-Fi mode is gone, with `--lan`, `--public-host`, `--wifi-ssid` / `--wifi-password` (the venue Wi-Fi QR code) and the Docker variables `PUBQUIZ_LAN` and `PUBQUIZ_PUBLIC_HOST`; using one stops with a message that says why. The host key, which used to cross the venue Wi-Fi in clear, now only travels on the laptop or over HTTPS. Until the link is up the lobby says "Setting up the internet link…" instead of showing a QR code, and when it drops or closes by its timer the banner has **Try again** / **Use the internet link**. No internet at the venue: share your phone's connection with the laptop. In Docker, publish the port as `127.0.0.1:3000:3000` (the README, compose file and image comment are updated); `--bind` sets the listening address, and `--public-url` must be `https://` (plain `http://` only for localhost).
+
 - **⏻ Shut down** from the host screen: under the network pill, next to the close-by-itself timer, a button stops the whole program at the end of the night. Every screen is told first, the internet link closes, and an unfinished quiz offers Resume when the program is started again.
 ## 0.2.0 — 2026-10-22
 

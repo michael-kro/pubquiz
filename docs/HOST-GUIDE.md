@@ -73,21 +73,19 @@ Check AI-written questions by hand: a wrong answer does more harm in practice th
 
 ## How phones connect
 
-By default the quiz gets a free public `https://` link from Cloudflare (no account needed) and the QR code points to it, so teams can use 4G or any Wi-Fi, and pub Wi-Fi that stops devices seeing each other does not matter. The first run downloads Cloudflare's `cloudflared` (checksum-verified). The host screen shows **🌐 Internet link** when it is ready, usually within 15 seconds; until then the QR code uses the local address. The link has a **new address after every restart**, and after it drops and comes back: teams already in rejoin by themselves, latecomers scan the new code.
+Teams join through a free public `https://` link from Cloudflare (no account needed), so they can use 4G or any Wi-Fi, and pub Wi-Fi that stops devices seeing each other does not matter. The quiz is **never offered over plain HTTP on the local network**: the program listens on the laptop itself only (in Docker, the port is published to `127.0.0.1` only), so nothing on the venue Wi-Fi can reach it or read the host key. The first run downloads Cloudflare's `cloudflared` (checksum-verified). The host screen shows **🌐 Internet link** when it is ready, usually within 15 seconds; until then there is no QR code, only "Setting up the internet link…". The link has a **new address after every restart**, and after it drops and comes back: teams already in rejoin by themselves, latecomers scan the new code.
 
-**The network pill** (🌐 Internet link / 📶 Local Wi-Fi, top of the host screen) opens the internet-link panel: the address with a copy button, when the link will close, **Close the internet link by itself** after 1 to 24 hours (a quiz night needs it for an evening, not till morning; remembered for next time), the switch between the internet link and local Wi-Fi, and **⏻ Shut down the quiz program** for the end of the night: every screen is told, the internet link closes and the program stops; an unfinished quiz offers **Resume** when it is started again (in Docker, `docker start pubquiz`). From a phone it warns first that only the laptop can start the program again. When a link closes by itself a banner says so and **Use the internet link** opens a new one.
+**The network pill** (🌐 Internet link, top of the host screen) opens the internet-link panel: the address with a copy button, when the link will close, **Close the internet link by itself** after 1 to 24 hours (a quiz night needs it for an evening, not till morning; remembered for next time), a button to open a new link when it has closed or failed, and **⏻ Shut down the quiz program** for the end of the night: every screen is told, the internet link closes and the program stops; an unfinished quiz offers **Resume** when it is started again (in Docker, `docker start pubquiz`). From a phone it warns first that only the laptop can start the program again. When a link closes by itself a banner says so and **Use the internet link** opens a new one; if it fails, **Try again** does the same.
 
-**No internet at the venue?** Press **Switch to local Wi-Fi** (or start with `--lan`; in Docker `PUBQUIZ_LAN=1`) and put the phones on the same Wi-Fi as the laptop, or on the laptop's hotspot. Try a hotspot before the night: some do not let devices see each other, and most allow only a handful. If the QR code shows the wrong address (a laptop with several networks), set `--public-host` (`PUBQUIZ_PUBLIC_HOST`).
+**No internet at the venue?** The laptop needs some connection to open the link, but not the venue's: share your phone's mobile data with the laptop (a hotspot or tethering). Teams then use their own 4G or the venue Wi-Fi. There is no local-Wi-Fi mode any more (`--lan`, `--public-host` and `--wifi-ssid` were removed, and Docker stops with a message if `PUBQUIZ_LAN` or `PUBQUIZ_PUBLIC_HOST` is set), because it meant plain HTTP on a network full of strangers.
 
 | Option (Docker variable) | What it does |
 |---|---|
-| `--lan` (`PUBQUIZ_LAN=1`) | Local Wi-Fi only, no internet link |
-| `--public-host <address>` (`PUBQUIZ_PUBLIC_HOST`) | The laptop's address in the local join link |
-| `--public-url <url>` (`PUBQUIZ_PUBLIC_URL`) | Your own public address instead (a VPS, Tailscale Funnel) |
+| `--public-url <url>` (`PUBQUIZ_PUBLIC_URL`) | Your own `https://` address instead (a VPS, Tailscale Funnel) |
+| `--bind <address>` | Where the program listens (default `127.0.0.1`, this laptop only). Docker sets `0.0.0.0` inside the container; keep the port published as `127.0.0.1:3000:3000` |
 | `--tunnel ngrok` | ngrok instead of Cloudflare (needs ngrok installed and signed in) |
 | `--tunnel-hours <n>` (`PUBQUIZ_TUNNEL_HOURS`) | Close the internet link by itself after that many hours, e.g. `6`. The same setting is under the network pill on the host screen (below), which is the usual way to set it. Default: never |
 | `--short-links` (`PUBQUIZ_SHORT_LINKS=1`) | Ask is.gd for a short address (is.gd currently refuses Cloudflare's) |
-| `--wifi-ssid <name>` `--wifi-password <pw>` | A second QR code for joining a Wi-Fi network, such as a hotspot |
 | `--port <n>` (`PUBQUIZ_PORT`) | Another port |
 | `--quizzes <folder>` (`PUBQUIZ_LIBRARY`) | Where your library is |
 | `--no-open`, `--fresh` | Do not open the browser; start over instead of resuming |
@@ -96,17 +94,16 @@ By default the quiz gets a free public `https://` link from Cloudflare (no accou
 
 - `--host-pin <6+ characters>` (`PUBQUIZ_HOST_PIN`): open `/host` and type the PIN instead of using the long link, which is handy on a phone. Wrong guesses are limited.
 - **⋯ More → New host key** (or `--new-key`) replaces the key at once; the old host and TV links stop working.
-- `--host-local-only`: the host screen only works on the laptop itself, not over Wi-Fi or the internet link.
+- `--host-local-only`: the host screen only works on the laptop itself, not through the internet link.
 - The host and TV links carry their key after a `#` (`/host#key=…`). Browsers never send that part to any server, so the key cannot end up in a proxy's or a log's records; the page keeps it and takes it out of the address bar. Old `?key=` links still work once.
-- In local mode the host key travels over plain HTTP, so on shared Wi-Fi prefer the internet link.
+- The host key never crosses the venue Wi-Fi: the host page is on the laptop itself, or reached through the HTTPS internet link.
 
 ## If something goes wrong
 
 | What you see | Why | What to do |
 |---|---|---|
-| The QR code scans but the page never loads, and the host screen says **📶 Local Wi-Fi** | The phones are not on the laptop's Wi-Fi, or the venue Wi-Fi isolates devices | Press **Use the internet link**, or get the phones onto the laptop's network |
-| **🌐 Connecting to the internet…** for a long time | The laptop has no internet, or the venue blocks it | Check the laptop can browse; otherwise use local Wi-Fi mode (above) |
-| **⚠️ Internet link down** | The link dropped | It retries by itself; if it keeps failing, **Switch to local Wi-Fi** |
+| **🌐 Connecting to the internet…** for a long time | The laptop has no internet, or the venue blocks it | Check the laptop can browse; otherwise share your phone's connection with it (above) |
+| **⚠️ Internet link down** | The link dropped | It retries by itself; **Try again** in the banner tries at once. If it keeps failing, check the laptop's connection |
 | A phone says "Reconnecting…" | It lost signal or went to sleep | It rejoins by itself; the score is kept |
 | A team closed its page | | Scan again and **Rejoin with your team code** |
 | Answers arrive late, or teams drop, on one Wi-Fi | Too many devices on it | Use the internet link so phones can use mobile data, and ask players to keep off the Wi-Fi for anything else |
