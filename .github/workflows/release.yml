@@ -75,7 +75,6 @@ jobs:
         run: |
           set -euo pipefail
           tag=$(node scripts/release.ts prepare "$BUMP")
-          version=${tag#v}
           git config user.name 'pubquiz release'
           git config user.email 'release@users.noreply.github.com'
           git checkout -b "release/$tag"
