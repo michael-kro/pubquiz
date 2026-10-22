@@ -1198,3 +1198,4 @@ button.network-pill:hover { filter: brightness(1.15); }
 .notice-inline { background: var(--surface); border-left: 4px solid var(--accent); padding: 10px 14px; border-radius: 10px; }
 .paused-banner.restart { background: var(--surface); }
 .restart-note { grid-column: 1 / -1; flex-basis: 100%; margin: 0 0 6px; padding: 8px 12px; border-radius: 10px; background: var(--surface); border-left: 4px solid var(--accent); font-size: 0.95rem; }
+.network-card .shutdown-row { border-top: 1px solid var(--surface-2); padding-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }

@@ -190,6 +190,10 @@ async function main(): Promise<void> {
           tunnel.start();
         }
       },
+      onShutdown() {
+        // A moment for the "shutting down" message to reach every screen.
+        setTimeout(shutdown, 300);
+      },
       onTunnelHours(hours) {
         tunnelHours = hours;
         void saveTunnelHours(hours).catch(() => {});
@@ -277,12 +281,14 @@ Press Ctrl+C to stop.
 
   if (!values['no-open']) openBrowser(server.hostUrl);
 
-  const shutdown = () => {
-    tunnel?.stop();
-    quizServer.close().finally(() => process.exit(0));
-  };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
+
+  /** Stops the internet link and the server, then the process (Ctrl+C, a stop signal, or the host screen's Shut down). */
+  function shutdown(): void {
+    tunnel?.stop();
+    quizServer.close().finally(() => process.exit(0));
+  }
 }
 
 await main();

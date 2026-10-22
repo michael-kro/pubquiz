@@ -36,6 +36,7 @@ let pinError = '';
 
 let state = null;
 let fatal = null;
+let shutDown = false; // the host pressed Shut down: the program has stopped, so no reconnecting
 let notice = '';
 let noticeTimer;
 let library = { items: null, error: '' };
@@ -181,6 +182,9 @@ function connect() {
         key = message.key;
         rememberKey();
         showNotice('New host key saved in this browser. The old links no longer work; open the TV screen again from the TV screen button.');
+      } else if (message.t === 'shutdown') {
+        shutDown = true;
+        socket.stop();
       } else if (message.t === 'error') {
         if (state) showNotice(message.message);
         else if (!TV && storedKey() === key) {
@@ -350,6 +354,10 @@ function render() {
     app.replaceChildren(pinForm());
     return;
   }
+  if (shutDown) {
+    app.replaceChildren(h('section', { class: 'screen center' }, h('h1', {}, '⏻ Shut down'), h('p', {}, 'The quiz program has stopped, as asked from the host screen. Start it again to carry on: an unfinished quiz offers Resume, and phones come back in by themselves.')));
+    return;
+  }
   if (fatal) {
     app.replaceChildren(h('section', { class: 'screen center' }, h('h1', {}, "Can't open the host screen"), h('p', {}, fatal)));
     return;
@@ -480,6 +488,30 @@ function networkOverlay(s) {
               : h('button', { type: 'button', class: 'primary', onclick: () => { socket.send({ t: 'network', action: 'use-tunnel' }); close(); } }, 'Use the internet link'),
           )
         : null,
+      // The end of the night: stop the program itself, and with it the internet link.
+      h(
+        'div',
+        { class: 'shutdown-row' },
+        h(
+          'button',
+          {
+            type: 'button',
+            class: 'danger',
+            onclick: () => {
+              // From a phone there is no way back: the program can only be started again at the laptop.
+              const warning = isPhone()
+                ? 'You are on the phone. Once the program stops it can only be started again at the laptop that runs it (or with docker start): this phone cannot. Phones and the TV lose the quiz and the internet link closes; an unfinished quiz can be resumed then.\n\nShut the quiz program down now?'
+                : 'Shut the quiz program down? Phones and the TV lose the quiz; the internet link closes. An unfinished quiz can be resumed when the program is started again.';
+              if (confirm(warning)) {
+                socket.send({ t: 'shutdown' });
+                close();
+              }
+            },
+          },
+          '⏻ Shut down the quiz program',
+        ),
+        h('span', { class: 'muted small' }, isPhone() ? ' Stops everything until it is started again at the laptop; this phone cannot start it.' : ' Stops everything until it is started again (in Docker: docker start pubquiz).'),
+      ),
     ),
   );
 }

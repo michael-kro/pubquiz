@@ -3,6 +3,7 @@
 ## Unreleased
 
 - **Hardening, from a hand-run penetration test:** a website whose domain was pointed at the laptop (DNS rebinding) can no longer open a connection, because the origin check now also requires a local-looking name; an address that sends 20 wrong host, TV or practice keys in a minute is paused for a minute; slow or half-open connections are dropped after about 10 seconds instead of a minute or more; a clip uploaded with a path in its file name gets a plain title.
+- **⏻ Shut down** from the host screen: under the network pill, next to the close-by-itself timer, a button stops the whole program at the end of the night. Every screen is told first, the internet link closes, and an unfinished quiz offers Resume when the program is started again.
 
 ## 0.2.0 — 2026-10-22
 

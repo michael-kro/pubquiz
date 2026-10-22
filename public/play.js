@@ -152,6 +152,12 @@ const socket = connectSocket({
         stopped = true;
         socket.stop();
         break;
+      case 'shutdown':
+        // The token stays: if the quiz is started again, this phone is back in by itself.
+        ended = 'The quiz master has shut the quiz down. If it starts again, open this page again and you will be back in.';
+        stopped = true;
+        socket.stop();
+        break;
       case 'quiz-ended':
         // Keep showing the final results if the quiz finished; otherwise say it's over.
         writeToken(null);
