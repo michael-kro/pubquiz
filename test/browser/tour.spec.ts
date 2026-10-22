@@ -144,9 +144,9 @@ test('a whole quiz on every screen: host on a laptop and a phone, the TV and a t
       if (await v.page.locator('.codes-overlay').count()) note(`Escape did not close the pop-up on ${v.name} at ${label}`);
     }
   };
-  /** Clicks a visible button by its text, looking under the "⋯ More" menu when it is not on the screen itself. */
+  /** Clicks a visible button (or menu item) by its text, looking under the "⋯" menu when it is not on the screen itself. */
   const clickButton = async (v: View, text: string, { required = true } = {}): Promise<boolean> => {
-    const visible = () => v.page.getByRole('button', { name: text }).filter({ visible: true }).first();
+    const visible = () => v.page.locator('button, [role="menuitem"]').filter({ hasText: text }).filter({ visible: true }).first();
     if (!(await visible().count())) {
       const more = v.page.getByRole('button', { name: 'More actions' }).filter({ visible: true }).first();
       if (await more.count()) {
@@ -268,6 +268,19 @@ test('a whole quiz on every screen: host on a laptop and a phone, the TV and a t
       await check('head-starts');
       await pressEscape(hosts, 'head starts');
       for (const v of hosts) await v.page.evaluate(() => scrollTo(0, 0));
+      // The phone's bottom bar: ☕ and ⋯ are sheets in the same place, so opening one must close the other, and a tap elsewhere closes both.
+      const menus = () => hostPhone.page.locator('.break-menu').count();
+      await hostPhone.page.getByRole('button', { name: 'Break' }).tap();
+      await sleep(300);
+      expect(await menus(), 'the Break sheet opens').toBe(1);
+      await hostPhone.page.getByRole('button', { name: 'More actions' }).tap();
+      await sleep(300);
+      expect(await menus(), 'More replaces Break rather than stacking on it').toBe(1);
+      await expect(hostPhone.page.getByRole('menuitem', { name: /Clips/ })).toBeVisible();
+      await check('phone-more-menu');
+      await hostPhone.page.touchscreen.tap(195, 300);
+      await sleep(300);
+      expect(await menus(), 'a tap elsewhere closes the sheet').toBe(0);
     });
 
     await test.step('the whole quiz', async () => {

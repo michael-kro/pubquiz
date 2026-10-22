@@ -43,7 +43,7 @@ Teams on equal points are separated by their quicker total answer time.
 
 ## Hosting from your phone
 
-Open the host link on your phone, or press **📲 Host on my phone** for a QR code of it. The screen becomes a remote: the question and answers, and big buttons along the bottom. **Clips**, **Show join QR code**, **End round** and **End quiz** are under **⋯**. Keep the laptop on: it runs the quiz, the phone only controls it.
+Open the host link on your phone, or press **⋯ → 📲 Host on my phone** on the quizzes screen for a QR code of it. The screen becomes a remote: the question and answers, and big buttons along the bottom. **Clips**, **Show join QR code**, **End round** and **End quiz** are under **⋯**. Keep the laptop on: it runs the quiz, the phone only controls it.
 
 ## Sound clips
 
@@ -55,7 +55,7 @@ Open the host link on your phone, or press **📲 Host on my phone** for a QR co
 
 ## Practice mode
 
-For one person revising for a test (the 11+, SATs, a driving theory test) rather than a room full of teams. **🎓 Practice** on the host screen shows a link and a QR code for a separate page with its own key; give it to the learner, not to teams, since it shows the answers. It works wherever the join link works, including over the internet link.
+For one person revising for a test (the 11+, SATs, a driving theory test) rather than a room full of teams. **⋯ → 🎓 Practice** on the quizzes screen shows a link and a QR code for a separate page with its own key; give it to the learner, not to teams, since it shows the answers. It works wherever the join link works, including over the internet link.
 
 - The learner types a name, picks any quiz in your library, how many questions and whether to mix them up, and either **Learn as I go** (the answer, and the `info` line if the question has one, straight after each question) or **Test myself** (marked at the end).
 - No timer stops anything; a small clock just shows time spent. They can go **Back**, **Skip**, **Flag** a question to look at again, and stop and **Carry on** later. Buzzer questions become "show me the answer, did I have it?".
@@ -63,7 +63,7 @@ For one person revising for a test (the 11+, SATs, a driving theory test) rather
 - **Another look:** a question got wrong comes back after a day, then three days, a week and a fortnight; right every time and it stops. **Due for another look** on the learner's home page starts just those, per quiz.
 - **📈 My progress:** attempts over time, every topic (round) weakest first, the questions missed most, and **Download everything as CSV** or **Print**. Each results page can be downloaded or printed too.
 - **Exam practice:** in *Test myself*, set a **Time limit** and the paper is marked when the clock runs out, whatever state it is in.
-- **For a parent or teacher:** the **🎓 Practice** pop-up on the host screen lists the learners; pick one for their attempts, weakest topics and most-missed questions, and a CSV.
+- **For a parent or teacher:** the same **🎓 Practice** pop-up lists the learners; pick one for their attempts, weakest topics and most-missed questions, and a CSV.
 - Each learner's history is a file under `practice/` in your library. Nothing leaves the machine. **⋯ More → New host key** also changes the practice link.
 
 - **Hints and explanations:** a question with `hint` offers **💡 Hint**, one at a time (the results say how many were used); `explain` is shown after the question instead of `info`; `topic` groups progress finer than rounds. The editor has these under **🎓 For practice** on each question, and [AI-QUIZ-GUIDE.md](AI-QUIZ-GUIDE.md) tells an AI to write them. `true-false` questions are good for revision.
