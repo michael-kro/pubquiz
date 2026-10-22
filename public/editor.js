@@ -6,6 +6,7 @@ import { h, LETTERS } from './common.js';
 const TYPES = {
   'multiple-choice': 'Multiple choice',
   'true-false': 'True or false',
+  text: 'Typed answer',
   picture: 'Picture',
   music: 'Music',
   ordering: 'Put in order',
@@ -40,6 +41,7 @@ function blankQuestion(type = 'multiple-choice', from = {}) {
   const typed = {
     'multiple-choice': { options: ['', '', '', ''], answer: 0 },
     'true-false': { answer: true },
+    text: { accept: [''] },
     picture: { accept: [''] },
     music: { accept: [''] },
     ordering: { items: Array(ORDERING_ITEMS).fill('') },
@@ -49,8 +51,8 @@ function blankQuestion(type = 'multiple-choice', from = {}) {
     buzzer: { answer: '' },
   }[type];
   // Carry the answer across where the types are similar.
-  if ((type === 'picture' || type === 'music') && from.accept) typed.accept = [...from.accept];
-  if ((type === 'picture' || type === 'music') && from.type === 'letter' && from.answer) typed.accept = [from.answer];
+  if ((type === 'text' || type === 'picture' || type === 'music') && from.accept) typed.accept = [...from.accept];
+  if ((type === 'text' || type === 'picture' || type === 'music') && from.type === 'letter' && from.answer) typed.accept = [from.answer];
   if (type === 'letter' && from.accept?.[0]) typed.answer = from.accept[0];
   return { key: newKey(), type, ...keep, ...typed };
 }
@@ -580,6 +582,7 @@ export async function mountEditor(container, { id, api, blobUrlFor, downloadWith
           ),
           'options',
         );
+      case 'text':
       case 'picture':
       case 'music':
         return [
@@ -595,7 +598,7 @@ export async function mountEditor(container, { id, api, blobUrlFor, downloadWith
           'Accepted answers',
           listEditor(q, 'accept', { min: 1, max: 10, label: 'Answer', placeholder: (i) => (i === 0 ? 'The answer' : 'Another way to write it') }),
           'accept',
-          'Teams type their answer. Small typos, capitals and "the" are forgiven, and you check every answer before the reveal.',
+          q.type === 'text' ? 'Teams type their answer. Capitals, small typos and "the" are forgiven: matching answers start ticked, the rest unticked, and you check them all once the question closes, before the reveal. Marking is easier on the laptop than on a phone.' : 'Teams type their answer. Small typos, capitals and "the" are forgiven, and you check every answer before the reveal.',
         ),
         ];
       case 'ordering':
@@ -1035,6 +1038,7 @@ export async function mountEditor(container, { id, api, blobUrlFor, downloadWith
         case 'number':
         case 'nearest':
           return h('div', { class: 'text-answer' }, h('input', { disabled: true, placeholder: 'Type a number' }), h('div', { class: 'primary fake-button' }, 'Submit answer'));
+        case 'text':
         case 'picture':
         case 'music':
           return h('div', { class: 'text-answer' }, h('input', { disabled: true, placeholder: 'Type your answer' }), h('div', { class: 'primary fake-button' }, 'Submit answer'));

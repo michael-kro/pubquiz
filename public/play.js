@@ -525,7 +525,7 @@ function phaseView(s) {
         s.myAnswerText != null
           ? h('p', {}, 'You answered ', h('strong', {}, myAnswerLabel(s)))
           : h('p', {}, 'No answer from your team this time.'),
-        h('p', { class: 'muted' }, q.type === 'picture' || q.type === 'music' ? 'The quiz master is marking answers…' : 'Waiting for the reveal…'),
+        h('p', { class: 'muted' }, q.type === 'text' || q.type === 'picture' || q.type === 'music' ? 'The quiz master is marking answers…' : 'Waiting for the reveal…'),
       );
 
     case 'reveal': {
@@ -799,6 +799,7 @@ function answerInput(s, q, locked) {
       );
     }
 
+    case 'text':
     case 'picture':
     case 'music': {
       if (locked) return null;

@@ -460,6 +460,7 @@ function answerInput(q, lockedIn) {
         { class: 'options' },
         q.options.map((option, i) => h('button', { class: `option opt-${i}${q.given?.value === i ? ' chosen' : ''}`, disabled: busy || lockedIn, onclick: () => send(i) }, h('span', { class: 'letter' }, LETTERS[i]), h('span', {}, option))),
       );
+    case 'text':
     case 'picture':
     case 'music':
       return h(

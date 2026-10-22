@@ -1262,6 +1262,7 @@ export class Game {
         const correct = isRight(q, answer.value);
         return { correct, points: timed(correct, q.points) };
       }
+      case 'text':
       case 'picture':
       case 'music': {
         const correct = this.isCorrectText(questionIndex, q.accept, answer.value as string);
@@ -1507,6 +1508,7 @@ export class Game {
     switch (q.type) {
       case 'multiple-choice':
         return q.options[answer.value as number]!;
+      case 'text':
       case 'picture':
       case 'music':
       case 'letter':
