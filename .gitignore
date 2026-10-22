@@ -14,3 +14,5 @@ dist/
 # Browser tour output
 test-results/
 playwright-report/
+# Written by scripts/release.ts during a release
+release-notes.md
