@@ -1,4 +1,4 @@
-# The weekly release: every Thursday morning (or by hand), if anything is under "Unreleased" in CHANGELOG.md,
+# The weekly release: every Friday morning (or by hand), if anything is under "Unreleased" in CHANGELOG.md,
 # cut a release branch from develop with the version bumped and the changelog dated, open the pull request into
 # main and let it merge itself once every check is green. publish.yml then tags, publishes and builds the image.
 #
@@ -8,7 +8,7 @@ name: Release
 
 on:
   schedule:
-    - cron: '0 9 * * 4'
+    - cron: '0 9 * * 5'
   workflow_dispatch:
     inputs:
       bump:
