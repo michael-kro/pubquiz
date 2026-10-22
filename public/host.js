@@ -18,6 +18,8 @@ document.body.classList.toggle('phone', isPhone());
 if (TV) document.documentElement.style.fontSize = 'clamp(13px, min(1.12vw, 1.9vh), 36px)';
 const KEY_STORAGE = 'pubquiz.host-key';
 const params = new URLSearchParams(location.search);
+// The key rides in the fragment (#key=…), which browsers never send to any server or proxy. ?key= still works for old links.
+const hashParams = new URLSearchParams(location.hash.slice(1));
 
 function storedKey() {
   try {
@@ -28,7 +30,7 @@ function storedKey() {
 }
 
 // The host link carries the key. Without it, a host can type the PIN (if the program was started with one).
-let key = params.get('key') ?? (TV ? null : storedKey());
+let key = hashParams.get('key') ?? params.get('key') ?? (TV ? null : storedKey());
 let needPin = false;
 let pinError = '';
 
@@ -54,6 +56,54 @@ async function api(method, path, body) {
     throw error;
   }
   return data;
+}
+
+// Things only a key may fetch (clips, the QR codes with secrets in them, results, exports) are fetched with the key in a
+// header and shown from a blob URL, so the key is never part of any address that a proxy or a log could see.
+const blobUrls = new Map();
+const pendingBlobs = new Set();
+
+async function fetchWithKey(path) {
+  const res = await fetch(path, { headers: { [TV ? 'x-screen-key' : 'x-host-key']: key ?? '' } });
+  if (!res.ok) throw new Error(`Could not load that (${res.status}).`);
+  return res;
+}
+
+async function blobUrlFor(path) {
+  const url = URL.createObjectURL(await (await fetchWithKey(path)).blob());
+  const old = blobUrls.get(path);
+  if (old) URL.revokeObjectURL(old);
+  blobUrls.set(path, url);
+  return url;
+}
+
+/** For an <img> inside a render: the cached blob URL, or '' while it loads (the page is redrawn when it arrives). */
+function imageWithKey(path) {
+  if (blobUrls.has(path)) return blobUrls.get(path);
+  if (!pendingBlobs.has(path)) {
+    pendingBlobs.add(path);
+    blobUrlFor(path)
+      .then(() => render())
+      .catch(() => {})
+      .finally(() => pendingBlobs.delete(path));
+  }
+  return '';
+}
+
+async function playWithKey(audio, path) {
+  audio.src = await blobUrlFor(path);
+  await audio.play();
+}
+
+async function downloadWithKey(path, fallbackName) {
+  const res = await fetchWithKey(path);
+  const name = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? fallbackName;
+  const url = URL.createObjectURL(await res.blob());
+  const link = h('a', { href: url, download: name });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 const isBrandingPage = () => !TV && location.hash === '#branding';
@@ -123,8 +173,7 @@ function connect() {
         preload(state.preloadImage);
         if (!TV) rememberKey();
       } else if (message.t === 'play-clip' && TV) {
-        tvClip.src = message.url;
-        void tvClip.play().catch(() => {});
+        void playWithKey(tvClip, `/clip/${encodeURIComponent(message.name)}`).catch(() => {});
         showClipToast(`🔊 ${message.title}`);
       } else if (message.t === 'stop-clips' && TV) {
         tvClip.pause();
@@ -157,7 +206,7 @@ function rememberKey() {
     return;
   }
   // Once the browser has it, the secret needn't sit in the address bar (screenshots, shoulder-surfers).
-  if (params.has('key')) history.replaceState(null, '', location.pathname + location.hash);
+  if (params.has('key') || hashParams.has('key')) history.replaceState(null, '', location.pathname);
 }
 
 function forgetKey() {
@@ -222,15 +271,18 @@ function advance() {
 // Space, → and PageDown (what presentation clickers send) all move on.
 /** Escape closes whichever pop-up is open, the one on top first. Returns whether there was one. */
 function closeTopPopup() {
-  if (hostQrOpen) hostQrOpen = false;
+  if (networkOpen) networkOpen = false;
+  else if (practiceOpen) practiceOpen = false;
+  else if (hostQrOpen) hostQrOpen = false;
   else if (headStartOpen) headStartOpen = false;
   else if (clipsOpen) clipsOpen = false;
   else if (settingsOpen) settingsOpen = false;
   else if (codesOpen) codesOpen = false;
   else if (state?.showJoin && !TV) socket?.send({ t: 'show-join', shown: false });
-  else if (moreOpen || breakMenuOpen) {
+  else if (moreOpen || breakMenuOpen || libraryMoreOpen) {
     moreOpen = false;
     breakMenuOpen = false;
+    libraryMoreOpen = false;
   } else return false;
   render();
   return true;
@@ -333,7 +385,8 @@ function render() {
     return;
   }
   if (state.phase === 'idle') {
-    keepFocus(() => draw(openHostWarning(state), libraryView(state), hostQrOverlay(state), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : null));
+    // The network banner shows here too: an internet link that closed by itself should be explained wherever the host is looking.
+    keepFocus(() => draw(openHostWarning(state), networkBanner(state), libraryView(state), hostQrOverlay(state), practiceOverlay(), networkOverlay(state), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : null));
     return;
   }
   keepFocus(() => draw(
@@ -348,6 +401,8 @@ function render() {
     codesOverlay(state),
     joinOverlay(state),
     hostQrOverlay(state),
+    practiceOverlay(),
+    networkOverlay(state),
     headStartOverlay(state),
     clipsOverlay(),
     settingsOverlay(),
@@ -364,11 +419,69 @@ const NETWORK_LABELS = {
   down: '⚠️ Internet link down',
 };
 
+const closesAt = (network) => (network.expiresAt && network.state === 'up' ? new Date(network.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
+
+/** The network state. On the host it is a button that opens the internet-link panel; the TV just shows it. */
 function networkPill(network, compact = false) {
   const key = network.mode === 'lan' ? 'lan' : network.state;
+  const closes = closesAt(network) ? `Closes by itself at ${closesAt(network)}` : '';
+  const detail = [network.message, closes].filter(Boolean).join(' · ');
+  const words = NETWORK_LABELS[key].replace(/^\S+\s/, '');
+  const attrs = TV ? {} : { type: 'button', onclick: () => { networkOpen = true; render(); } };
   // On a phone the pill is just its emoji, with the words as the tooltip and for screen readers.
-  if (compact) return h('span', { class: `network-pill compact ${key}`, role: 'img', 'aria-label': NETWORK_LABELS[key].replace(/^\S+\s/, ''), title: `${NETWORK_LABELS[key].replace(/^\S+\s/, '')}${network.message ? `: ${network.message}` : ''}` }, NETWORK_LABELS[key].split(' ')[0]);
-  return h('span', { class: `network-pill ${key}`, title: network.message ?? '' }, NETWORK_LABELS[key]);
+  if (compact) return h(TV ? 'span' : 'button', { ...attrs, class: `network-pill compact ${key}`, 'aria-label': `${words}. Internet link settings`, title: `${words}${detail ? `: ${detail}` : ''}` }, NETWORK_LABELS[key].split(' ')[0]);
+  return h(TV ? 'span' : 'button', { ...attrs, class: `network-pill ${key}`, title: detail || (TV ? '' : 'Internet link settings') }, NETWORK_LABELS[key]);
+}
+
+// The internet-link panel: what the link is, when it closes, and how long links may stay open.
+let networkOpen = false;
+const TUNNEL_HOUR_CHOICES = [[0, 'Never (until the program stops)'], [1, 'After 1 hour'], [2, 'After 2 hours'], [4, 'After 4 hours'], [6, 'After 6 hours'], [8, 'After 8 hours'], [12, 'After 12 hours'], [24, 'After 24 hours']];
+
+function networkOverlay(s) {
+  if (TV || !networkOpen || !s) return null;
+  const n = s.network;
+  const close = () => {
+    networkOpen = false;
+    render();
+  };
+  const key = n.mode === 'lan' ? 'lan' : n.state;
+  const canSwitch = n.mode === 'tunnel' || n.tunnelAvailable;
+  const choices = TUNNEL_HOUR_CHOICES.some(([h]) => h === (n.maxHours ?? 0)) ? TUNNEL_HOUR_CHOICES : [...TUNNEL_HOUR_CHOICES, [n.maxHours, `After ${n.maxHours} hours`]];
+  return h(
+    'div',
+    { class: 'codes-overlay', role: 'dialog', 'aria-label': 'Internet link', onclick: (e) => e.target === e.currentTarget && close() },
+    h(
+      'div',
+      { class: 'codes-card network-card' },
+      h('div', { class: 'codes-head' }, h('h2', {}, NETWORK_LABELS[key]), h('button', { type: 'button', onclick: close }, 'Close')),
+      n.mode === 'tunnel' && n.state === 'up' && n.publicUrl ? h('p', { class: 'copy-link' }, h('code', {}, n.publicUrl.replace(/^https?:\/\//, '')), ' ', h('button', { type: 'button', onclick: () => copyText(n.publicUrl) }, '📋 Copy')) : null,
+      n.message ? h('p', { class: n.mode === 'lan' ? 'muted' : 'error' }, n.message) : null,
+      n.mode === 'tunnel' && n.state === 'up' ? h('p', { class: 'muted' }, closesAt(n) ? `Closes by itself at ${closesAt(n)}.` : 'Stays open until the program stops.') : null,
+      n.mode === 'lan' ? h('p', { class: 'muted' }, "Local Wi-Fi only: teams' phones must be on the same Wi-Fi as this laptop.") : null,
+      canSwitch
+        ? h(
+            'label',
+            { class: 'network-hours' },
+            'Close the internet link by itself ',
+            h(
+              'select',
+              { 'aria-label': 'Close the internet link by itself after', onchange: (e) => socket.send({ t: 'tunnel-hours', hours: Number(e.target.value) }) },
+              choices.map(([hours, label]) => h('option', { value: String(hours), selected: (n.maxHours ?? 0) === hours }, label)),
+            ),
+            h('span', { class: 'muted small' }, ' A quiz night needs the link for an evening, not till morning. Remembered for next time; a new link can be opened any time.'),
+          )
+        : h('p', { class: 'muted small' }, 'Started without an internet link (--lan).'),
+      canSwitch
+        ? h(
+            'div',
+            { class: 'card-actions' },
+            n.mode === 'tunnel'
+              ? h('button', { type: 'button', onclick: () => { socket.send({ t: 'network', action: 'use-lan' }); close(); } }, 'Switch to local Wi-Fi')
+              : h('button', { type: 'button', class: 'primary', onclick: () => { socket.send({ t: 'network', action: 'use-tunnel' }); close(); } }, 'Use the internet link'),
+          )
+        : null,
+    ),
+  );
 }
 
 /** The address to show people: the short link if there is one, else the full one, without the https://. */
@@ -439,8 +552,8 @@ function networkBanner(s) {
   if (n.mode === 'lan' && n.tunnelAvailable) {
     return h(
       'div',
-      { class: 'network-banner calm' },
-      h('span', {}, "Local Wi-Fi only: teams' phones must be on the same Wi-Fi as this laptop."),
+      { class: `network-banner${n.message ? '' : ' calm'}`, role: n.message ? 'alert' : undefined },
+      h('span', {}, n.message ? h('strong', {}, n.message, ' ') : null, "Local Wi-Fi only: teams' phones must be on the same Wi-Fi as this laptop."),
       h('button', { onclick: () => socket.send({ t: 'network', action: 'use-tunnel' }) }, 'Use the internet link'),
     );
   }
@@ -452,8 +565,10 @@ function openEditor(id) {
   app.replaceChildren(h('section', { class: 'screen center' }, h('p', { class: 'muted' }, 'Opening the editor…')));
   mountEditor(app, {
     id,
-    hostKey: key,
     api,
+    blobUrlFor,
+    downloadWithKey,
+    notice: showNotice,
     onExit() {
       location.hash = '';
       void loadLibrary();
@@ -588,7 +703,7 @@ function libraryView(s) {
         : null,
       h('a', { class: 'button', href: '#branding' }, 'Branding'),
       h('button', { type: 'button', onclick: openSettings, title: 'Where your quizzes are kept' }, '⚙ Settings'),
-      isPhone() ? null : h('button', { type: 'button', onclick: () => { hostQrOpen = true; render(); }, title: 'A QR code to open this host page on your phone' }, '📲 Host on my phone'),
+      libraryMoreMenu(),
       h(
         'label',
         { class: 'button' },
@@ -655,22 +770,23 @@ function libraryView(s) {
                 h(
                   'div',
                   { class: 'card-actions' },
+                  // Run is the one with words; the rest are icons with the word as the tooltip (and for screen readers).
                   q.unfinished
                     ? [
                         h('button', { class: 'primary', disabled: q.problems > 0, onclick: () => runQuiz(q.id) }, 'Resume ▶'),
-                        h('button', { disabled: q.problems > 0, onclick: () => confirm('Start again from the beginning? The unfinished scores are lost.') && runQuiz(q.id, true) }, 'Start over'),
+                        h('button', { class: 'icon-button', title: 'Start over', 'aria-label': `Start "${q.title}" over`, disabled: q.problems > 0, onclick: () => confirm('Start again from the beginning? The unfinished scores are lost.') && runQuiz(q.id, true) }, '↺'),
                       ]
                     : h('button', { class: 'primary', disabled: q.problems > 0, onclick: () => runQuiz(q.id) }, 'Run ▶'),
-                  h('a', { class: 'button', href: `#edit/${q.id}` }, 'Edit'),
-                  h('button', { onclick: act(() => api('POST', `/quizzes/${q.id}/duplicate`)) }, 'Duplicate'),
+                  h('a', { class: 'button icon-button', href: `#edit/${q.id}`, title: 'Edit', 'aria-label': `Edit "${q.title}"` }, '✏️'),
+                  h('button', { class: 'icon-button', title: 'Duplicate', 'aria-label': `Duplicate "${q.title}"`, onclick: act(() => api('POST', `/quizzes/${q.id}/duplicate`)) }, '📑'),
                   // On a phone the card keeps to running and editing; exporting and deleting are laptop jobs.
-                  isPhone() ? null : h('a', { class: 'button', href: `/api/quizzes/${q.id}/export.zip?key=${encodeURIComponent(key)}` }, 'Export'),
+                  isPhone() ? null : h('button', { type: 'button', class: 'icon-button', title: 'Export (a zip with the pictures)', 'aria-label': `Export "${q.title}"`, onclick: () => downloadWithKey(`/api/quizzes/${q.id}/export.zip`, `${q.id}.zip`).catch((error) => showNotice(error.message)) }, '⬇'),
                   isPhone()
                     ? null
                     : h(
                         'button',
-                        { class: 'danger', onclick: act(async () => confirm(`Delete "${q.title}"?`) && (await api('DELETE', `/quizzes/${q.id}`))) },
-                        'Delete',
+                        { class: 'danger icon-button', title: 'Delete', 'aria-label': `Delete "${q.title}"`, onclick: act(async () => confirm(`Delete "${q.title}"?`) && (await api('DELETE', `/quizzes/${q.id}`))) },
+                        '🗑',
                       ),
                 ),
               ),
@@ -904,7 +1020,7 @@ function topBar(s) {
     ),
     networkPill(s.network),
     soundButton(),
-    h('a', { class: 'button', href: `/screen?key=${encodeURIComponent(s.screenKey)}`, target: '_blank', rel: 'noopener', title: 'Open this on the TV or projector' }, 'TV ↗'),
+    h('a', { class: 'button', href: `/screen#key=${encodeURIComponent(s.screenKey)}`, target: '_blank', rel: 'noopener', title: 'Open this on the TV or projector' }, 'TV ↗'),
     breakControl(s),
     h('button', { type: 'button', onclick: openClips, title: 'Play sound clips whenever you like' }, '🎵 Clips'),
     s.pendingTeams?.length ? h('button', { type: 'button', class: 'pending-pill', title: 'Let in every team that is waiting', onclick: () => socket.send({ t: 'admit-all' }) }, `⏳ ${s.pendingTeams.length} waiting · Admit`) : null,
@@ -932,7 +1048,7 @@ function stage(s) {
           ? h(
               'div',
               { class: 'qr-pair' },
-              h('figure', { class: 'qr-step' }, h('img', { class: 'qr', src: `/wifi-qr.svg?key=${encodeURIComponent(TV ? key : s.screenKey)}`, alt: `QR code to join the ${s.wifi.ssid} Wi-Fi network` }), h('figcaption', {}, h('strong', {}, '1. Join the Wi-Fi'), h('br'), s.wifi.ssid, s.wifi.password ? h('br') : null, s.wifi.password ? `Password: ${s.wifi.password}` : null)),
+              h('figure', { class: 'qr-step' }, h('img', { class: 'qr', src: imageWithKey('/wifi-qr.svg'), alt: `QR code to join the ${s.wifi.ssid} Wi-Fi network` }), h('figcaption', {}, h('strong', {}, '1. Join the Wi-Fi'), h('br'), s.wifi.ssid, s.wifi.password ? h('br') : null, s.wifi.password ? `Password: ${s.wifi.password}` : null)),
               h('figure', { class: 'qr-step' }, h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }), h('figcaption', {}, h('strong', {}, '2. Open the quiz'))),
             )
           : h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }),
@@ -1069,7 +1185,7 @@ function stage(s) {
           ? h(
               'p',
               { class: 'center' },
-              h('a', { class: 'button', href: `/results.csv?key=${encodeURIComponent(key)}`, download: '' }, 'Download results (CSV)'),
+              h('button', { type: 'button', onclick: () => downloadWithKey('/results.csv', 'results.csv').catch((error) => showNotice(error.message)) }, 'Download results (CSV)'),
             )
           : null,
       );
@@ -1080,7 +1196,7 @@ function stage(s) {
 
 /** Time's up: the answer, for the host to check (and change) before it goes on the screens. */
 function answerReview(s, q) {
-  if (q.type === 'buzzer' || q.type === 'picture' || q.type === 'music') return null; // Typed answers have their own review list.
+  if (q.type === 'buzzer' || q.type === 'text' || q.type === 'picture' || q.type === 'music') return null; // Typed answers have their own review list.
   const edit = (() => {
     if (!q.editable) return null;
     if (q.type === 'multiple-choice') return h('span', { class: 'muted' }, 'Click an option below to change it.');
@@ -1119,12 +1235,30 @@ function breakStage(s) {
 
 let breakMenuOpen = false;
 document.addEventListener('click', (event) => {
-  if ((breakMenuOpen || moreOpen) && !event.target.closest?.('.break-menu-wrap')) {
+  if ((breakMenuOpen || moreOpen || libraryMoreOpen) && !event.target.closest?.('.break-menu-wrap')) {
     breakMenuOpen = false;
     moreOpen = false;
+    libraryMoreOpen = false;
     render();
   }
 });
+
+// The library screen's ⋯ menu: the less-used things, so the bar stays short.
+let libraryMoreOpen = false;
+function libraryMoreMenu() {
+  const items = [
+    ...(isPhone() ? [] : [['📲 Host on my phone', () => { hostQrOpen = true; }]]),
+    ['🎓 Practice', openPractice],
+  ];
+  return h(
+    'span',
+    { class: 'break-menu-wrap more-menu-wrap' },
+    h('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': String(libraryMoreOpen), title: 'More', 'aria-label': 'More actions', onclick: () => { libraryMoreOpen = !libraryMoreOpen; render(); } }, '⋯'),
+    libraryMoreOpen
+      ? h('div', { class: 'break-menu', role: 'menu' }, items.map(([label, run]) => h('button', { type: 'button', role: 'menuitem', onclick: () => { libraryMoreOpen = false; run(); render(); } }, label)))
+      : null,
+  );
+}
 
 /** The Break button and its choice of lengths, shown between questions. */
 let moreOpen = false;
@@ -1145,7 +1279,8 @@ function moreControl(s) {
   return h(
     'span',
     { class: 'break-menu-wrap more-menu-wrap' },
-    h('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': String(moreOpen), title: 'More actions', 'aria-label': 'More actions', onclick: () => { moreOpen = !moreOpen; render(); } }, isPhone() ? '⋯' : '⋯ More'),
+    // Opening one menu closes the other: on a phone both are sheets in the same place, and two at once looked stuck.
+    h('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': String(moreOpen), title: 'More actions', 'aria-label': 'More actions', onclick: () => { moreOpen = !moreOpen; breakMenuOpen = false; render(); } }, isPhone() ? '⋯' : '⋯ More'),
     moreOpen
       ? h('div', { class: 'break-menu', role: 'menu' }, items.map(([label, run]) => h('button', { role: 'menuitem', onclick: () => { moreOpen = false; run(); render(); } }, label)))
       : null,
@@ -1161,7 +1296,7 @@ function breakControl(s, compact = false) {
   return h(
     'span',
     { class: 'break-menu-wrap' },
-    h('button', { 'aria-haspopup': 'true', 'aria-expanded': String(breakMenuOpen), onclick: () => { breakMenuOpen = !breakMenuOpen; render(); }, title: 'Show a break screen with fun facts', 'aria-label': 'Break' }, compact ? '☕' : '☕ Break'),
+    h('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': String(breakMenuOpen), onclick: () => { breakMenuOpen = !breakMenuOpen; moreOpen = false; render(); }, title: 'Show a break screen with fun facts', 'aria-label': 'Break' }, compact ? '☕' : '☕ Break'),
     breakMenuOpen
       ? h(
           'div',
@@ -1285,6 +1420,7 @@ function questionControls(s) {
   return h(
     'div',
     { class: 'question-controls' },
+    q.pausedByRestart ? h('p', { class: 'restart-note', role: 'status' }, '⏸ Paused: the program was restarted with this question open. Phones are back in with their scores. Press Resume (P) when everyone is ready.') : null,
     s.phase === 'open'
       ? [
           // While a team is answering a Buzzin' question the clock is held by the game; judging them releases it.
@@ -1441,6 +1577,7 @@ function questionBody(s, q, reveal) {
         s.summary ? h('p', { class: 'letter-counts' }, s.summary.split(/\s{2,}/).map((count) => h('span', {}, count))) : null,
       );
 
+    case 'text':
     case 'picture':
     case 'music':
       if (s.phase === 'open') return null;
@@ -1465,8 +1602,9 @@ function reviewPanel(s, q) {
       { class: 'review-help' },
       'Mark the answers, then reveal. Accepted: ',
       h('strong', {}, q.answerText),
-      '. Exact and close matches start ticked.',
+      '. Exact and close matches start ticked; the rest count as wrong unless you tick them.',
     ),
+    isPhone() && s.review.length > 4 ? h('p', { class: 'review-help muted small' }, '📱 Lots to mark: this is easier on the laptop, where the same list is waiting.') : null,
     h(
       'ul',
       {},
@@ -1571,6 +1709,12 @@ function entryFeeEditor(s) {
       { class: 'check', title: 'New teams wait on their phone until you press Admit, so you can check they have paid.' },
       h('input', { type: 'checkbox', checked: s.requireAdmission, onchange: (e) => socket.send({ t: 'require-admission', on: e.target.checked }) }),
       ' Teams wait to be admitted (tick once they have paid)',
+    ),
+    h(
+      'label',
+      { class: 'check', title: 'A laptop or desktop browser opening the join link is turned away, so nobody plays with a big screen and a search engine beside them. Phones and tablets are fine.' },
+      h('input', { type: 'checkbox', checked: s.phonesOnly, onchange: (e) => socket.send({ t: 'phones-only', on: e.target.checked }) }),
+      ' 📱 Teams must join from a phone',
     ),
   );
 }
@@ -1740,10 +1884,11 @@ let clipFilter = '';
 let clipBusy = '';
 const soundboard = new Audio();
 let playingClip = '';
+/** The clip the soundboard was last asked to play (its src is a blob URL, which says nothing). */
+let soundboardClip = '';
 for (const event of ['play', 'pause', 'ended']) {
   soundboard.addEventListener(event, () => {
-    if (event !== 'play') playingClip = '';
-    else playingClip = decodeURIComponent((soundboard.src.match(/\/clip\/([^?]+)/) ?? [])[1] ?? '');
+    playingClip = event === 'play' ? soundboardClip : '';
     if (clipsOpen) render();
   });
 }
@@ -1774,8 +1919,8 @@ function playHere(clip) {
     soundboard.pause();
     return;
   }
-  soundboard.src = `/clip/${encodeURIComponent(clip.name)}?key=${encodeURIComponent(key)}`;
-  void soundboard.play().catch(() => showNotice('The browser blocked the sound. Click anywhere on the page, then try again.'));
+  soundboardClip = clip.name;
+  playWithKey(soundboard, `/clip/${encodeURIComponent(clip.name)}`).catch(() => showNotice('The browser blocked the sound. Click anywhere on the page, then try again.'));
 }
 
 async function uploadClips(files) {
@@ -1883,6 +2028,93 @@ let codesOpen = false;
 /** A big, easy-to-read list of every team and its rejoin code, for when a phone dies or someone changes device. */
 let hostQrOpen = false;
 
+// Practice mode: a separate page with its own key, for one learner at a time. The host hands over the link or the QR code.
+let practiceOpen = false;
+let practiceLink = '';
+let practiceLearners = [];
+let practiceProgress = null; // { name, attempts, topics, hardest, due, … } for the learner being looked at
+
+async function openPractice() {
+  try {
+    practiceLink = (await api('GET', '/practice/link')).url;
+    practiceLearners = await api('GET', '/practice/learners');
+    practiceProgress = null;
+    practiceOpen = true;
+  } catch (error) {
+    showNotice(error.message);
+  }
+  render();
+}
+
+/** The parent's or teacher's view: how a learner is getting on, from their saved attempts. */
+async function showLearner(name) {
+  try {
+    practiceProgress = await api('GET', `/practice/learners/${encodeURIComponent(name)}/progress`);
+  } catch (error) {
+    showNotice(error.message);
+  }
+  render();
+}
+
+function learnerProgressPanel() {
+  if (practiceProgress) {
+    const p = practiceProgress;
+    const when = (iso) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    return h(
+      'div',
+      { class: 'practice-learners' },
+      h('div', { class: 'codes-head' }, h('h3', {}, `📈 ${p.name}`), h('button', { type: 'button', onclick: () => { practiceProgress = null; render(); } }, '‹ All learners')),
+      p.attempts.length === 0
+        ? h('p', { class: 'muted' }, 'No finished attempts yet.')
+        : [
+            h('p', {}, `${p.attempts.length} ${p.attempts.length === 1 ? 'attempt' : 'attempts'} · ${p.answered} questions · ${p.percent}% right overall${p.reviewing ? ` · ${p.reviewing} to keep an eye on` : ''}`),
+            p.topics.length ? h('p', { class: 'muted small' }, 'Weakest topics: ', p.topics.slice(0, 4).map((t) => `${t.round} ${t.percent}%`).join(' · ')) : null,
+            h('ul', { class: 'practice-attempts' }, p.attempts.slice(-8).reverse().map((a) => h('li', {}, h('span', {}, `${when(a.finishedAt)} · ${a.quizTitle} · ${a.kind ?? a.mode}`), h('strong', {}, `${a.right}/${a.total}`)))),
+            p.hardest.length ? h('p', { class: 'muted small' }, 'Missed most: ', p.hardest.slice(0, 3).map((x) => `“${x.text}” (${x.misses})`).join(' · ')) : null,
+            h('button', { type: 'button', onclick: () => downloadWithKey(`/api/practice/learners/${encodeURIComponent(p.name)}/export.csv`, `${p.name}.csv`).catch((error) => showNotice(error.message)) }, '⬇ CSV of every attempt'),
+          ],
+    );
+  }
+  if (!practiceLearners.length) return h('p', { class: 'muted small' }, 'Nobody has practised yet. Once someone has, their attempts show up here.');
+  return h(
+    'div',
+    { class: 'practice-learners' },
+    h('h3', {}, 'Learners'),
+    h('ul', { class: 'practice-attempts' }, practiceLearners.map((l) => h('li', {}, h('button', { type: 'button', class: 'link-button', onclick: () => showLearner(l.name) }, l.name), h('span', { class: 'muted small' }, `${l.sessions} ${l.sessions === 1 ? 'attempt' : 'attempts'}${l.lastAt ? ` · last ${new Date(l.lastAt).toLocaleDateString()}` : ''}`)))),
+  );
+}
+
+function practiceOverlay() {
+  if (TV || !practiceOpen) return null;
+  const close = () => {
+    practiceOpen = false;
+    render();
+  };
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(practiceLink);
+      showNotice('Link copied.');
+    } catch {
+      showNotice('Could not copy; select the link and copy it.');
+    }
+  };
+  return h(
+    'div',
+    { class: 'codes-overlay', role: 'dialog', 'aria-label': 'Practice', onclick: (e) => e.target === e.currentTarget && close() },
+    h(
+      'div',
+      { class: 'codes-card join-card practice-card' },
+      h('h2', {}, '🎓 Practice'),
+      h('p', { class: 'muted' }, 'One person works through a quiz at their own pace: no teams, no clock, the answer and the explanation after each question, and a breakdown at the end. Good for revising for a test.'),
+      h('img', { class: 'qr', src: imageWithKey('/practice-qr.svg'), alt: 'QR code for the practice page' }),
+      h('p', { class: 'copy-link' }, h('code', {}, practiceLink), ' ', h('button', { type: 'button', onclick: copy }, '📋 Copy link')),
+      h('p', { class: 'muted small' }, 'The link has its own key: anyone with it can practise any quiz in your library and see the answers, so give it to learners, not teams. Changing the host key changes it too.'),
+      learnerProgressPanel(),
+      h('div', { class: 'card-actions' }, h('a', { class: 'button primary', href: practiceLink, target: '_blank', rel: 'noopener' }, 'Open practice here'), h('button', { type: 'button', onclick: close }, 'Close')),
+    ),
+  );
+}
+
 /** A QR code of this host page's own address, to scan with the host's phone. Shows on the laptop only. */
 function hostQrOverlay(s) {
   if (TV || !hostQrOpen) return null;
@@ -1897,7 +2129,7 @@ function hostQrOverlay(s) {
       'div',
       { class: 'codes-card join-card' },
       h('h2', {}, 'Host from your phone'),
-      h('img', { class: 'qr', src: `/host-qr.svg?key=${encodeURIComponent(key)}&v=${s.qrVersion ?? 0}`, alt: 'QR code for the host page' }),
+      h('img', { class: 'qr', src: imageWithKey(`/host-qr.svg?v=${s.qrVersion ?? 0}`), alt: 'QR code for the host page' }),
       h('p', { class: 'muted' }, 'Scan this with your phone camera. ', s.openHost ? '' : 'The code contains the host key, so keep it to yourself. '),
       h('p', { class: 'muted' }, s.network?.mode === 'tunnel' && s.network.state === 'up' ? 'It uses the internet link, so it works on any network.' : 'It uses this laptop’s Wi-Fi address, so the phone must be on the same Wi-Fi.'),
       h('button', { type: 'button', onclick: close }, 'Close'),
@@ -2064,6 +2296,14 @@ function teamsPanel(s) {
           { class: 'check photos-toggle', title: 'New teams wait on their phone until you press Admit, so you can check they have paid.' },
           h('input', { type: 'checkbox', checked: s.requireAdmission, onchange: (e) => socket.send({ t: 'require-admission', on: e.target.checked }) }),
           ' Teams wait to be admitted (paid)',
+        ),
+    TV
+      ? null
+      : h(
+          'label',
+          { class: 'check photos-toggle', title: 'A laptop or desktop browser opening the join link is turned away. Phones and tablets are fine.' },
+          h('input', { type: 'checkbox', checked: s.phonesOnly, onchange: (e) => socket.send({ t: 'phones-only', on: e.target.checked }) }),
+          ' 📱 Teams must join from a phone',
         ),
     // On the start screen the "lock when it starts" box is enough; this one appears once the quiz is under way (or if it is already locked).
     TV || (s.phase === 'lobby' && !s.joiningLocked)

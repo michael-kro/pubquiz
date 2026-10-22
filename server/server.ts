@@ -14,6 +14,8 @@ import { ClipError, ClipStore, MAX_CLIP_BYTES } from './clips.ts';
 import { changeLibraryDir, defaultLibraryDir, SettingsError, type FolderChoice } from './settings.ts';
 import { clientAddress, isLocalRequest, TokenBucket, WindowCounter } from './limits.ts';
 import { MAX_PHOTO_BYTES, PhotoStore, sniffImage } from './photos.ts';
+import * as practice from './practice.ts';
+import { cleanLearnerName, currentSession, PracticeError, PracticeStore, startSession } from './practice.ts';
 import { loadBundledFacts, pickFacts } from './facts.ts';
 import { lanAddress, wifiQrText } from './net.ts';
 import type { ShortLinks } from './shortlink.ts';
@@ -22,7 +24,7 @@ import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
 import { createSaver, hashQuiz, readSession, writeSession, type Session } from './session.ts';
 import type { NetworkStatus } from './tunnel.ts';
 
-const ROUTES: Record<string, string> = { '/': 'play.html', '/host': 'host.html', '/screen': 'screen.html' };
+const ROUTES: Record<string, string> = { '/': 'play.html', '/host': 'host.html', '/screen': 'screen.html', '/practice': 'practice.html' };
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -47,14 +49,14 @@ const MAX_DROPPED_MESSAGES = 200;
 /** Wrong room codes and wrong team codes an address may try per minute. */
 const MAX_JOIN_GUESSES_PER_MINUTE = 20;
 
-/** Sent with every page: the host key lives in the host page's address, so nothing may leak it as a referrer. */
+/** Sent with every page: the host key arrives in the host page's link, so nothing may leak it as a referrer. `blob:` is for the pictures and clips the pages fetch with the key in a header. */
 const PAGE_HEADERS = {
   'referrer-policy': 'no-referrer',
   'x-content-type-options': 'nosniff',
   'x-frame-options': 'DENY',
   'content-security-policy':
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; " +
-    "connect-src 'self' ws: wss:; media-src 'self' https: http:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",  // No camera, microphone or location for anything on the page, except the same-origin camera (a team's photo).
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; " +
+    "connect-src 'self' ws: wss:; media-src 'self' blob: https: http:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",  // No camera, microphone or location for anything on the page, except the same-origin camera (a team's photo).
   'permissions-policy': 'camera=(self), microphone=(), geolocation=(), payment=(), usb=()',
   'cross-origin-opener-policy': 'same-origin',
   'cross-origin-resource-policy': 'same-origin',
@@ -113,6 +115,8 @@ export interface ServerOptions {
   publicHost?: string;
   /** Called when the host asks to switch between the internet link and local Wi-Fi. */
   onNetworkAction?: (action: 'use-lan' | 'use-tunnel') => void;
+  /** Called when the host sets after how many hours the internet link closes by itself (0: never). */
+  onTunnelHours?: (hours: number) => void;
   pingIntervalMs?: number;
 }
 
@@ -124,6 +128,8 @@ export interface QuizServer {
   port: number;
   readonly hostKey: string;
   readonly screenKey: string;
+  /** The key the practice page uses (derived from the host key, like the TV's). */
+  readonly practiceKey: string;
   readonly hostUrl: string;
   /** The link teams use right now: the internet link when it's up, otherwise the local address. */
   readonly joinUrl: string;
@@ -133,10 +139,22 @@ export interface QuizServer {
   startQuiz(quiz: Quiz, session?: SessionOptions): Promise<void>;
   endQuiz(): Promise<void>;
   setNetwork(status: NetworkStatus): void;
+  readonly network: NetworkStatus;
   /** Short addresses for the internet link (shown instead of the long one), or none. */
   setShortLinks(links: ShortLinks | undefined): void;
   close(): Promise<void>;
 }
+
+/**
+ * Whether a joining team is on a phone or tablet: its browser says so (every phone browser does), or the page reports
+ * a touch screen (an iPad asking for desktop sites looks like a Mac to the server). A deterrent against playing with a
+ * laptop and a search engine, not a lock: anyone can pretend, and that is documented.
+ */
+export function looksLikePhone(userAgent: string, pageSaysPhone?: boolean): boolean {
+  return /\b(Mobi|Android|iPhone|iPad|iPod|Tablet|Silk|Kindle|webOS|Windows Phone)\b/i.test(userAgent) || pageSaysPhone === true;
+}
+
+const PHONES_ONLY_ERROR = { t: 'error', code: 'phones-only', message: '📱 Open this on your phone. The quiz master has asked that teams play from a phone: scan the code on the screen with your phone camera.' } as const;
 
 interface Connection {
   ws: WebSocket;
@@ -144,9 +162,13 @@ interface Connection {
   address: string;
   /** The connection came from the machine running the quiz itself. */
   local: boolean;
+  /** The browser's User-Agent header, for the phones-only check when a team joins. */
+  userAgent: string;
   messages: TokenBucket;
   dropped: number;
   teamId?: string;
+  /** A team's token that arrived while no quiz was running: tried again as soon as one is. */
+  waitingToken?: string;
   pingSentAt?: number;
   missedPings: number;
   /** Recent round-trip times in ms, newest last. */
@@ -191,6 +213,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   // Derived from the host key, so a TV left on /screen reconnects after a restart.
   const deriveScreenKey = () => createHmac('sha256', hostKey).update('screen').digest('base64url').slice(0, 24);
   let screenKey = deriveScreenKey();
+  // The practice page has its own key the same way: safe to hand to a learner, and it changes with the host key.
+  const derivePracticeKey = () => createHmac('sha256', hostKey).update('practice').digest('base64url').slice(0, 24);
+  let practiceKey = derivePracticeKey();
   let active: ActiveQuiz | undefined;
   let baseUrl = '';
   let joinUrl = '';
@@ -381,6 +406,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     // A resumed game and its photo file are saved separately; make sure they agree about who has one.
     if (resume) for (const [teamId, version] of photos.versions()) game.setPhoto(teamId, version);
     await updateJoinUrl();
+    // Phones that tried to rejoin while nothing was running (after a restart) come straight back in.
+    for (const conn of connections) {
+      if (!conn.waitingToken || conn.role) continue;
+      const team = game.rejoin({ token: conn.waitingToken });
+      conn.waitingToken = undefined;
+      if (team) attachTeam(conn, team);
+    }
     broadcast();
   }
 
@@ -424,6 +456,11 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     return a.length === b.length && timingSafeEqual(a, b);
   }
   const isHostKey = (key: string | undefined) => keyIs(hostKey, key);
+  /** The key a request presents, in a header: never in the address, so it cannot end up in a proxy's or anyone's logs. */
+  const presentedKey = (req: IncomingMessage): string | undefined => {
+    const value = req.headers['x-host-key'] ?? req.headers['x-screen-key'];
+    return typeof value === 'string' ? value : undefined;
+  };
   /** With --host-local-only the host controls work only from the laptop running the quiz. */
   const hostAllowed = (req: IncomingMessage) => !options.hostLocalOnly || isLocalRequest(req);
 
@@ -431,6 +468,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   function rotateHostKey(requester: Connection): void {
     hostKey = randomBytes(18).toString('base64url');
     screenKey = deriveScreenKey();
+    practiceKey = derivePracticeKey();
     options.onHostKeyChange?.(hostKey);
     for (const conn of [...connections]) {
       if (conn === requester || (conn.role !== 'host' && conn.role !== 'screen')) continue;
@@ -489,6 +527,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (conn.role) return send(conn, { t: 'error', message: 'Already joined.' });
         if (!active || !game) return send(conn, { t: 'error', message: 'No quiz is running right now. Ask the quiz master.' });
         if (joinGuesses.blocked(conn.address)) return send(conn, { t: 'error', message: 'Too many wrong tries. Wait a minute and try again.' });
+        if (game.phonesOnly && !looksLikePhone(conn.userAgent, msg.phone)) return send(conn, PHONES_ONLY_ERROR);
         // With no room code the phone just opened the home page, and joins the one quiz that is running.
         // A code that is given (an old link, say) must still match.
         const room = (msg.room ?? '').trim().toUpperCase();
@@ -508,10 +547,17 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (msg.code !== undefined && joinGuesses.blocked(conn.address)) {
           return send(conn, { t: 'error', message: 'Too many wrong tries. Wait a minute and try again.' });
         }
-        const team = game?.rejoin({ token: msg.token, code: msg.code });
+        // A team cannot move to a laptop by carrying its code over.
+        if (game?.phonesOnly && !looksLikePhone(conn.userAgent, msg.phone)) return send(conn, PHONES_ONLY_ERROR);
+        if (!game) {
+          // Nothing running (the program restarted, say). Keep the token: when a quiz comes back, the team is let in by itself.
+          conn.waitingToken = msg.token;
+          return send(conn, { t: 'rejoin-failed', reason: 'no-quiz' });
+        }
+        const team = game.rejoin({ token: msg.token, code: msg.code });
         if (!team) {
           if (msg.token === undefined) joinGuesses.add(conn.address);
-          return send(conn, { t: 'rejoin-failed' });
+          return send(conn, { t: 'rejoin-failed', reason: 'unknown' });
         }
         attachTeam(conn, team);
         return;
@@ -597,12 +643,16 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         if (hostOnly()) game?.setRequireAdmission(msg.on);
         return;
 
+      case 'phones-only':
+        if (hostOnly()) game?.setPhonesOnly(msg.on);
+        return;
+
       case 'play-clip': {
         if (!hostOnly()) return;
         if (!clips || !(await clips.has(msg.name))) return send(conn, { t: 'error', message: 'That clip is gone.' });
         const title = (await clips.list()).find((c) => c.name === msg.name)?.title ?? msg.name;
         for (const other of connections) {
-          if (other.role === 'screen') send(other, { t: 'play-clip', url: `/clip/${encodeURIComponent(msg.name)}?key=${screenKey}`, title });
+          if (other.role === 'screen') send(other, { t: 'play-clip', name: msg.name, title });
         }
         return;
       }
@@ -719,6 +769,10 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
       case 'network':
         if (hostOnly()) options.onNetworkAction?.(msg.action);
+        return;
+
+      case 'tunnel-hours':
+        if (hostOnly()) options.onTunnelHours?.(msg.hours);
         return;
 
       case 'kick': {
@@ -848,7 +902,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
       res.end(JSON.stringify(body));
     };
-    const key = (req.headers['x-host-key'] as string | undefined) ?? url.searchParams.get('key') ?? undefined;
+    const key = presentedKey(req);
     const isHost = isHostKey(key) && hostAllowed(req);
     if (!clips) return void json(404, { error: 'Clips are not set up.' }), true;
     try {
@@ -886,11 +940,217 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     }
   }
 
+  // Practice mode: one learner over plain HTTP, with its own key. Sessions live in the library, one file per learner.
+  const practiceStore = options.library ? new PracticeStore(options.library.dir) : undefined;
+  const practiceQuizzes = new Map<string, { hash: string; quiz: Quiz }>();
+  const QUIZ_ID = /^[a-z0-9][a-z0-9-]{0,80}$/;
+
+  /** A quiz from the library, loaded with its pictures and kept until the file changes. */
+  async function practiceQuiz(id: string): Promise<{ hash: string; quiz: Quiz }> {
+    const library = options.library!;
+    if (!QUIZ_ID.test(id)) throw new PracticeError('No such quiz.', 404);
+    let source: string;
+    try {
+      source = await readFile(library.quizPath(id), 'utf8');
+    } catch {
+      throw new PracticeError('No such quiz.', 404);
+    }
+    const hash = hashQuiz(source);
+    const cached = practiceQuizzes.get(id);
+    if (cached && cached.hash === hash) return cached;
+    let quiz: Quiz;
+    try {
+      quiz = await loadQuizFile(library.quizPath(id));
+    } catch (error) {
+      if (error instanceof QuizError) throw new PracticeError(`This quiz has something to fix first: ${error.issues[0] ?? ''}`, 422);
+      throw error;
+    }
+    const entry = { hash, quiz };
+    practiceQuizzes.set(id, entry);
+    if (practiceQuizzes.size > 20) practiceQuizzes.delete(practiceQuizzes.keys().next().value!);
+    return entry;
+  }
+
+  async function readJsonBody(req: IncomingMessage): Promise<Record<string, unknown>> {
+    let body = '';
+    for await (const chunk of req) {
+      body += chunk;
+      if (body.length > 64 * 1024) throw new PracticeError('Too big.', 413);
+    }
+    if (!body.trim()) return {};
+    try {
+      const parsed: unknown = JSON.parse(body);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
+    } catch {
+      throw new PracticeError('Expected JSON.');
+    }
+  }
+
+  /** /api/practice/… for the practice page (its own key, or the host's), and the practice link and QR code for the host. */
+  async function handlePractice(req: IncomingMessage, res: ServerResponse, url: URL): Promise<boolean> {
+    const { pathname } = url;
+    if (pathname !== '/practice-qr.svg' && pathname !== '/api/practice' && !pathname.startsWith('/api/practice/')) return false;
+    const json = (status: number, body: unknown) => {
+      res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+      res.end(JSON.stringify(body));
+    };
+    const library = options.library;
+    if (!practiceStore || !library) return void json(404, { error: 'Practice mode needs a quiz library.' }), true;
+    const presented = req.headers['x-practice-key'];
+    const asHost = isHostKey(presentedKey(req)) && hostAllowed(req);
+    const allowed = asHost || keyIs(practiceKey, typeof presented === 'string' ? presented : undefined);
+    const base = network.mode === 'tunnel' && network.state === 'up' && network.publicUrl ? network.publicUrl : baseUrl;
+    const practiceUrl = `${base}/practice#key=${practiceKey}`;
+    const method = req.method ?? 'GET';
+    try {
+      if (pathname === '/practice-qr.svg') {
+        if (!asHost) {
+          res.writeHead(401, { 'content-type': 'text/plain', ...PAGE_HEADERS });
+          res.end('Use the host link.');
+          return true;
+        }
+        const svg = await QRCode.toString(practiceUrl, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
+        res.writeHead(200, { 'content-type': CONTENT_TYPES['.svg'], 'cache-control': 'no-store' });
+        res.end(svg);
+        return true;
+      }
+      if (pathname === '/api/practice/link') {
+        if (!asHost) return void json(401, { error: 'Use the host link.' }), true;
+        return void json(200, { url: practiceUrl }), true;
+      }
+      if (!allowed) return void json(401, { error: 'Open the practice link from the host screen.' }), true;
+
+      const parts = pathname.split('/').filter(Boolean).slice(2).map(decodeURIComponent);
+      if (parts[0] === 'quizzes' && parts.length === 1 && method === 'GET') {
+        const list = (await library.list()).filter((q) => q.problems === 0).map(({ id, title, rounds, questions }) => ({ id, title, rounds, questions }));
+        return void json(200, list), true;
+      }
+      if (parts[0] === 'quizzes' && parts[2] === 'media' && parts.length === 4 && method === 'GET') {
+        const media = (await practiceQuiz(parts[1]!)).quiz.media.get(parts[3]!);
+        if (!media) return void json(404, { error: 'Not found.' }), true;
+        sendBytes(req, res, media.data, {
+          'content-type': media.contentType,
+          'cache-control': 'private, max-age=3600',
+          'content-security-policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+          'x-content-type-options': 'nosniff',
+        });
+        return true;
+      }
+      if (parts[0] === 'learners' && parts.length === 1 && method === 'GET') return void json(200, await practiceStore.learners()), true;
+      if (parts[0] !== 'learners' || !parts[1]) return void json(404, { error: 'Not found.' }), true;
+
+      const name = cleanLearnerName(parts[1]);
+      const learner = await practiceStore.load(name);
+      const historyOf = () =>
+        learner.sessions
+          .filter((s) => s.finishedAt)
+          .map((s) => ({ id: s.id, quizId: s.quizId, quizTitle: s.quizTitle, mode: s.mode, startedAt: s.startedAt, finishedAt: s.finishedAt, right: Object.values(s.answers).filter((a) => a.correct).length, total: s.order.length, elapsedMs: s.elapsedMs }))
+          .reverse();
+      /** The current session with its quiz, provided the quiz is still the one it started on. */
+      const currentWithQuiz = async () => {
+        const session = currentSession(learner);
+        if (!session) return undefined;
+        try {
+          const { hash, quiz } = await practiceQuiz(session.quizId);
+          if (hash === session.quizHash) return { session, quiz };
+        } catch {
+          // The quiz is gone or broken: the session cannot carry on.
+        }
+        practice.finish(session);
+        practice.forgetReview(learner, session.quizId);
+        await practiceStore.save(learner);
+        return undefined;
+      };
+      /** Ends a session properly: its summary is kept and the review boxes move on. */
+      const close = (session: practice.PracticeSession, quiz: Quiz) => {
+        practice.finish(session, quiz);
+        practice.updateReview(learner, session, quiz);
+      };
+      const answerView = async () => {
+        const live = await currentWithQuiz();
+        return json(200, { name: learner.name, current: live ? practice.view(live.session, live.quiz) : null, history: historyOf(), due: practice.dueReview(learner) });
+      };
+
+      if (parts.length === 2 && method === 'GET') return void (await answerView()), true;
+      if (parts[2] === 'progress' && parts.length === 3 && method === 'GET') return void json(200, { name: learner.name, ...practice.progress(learner) }), true;
+      if (parts[2] === 'export.csv' && parts.length === 3 && method === 'GET') {
+        res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${learner.name.replace(/[^\w .-]/g, '_')} practice.csv"`, 'cache-control': 'no-store' });
+        res.end('﻿' + practice.learnerCsv(learner));
+        return true;
+      }
+
+      if (parts[2] === 'sessions' && parts.length === 3 && method === 'POST') {
+        const body = await readJsonBody(req);
+        const quizId = typeof body['quizId'] === 'string' ? body['quizId'] : '';
+        const { hash, quiz } = await practiceQuiz(quizId);
+        const count = Number(body['count']);
+        let only = Array.isArray(body['only']) ? body['only'].filter((i): i is number => Number.isInteger(i) && i >= 0 && i < quiz.questions.length) : undefined;
+        let kind: practice.PracticeOptions['kind'];
+        if (body['review'] === true) {
+          // What is due for another look in this quiz, provided the quiz is still the one those questions came from.
+          only = practice.dueReview(learner).find((g) => g.quizId === quizId)?.indices.filter((i) => i < quiz.questions.length) ?? [];
+          if (!only.length) throw new PracticeError('Nothing in this quiz is due for review right now.');
+          kind = 'review';
+        }
+        const minutes = body['timeLimitMinutes'] === undefined ? undefined : Number(body['timeLimitMinutes']);
+        for (const s of learner.sessions) if (!s.finishedAt) close(s, s.quizId === quizId ? quiz : (await practiceQuiz(s.quizId).catch(() => undefined))?.quiz ?? quiz); // one at a time; a half-done one stays in the history
+        learner.sessions.push(startSession(quiz, quizId, hash, { mode: body['mode'] === 'test' ? 'test' : 'learn', shuffle: body['shuffle'] === true, ...(Number.isInteger(count) && count > 0 ? { count } : {}), ...(only?.length ? { only } : {}), ...(minutes !== undefined ? { timeLimitMinutes: minutes } : {}), ...(kind ? { kind } : {}) }));
+        await practiceStore.save(learner);
+        return void (await answerView()), true;
+      }
+
+      if (parts[2] === 'sessions' && parts[3] && (parts[4] === 'results' || parts[4] === 'export.csv') && method === 'GET') {
+        const session = learner.sessions.find((s) => s.id === parts[3]);
+        if (!session?.finishedAt) return void json(404, { error: 'No such finished session.' }), true;
+        const { hash, quiz } = await practiceQuiz(session.quizId);
+        if (hash !== session.quizHash) return void json(409, { error: 'The quiz has changed since this session, so its questions cannot be shown.' }), true;
+        const r = practice.results(session, quiz);
+        if (parts[4] === 'results') return void json(200, r), true;
+        res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${learner.name.replace(/[^\w .-]/g, '_')} - ${r.quizTitle.replace(/[^\w .-]/g, '_')}.csv"`, 'cache-control': 'no-store' });
+        res.end('﻿' + practice.resultsCsv(learner, r));
+        return true;
+      }
+
+      if (parts[2] === 'current' && parts[3] && method === 'POST') {
+        const live = await currentWithQuiz();
+        if (!live) return void json(404, { error: 'Nothing is in progress. Start a quiz.' }), true;
+        const { session, quiz } = live;
+        const body = await readJsonBody(req);
+        // Exam simulation: once the clock has run out, whatever the learner was about to do, the paper is taken in.
+        if (practice.timeUp(session) && parts[3] !== 'abandon') {
+          close(session, quiz);
+          await practiceStore.save(learner);
+          return void json(200, { timeUp: true, results: practice.results(session, quiz) }), true;
+        }
+        switch (parts[3]) {
+          case 'answer': practice.answer(session, quiz, body['value'] as never); break;
+          case 'next': practice.move(session, 1); break;
+          case 'back': practice.move(session, -1); break;
+          case 'skip': practice.skip(session); break;
+          case 'flag': practice.toggleFlag(session); break;
+          case 'hint': practice.hint(session, quiz); break;
+          case 'reveal': return void json(200, practice.revealForSelfMarking(session, quiz)), true;
+          case 'finish': close(session, quiz); await practiceStore.save(learner); return void json(200, practice.results(session, quiz)), true;
+          case 'abandon': learner.sessions = learner.sessions.filter((s) => s !== session); break;
+          default: return void json(404, { error: 'Not found.' }), true;
+        }
+        await practiceStore.save(learner);
+        return void (await answerView()), true;
+      }
+      return void json(404, { error: 'Not found.' }), true;
+    } catch (error) {
+      if (error instanceof PracticeError) return void json(error.status, { error: error.message }), true;
+      if (req.destroyed) return true;
+      throw error;
+    }
+  }
+
   async function handleHttp(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? '/', 'http://localhost');
     const { pathname } = url;
 
     if (await handleClips(req, res, url)) return;
+    if (await handlePractice(req, res, url)) return;
 
     // Settings: where the quizzes, clips and branding are kept. Changing it takes effect the next time the program starts.
     if (url.pathname === '/api/settings') {
@@ -898,8 +1158,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
         res.end(JSON.stringify(body));
       };
-      const key = (req.headers['x-host-key'] as string | undefined) ?? url.searchParams.get('key') ?? undefined;
-      if (!(isHostKey(key) && hostAllowed(req))) return json(401, { error: 'Use the host link printed when the quiz program started.' });
+      if (!(isHostKey(presentedKey(req)) && hostAllowed(req))) return json(401, { error: 'Use the host link printed when the quiz program started.' });
       const folder = options.libraryFolder;
       if (!folder) return json(404, { error: 'Settings are not available here.' });
       if (req.method === 'GET') return json(200, { libraryDir: folder.dir, source: folder.source, defaultDir: defaultLibraryDir() });
@@ -1003,7 +1262,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
     if (pathname === '/wifi-qr.svg') {
       // The Wi-Fi password is in the code, so only the host and TV screens (which show it anyway) may fetch it.
-      const key = url.searchParams.get('key') ?? undefined;
+      const key = presentedKey(req);
       if (!options.wifi || !((isHostKey(key) && hostAllowed(req)) || keyIs(screenKey, key))) {
         res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
         return;
@@ -1015,7 +1274,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     }
 
     if (pathname === '/results.csv') {
-      if (!isHostKey(url.searchParams.get('key') ?? undefined) || !hostAllowed(req) || !active) {
+      if (!isHostKey(presentedKey(req)) || !hostAllowed(req) || !active) {
         res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
         return;
       }
@@ -1030,13 +1289,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
     // The host's own link as a QR code, so the host can open the controls on a phone. Host key only.
     if (pathname === '/host-qr.svg') {
-      if (!(isHostKey(url.searchParams.get('key') ?? undefined) && hostAllowed(req))) {
-        res.writeHead(401, { 'content-type': 'text/plain' });
+      if (!(isHostKey(presentedKey(req)) && hostAllowed(req))) {
+        res.writeHead(401, { 'content-type': 'text/plain', ...PAGE_HEADERS });
         res.end('Use the host link.');
         return;
       }
       const base = network.mode === 'tunnel' && network.state === 'up' && network.publicUrl ? network.publicUrl : baseUrl;
-      const svg = await QRCode.toString(`${base}/host${options.openHost ? '' : `?key=${hostKey}`}`, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
+      const svg = await QRCode.toString(`${base}/host${options.openHost ? '' : `#key=${hostKey}`}`, { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
       res.writeHead(200, { 'content-type': CONTENT_TYPES['.svg'], 'cache-control': 'no-store' });
       res.end(svg);
       return;
@@ -1107,7 +1366,33 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       res.end();
     });
   });
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws', maxPayload: 4096 });
+  // A browser sends the page's origin with the upgrade. It must be this server's own address, by whatever name it
+  // was reached (localhost, the Wi-Fi address, the internet link), so another website open in the same browser
+  // cannot quietly open a connection. Clients that are not browsers send no origin and are judged on their keys.
+  const originAllowed = (origin: string | undefined, hostHeader: string | undefined): boolean => {
+    if (!origin) return true;
+    let originHost: string;
+    try {
+      originHost = new URL(origin).host.toLowerCase();
+    } catch {
+      return false;
+    }
+    const ownHosts = [hostHeader, baseUrl, network.publicUrl].flatMap((value) => {
+      if (!value) return [];
+      try {
+        return [(value.includes('://') ? new URL(value) : new URL(`http://${value}`)).host.toLowerCase()];
+      } catch {
+        return [];
+      }
+    });
+    return ownHosts.includes(originHost);
+  };
+  const wss = new WebSocketServer({
+    server: httpServer,
+    path: '/ws',
+    maxPayload: 4096,
+    verifyClient: (info: { origin: string; req: IncomingMessage }) => originAllowed(info.origin || undefined, info.req.headers.host),
+  });
 
   function ping(conn: Connection): void {
     if (conn.pingSentAt !== undefined && ++conn.missedPings >= MAX_MISSED_PINGS) {
@@ -1131,7 +1416,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       return;
     }
     perAddress.set(address, open + 1);
-    const conn: Connection = { ws, address, local: isLocalRequest(req), missedPings: 0, rtts: [], messages: new TokenBucket(MESSAGE_BURST, MESSAGES_PER_SECOND), dropped: 0 };
+    const conn: Connection = { ws, address, local: isLocalRequest(req), userAgent: String(req.headers['user-agent'] ?? ''), missedPings: 0, rtts: [], messages: new TokenBucket(MESSAGE_BURST, MESSAGES_PER_SECOND), dropped: 0 };
     connections.add(conn);
     ws.on('pong', () => {
       if (conn.pingSentAt === undefined) return;
@@ -1185,8 +1470,12 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     get screenKey() {
       return screenKey;
     },
+    get practiceKey() {
+      return practiceKey;
+    },
     get hostUrl() {
-      return `http://localhost:${port}/host?key=${hostKey}`;
+      // The key rides after the #: browsers keep that part to themselves, so it never reaches a proxy or a log.
+      return `http://localhost:${port}/host#key=${hostKey}`;
     },
     get joinUrl() {
       return joinUrl;
@@ -1200,6 +1489,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     setNetwork(status) {
       network = status;
       void updateJoinUrl().then(broadcast);
+    },
+    get network() {
+      return network;
     },
     setShortLinks(links) {
       shortLinks = links;

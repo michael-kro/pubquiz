@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.2.0 — 2026-10-22
+
+- **Weekly releases, by themselves:** every Friday a workflow cuts the release from `develop` (version bumped, changelog dated), opens the pull request into `main` and merges it when green; a second workflow then tags, publishes the GitHub release, builds the image and opens the merge back into `develop`. `scripts/release.ts` does the changelog and version work, by hand too. The fortnightly reminder issue is gone.
+- **New question type `text`:** teams type the answer; once the question closes, every answer is listed for the host, exact and close matches (capitals, small typos and "the" ignored) already ticked and the rest unticked, to check before the reveal. The same marking as picture and music questions, without the picture or the music. The editor and the AI guide have it; the host phone suggests the laptop when there is a lot to mark.
+- **Fix, recovery after a crash or restart:** phones that reconnected before the host pressed **Resume** used to fall back to the join form and stay there; now they keep their place, show "The quiz is being restarted", and are let back in by themselves with their scores the moment the quiz resumes (a **Rejoin now** button is there as a fallback). A question that was open when the program stopped used to come back already closed, its clock having run on; it now comes back **paused** with the time it had left, the host screen says why, and **Resume** carries on.
+- The quiz cards' buttons after **Run** are icons now (✏️ edit, 📑 duplicate, ⬇ export, 🗑 delete, ↺ start over), with the word as the tooltip.
+- **Close the internet link by itself:** the network pill on the host screen now opens an internet-link panel with the address, when the link will close, a choice of 1 to 24 hours after which it closes by itself (remembered for next time; off unless set), and the switch to local Wi-Fi. Once a link has closed, a banner explains and **Use the internet link** opens a fresh one. Also `--tunnel-hours <n>` / `PUBQUI
+
 ## 0.1.5 — 2026-10-21
 
 - **Fix (security):** a single WebSocket frame over 4 KB, from anyone who could reach the join page, crashed the whole server. The connection is now closed and the quiz carries on. Found by the new fuzz test; a regression test covers it.

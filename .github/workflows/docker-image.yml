@@ -11,6 +11,9 @@ on:
 permissions:
   contents: read
   packages: write
+  # For the signed build provenance attached to each image.
+  id-token: write
+  attestations: write
 
 jobs:
   image:
@@ -38,9 +41,24 @@ jobs:
             type=raw,value=latest
 
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        id: build
         with:
           context: .
           platforms: linux/amd64,linux/arm64
+          # Always start from the newest base image, so a release never ships a stale one by accident.
+          pull: true
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          # A software bill of materials and build provenance, stored in the registry next to the image.
+          sbom: true
+          provenance: mode=max
+
+      # Signed provenance on GitHub too, so anyone can check an image came from this repository's workflow:
+      #   gh attestation verify oci://ghcr.io/michael-kro/pubquiz:<version> --owner michael-kro
+      - name: Attest the image's build provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v3.2.0
+        with:
+          subject-name: ghcr.io/${{ github.repository }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true

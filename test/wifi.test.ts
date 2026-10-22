@@ -29,15 +29,16 @@ test('the host and TV get the Wi-Fi details and its QR code; teams and strangers
   assert.deepEqual((await tv.state('lobby')).wifi, { ssid: 'QuizNight', password: 'beer1234' });
   assert.equal((await team.state('lobby')).wifi, undefined, "a team's phone is told nothing about it");
 
-  for (const key of [server.hostKey, server.screenKey]) {
-    const res = await fetch(`${base}/wifi-qr.svg?key=${key}`);
+  for (const [header, key] of [['x-host-key', server.hostKey], ['x-screen-key', server.screenKey]] as const) {
+    assert.equal((await fetch(`${base}/wifi-qr.svg?key=${key}`)).status, 404, 'a key in the address is not accepted');
+    const res = await fetch(`${base}/wifi-qr.svg`, { headers: { [header]: key } });
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('content-type'), 'image/svg+xml');
     assert.equal(res.headers.get('cache-control'), 'no-store');
     assert.match(await res.text(), /<svg/);
   }
   assert.equal((await fetch(`${base}/wifi-qr.svg`)).status, 404, 'no key, no password');
-  assert.equal((await fetch(`${base}/wifi-qr.svg?key=guess`)).status, 404);
+  assert.equal((await fetch(`${base}/wifi-qr.svg`, { headers: { 'x-host-key': 'guess' } })).status, 404);
   for (const c of [host, tv, team]) await c.close();
   await server.close();
 
@@ -45,7 +46,7 @@ test('the host and TV get the Wi-Fi details and its QR code; teams and strangers
   const plainHost = await Client.connect(none.port);
   plainHost.send({ t: 'host', key: none.hostKey });
   assert.equal((await plainHost.state('lobby')).wifi, undefined);
-  assert.equal((await fetch(`http://127.0.0.1:${none.port}/wifi-qr.svg?key=${none.hostKey}`)).status, 404);
+  assert.equal((await fetch(`http://127.0.0.1:${none.port}/wifi-qr.svg`, { headers: { 'x-host-key': none.hostKey } })).status, 404);
   await plainHost.close();
   await none.close();
 });

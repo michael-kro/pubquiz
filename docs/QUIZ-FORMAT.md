@@ -7,6 +7,8 @@ A quiz is one `quiz.yaml` file, plus an `images/` folder if it has pictures. Wri
 | Type | Teams see | You write |
 |---|---|---|
 | `multiple-choice` | 2–6 coloured buttons | `options`, and `answer`: the right option's position counting from 0 |
+| `true-false` | Two buttons, True and False | `answer: true` or `answer: false` (played as a two-option multiple choice) |
+| `text` | A text box | `accept`: the answers to accept. Matching answers start ticked and the rest unticked; you check them all once the question closes, before the reveal (easier on a laptop than a phone) |
 | `picture` | The picture and a text box | `image` and `accept`: the answers to accept. `uncover: true` reveals the picture slowly behind black tiles |
 | `music` | A text box (you play the track) | `accept` |
 | `ordering` | 5 items, shuffled, to drag into order | `items`, listed in the correct order |
@@ -16,6 +18,8 @@ A quiz is one `quiz.yaml` file, plus an `images/` folder if it has pictures. Wri
 | `buzzer` | One huge BUZZ button | `answer` (for you to judge with), optionally `penalty` |
 
 Any question can also have `seconds` (default 20), `points` (default 10 in rank scoring, 100 otherwise), `info` (a fun fact shown with the answer), `image`, and `audio`: an mp3, m4a, ogg or wav clip up to 20 MB, a file next to the quiz or a web address. Audio plays on the host and TV screens, never on phones, with Play, Pause and Replay, and pauses with the game. Zip exports and imports include it.
+
+**For practice mode** (see the host guide) any question can also have `topic` (progress is shown by topic; the round name otherwise), `explain` (why the answer is right, up to 600 characters, shown after the question instead of `info`) and `hint` (a sentence, or a list of up to three that get more specific, shown one at a time when the learner asks). The live quiz ignores them.
 
 Typed answers (`accept`) are matched ignoring case, punctuation, accents, a leading "the" and small typos. When a picture or music question closes, the host sees every answer grouped and ticks or unticks each before revealing.
 

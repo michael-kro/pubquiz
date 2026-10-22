@@ -245,16 +245,20 @@ test('a snapshot restores teams, answers, scores and the open question', () => {
     const snapshot = JSON.parse(JSON.stringify(game.snapshot()));
     game.dispose();
 
+    mock.timers.tick(60_000); // the program was down for a minute
     const restored = Game.restore(quiz, snapshot);
     assert.equal(restored.phase, 'open');
     assert.equal(restored.questionIndex, 1);
     assert.deepEqual(restored.standings(), before);
     assert.equal(restored.hostView().connectedCount, 0, 'everyone is offline until they rejoin');
+    assert.equal(restored.hostView().question?.paused, true, 'the open question comes back paused…');
+    assert.equal(restored.hostView().question?.remainingMs, 8_000, '…with the time it had left when the program stopped');
     assert.equal(restored.rejoin({ token: a.token })?.name, 'A');
     assert.equal(restored.answer(a.id, 1).ok, false, 'answers survive the restart');
+    assert.ok(restored.resume().ok);
     assert.ok(restored.answer(b.id, 1).ok);
-    mock.timers.tick(10_000 + MAX_LATENCY_MS);
-    assert.equal(restored.phase, 'closed', 'the question timer carries on');
+    mock.timers.tick(8_000 + MAX_LATENCY_MS);
+    assert.equal(restored.phase, 'closed', 'the question timer carries on from where it stopped');
     restored.dispose();
   } finally {
     mock.timers.reset();

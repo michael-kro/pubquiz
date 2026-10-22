@@ -26,14 +26,14 @@ test('with host-local-only, the host key works from the laptop but not through t
   host.send({ t: 'host', key: server.hostKey });
   await host.state('lobby');
 
-  const csvKey = `/results.csv?key=${server.hostKey}`;
-  assert.equal(await get(server.port, csvKey), 200, 'local');
-  assert.equal(await get(server.port, csvKey, { 'cf-connecting-ip': '203.0.113.9' }), 404, 'through the tunnel');
+  const csv = '/results.csv';
+  assert.equal(await get(server.port, csv, { 'x-host-key': server.hostKey }), 200, 'local');
+  assert.equal(await get(server.port, csv, { 'x-host-key': server.hostKey, 'cf-connecting-ip': '203.0.113.9' }), 404, 'through the tunnel');
   await host.close();
   await server.close();
 
   const open = await createQuizServer({ quiz: quiz(), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
-  assert.equal(await get(open.port, `/results.csv?key=${open.hostKey}`, { 'cf-connecting-ip': '203.0.113.9' }), 200, 'allowed when the setting is off');
+  assert.equal(await get(open.port, '/results.csv', { 'x-host-key': open.hostKey, 'cf-connecting-ip': '203.0.113.9' }), 200, 'allowed when the setting is off');
   await open.close();
 });
 

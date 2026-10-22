@@ -4,15 +4,19 @@
 FROM node:24-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+# No install scripts: none of the dependencies needs one, and a future compromised package could not run code at build time.
+RUN npm ci --omit=dev --ignore-scripts
 
 # Stage 2: the image that runs.
 FROM node:24-slim
 
 # cloudflared (the internet link) checks Cloudflare's certificate against the system's trusted list.
-# The base image is updated regularly and this is a plain certificate list, so pinning its version would only break builds.
-# hadolint ignore=DL3008
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+# The upgrade applies Debian's security fixes at build time: the node image can lag behind them by days, and the
+# image scanner fails the build on a known, fixed vulnerability. (hadolint discourages upgrade in general, DL3005;
+# here it is the point.) Pinning the certificate package's version would only break builds when it is superseded (DL3008).
+# hadolint ignore=DL3005,DL3008
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # The server runs on node alone. Taking npm out removes it, and the packages it bundles, from what ships.

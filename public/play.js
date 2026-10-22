@@ -37,6 +37,12 @@ let token = readToken();
 let state = null;
 let ended = null; // Message shown when this device is done (kicked or replaced).
 let joinError = '';
+let waitingToRejoin = false; // a team's token is kept while the program restarts; the server lets it back in
+
+/** This page's own view of its device, sent with a join so the server's phones-only check can let a tablet in desktop mode through. */
+function onPhone() {
+  return navigator.maxTouchPoints > 0 || matchMedia('(pointer: coarse)').matches;
+}
 let notice = '';
 let noticeTimer;
 let lastRenderKey = '';
@@ -82,7 +88,7 @@ function writeToken(value) {
 
 const socket = connectSocket({
   onOpen() {
-    if (token) socket.send({ t: 'rejoin', token });
+    if (token) socket.send({ t: 'rejoin', token, phone: onPhone() });
     else if (pendingJoin) socket.send(pendingJoin);
     pendingJoin = null;
     render();
@@ -107,10 +113,16 @@ const socket = connectSocket({
       case 'rejoin-failed':
         if (form.rejoining) {
           joinError = 'No team with that code. Check it on your other phone, or ask the quiz master.';
+        } else if (message.reason === 'no-quiz') {
+          // Nothing is running right now (the program is restarting, say). Keep the token: the server lets the team back
+          // in by itself when the quiz comes back, and the page asks again too in case this connection was lost meanwhile.
+          state = null;
+          waitingToRejoin = Boolean(token);
         } else {
-          // The quiz was restarted or the team was removed: start again.
+          // The team was removed, or this is another quiz: start again.
           writeToken(null);
           state = null;
+          waitingToRejoin = false;
         }
         break;
       case 'state':
@@ -234,6 +246,19 @@ function render() {
 
 function view() {
   if (ended) return h('section', { class: 'screen center' }, h('h1', {}, 'Thanks for playing'), h('p', {}, ended));
+  if (!state && token && waitingToRejoin) {
+    // The program is restarting: the team stays a team. Nothing to type; the server lets it back in by itself.
+    watchForQuiz();
+    return h(
+      'section',
+      { class: 'screen center' },
+      brandBlock(),
+      h('h1', {}, '⏸ One moment'),
+      h('p', {}, `The quiz is being restarted. Stay on this page: you will be back in${form.name ? ` as ${form.name}` : ''}, with your score, as soon as it carries on.`),
+      h('button', { class: 'primary', type: 'button', onclick: () => socket.send({ t: 'rejoin', token, phone: onPhone() }) }, 'Rejoin now'),
+      h('button', { class: 'link-button', type: 'button', onclick: () => { writeToken(null); waitingToRejoin = false; render(); } }, 'Start again as a new team instead'),
+    );
+  }
   if (!state) return token ? h('section', { class: 'screen center' }, h('p', { class: 'muted' }, 'Connecting…')) : joinForm();
 
   return h(
@@ -267,7 +292,7 @@ function rejoinForm() {
   const submit = (event) => {
     event.preventDefault();
     joinError = '';
-    submitWhenConnected({ t: 'rejoin', code: form.code });
+    submitWhenConnected({ t: 'rejoin', code: form.code, phone: onPhone() });
     lastRenderKey = '';
     render();
   };
@@ -360,6 +385,7 @@ function photoPrompt(s) {
 // The home page needs no room code: there is only one quiz. It checks whether one is running, and keeps checking.
 let quizRunning;
 let statusTimer;
+
 function watchForQuiz() {
   if (statusTimer) return;
   const check = async () => {
@@ -367,6 +393,8 @@ function watchForQuiz() {
       const { running } = await (await fetch('/status.json', { cache: 'no-store' })).json();
       if (running !== quizRunning) {
         quizRunning = running;
+        // A quiz is back and this team was in one: ask to be let back in (the server usually has done it already).
+        if (running && token && !state) socket.send({ t: 'rejoin', token, phone: onPhone() });
         if (!state) render();
       }
     } catch {
@@ -385,7 +413,7 @@ function joinForm() {
   const submit = (event) => {
     event.preventDefault();
     joinError = '';
-    submitWhenConnected({ t: 'join', room: form.room, name: form.name });
+    submitWhenConnected({ t: 'join', room: form.room, name: form.name, phone: onPhone() });
     lastRenderKey = '';
     render();
   };
@@ -396,7 +424,16 @@ function joinForm() {
     { class: 'screen join', onsubmit: submit },
     brandBlock(),
     h('h1', {}, 'Join the quiz'),
-    quizRunning === false ? h('p', { class: 'muted', role: 'status' }, 'No quiz is running yet. Stay on this page: it will let you in as soon as the quiz master starts one.') : null,
+    waitingToRejoin
+      ? h(
+          'p',
+          { class: 'notice-inline', role: 'status' },
+          `The quiz is being restarted. Stay on this page: you will be back in${form.name ? ` as ${form.name}` : ''}, with your score, as soon as it carries on. `,
+          h('button', { class: 'link-button', type: 'button', onclick: () => socket.send({ t: 'rejoin', token, phone: onPhone() }) }, 'Rejoin now'),
+        )
+      : quizRunning === false
+        ? h('p', { class: 'muted', role: 'status' }, 'No quiz is running yet. Stay on this page: it will let you in as soon as the quiz master starts one.')
+        : null,
     h(
       'label',
       {},
@@ -488,7 +525,7 @@ function phaseView(s) {
         s.myAnswerText != null
           ? h('p', {}, 'You answered ', h('strong', {}, myAnswerLabel(s)))
           : h('p', {}, 'No answer from your team this time.'),
-        h('p', { class: 'muted' }, q.type === 'picture' || q.type === 'music' ? 'The quiz master is marking answers…' : 'Waiting for the reveal…'),
+        h('p', { class: 'muted' }, q.type === 'text' || q.type === 'picture' || q.type === 'music' ? 'The quiz master is marking answers…' : 'Waiting for the reveal…'),
       );
 
     case 'reveal': {
@@ -594,7 +631,7 @@ function questionScreen(s, q, closed) {
       questionHeader(q),
       closed ? h('span', { class: 'time-up' }, "Time's up") : reading ? h('span', { class: 'time-up' }, 'Listen…') : h('span', { class: 'countdown', 'data-countdown': true }),
     ),
-    q.paused ? h('p', { class: 'paused-banner', role: 'status' }, '⏸ Paused by the quiz master. The clock is stopped.') : null,
+    q.paused ? h('p', { class: 'paused-banner', role: 'status' }, q.pausedByRestart ? '⏸ The quiz is carrying on from where it stopped. The clock starts again when the quiz master presses Resume.' : '⏸ Paused by the quiz master. The clock is stopped.') : null,
     s.wagerInfo?.amount ? h('p', { class: 'wager-banner' }, `🎲 ${s.wagerInfo.amount} points on the line`) : null,
     q.halveOnWrong ? h('p', { class: 'halve-banner', role: 'note' }, '⚠ One wrong answer halves your score for this round') : null,
     q.type === 'music' ? h('p', { class: 'music-badge' }, '🎵 Listen to the music') : null,
@@ -762,6 +799,7 @@ function answerInput(s, q, locked) {
       );
     }
 
+    case 'text':
     case 'picture':
     case 'music': {
       if (locked) return null;

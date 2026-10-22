@@ -1,5 +1,6 @@
 import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { checkTeamName, MAX_NAME_LENGTH } from './limits.ts';
+import { answerText, isRight, itemsInPlace, MAX_TEXT_ANSWER, validateAnswer } from './marking.ts';
 import { matchAnswer, normalise } from './matching.ts';
 import type { AnswerValue, BreakView, HostView, Phase, QuestionView, ReviewGroup, StandingRow, TeamView } from './protocol.ts';
 import { isTextAnswer, LETTER_GROUPS, ORDERING_ITEMS, POINTS_UNIT, type Question, type Quiz } from './quiz.ts';
@@ -11,12 +12,14 @@ import { scoreAnswer } from './scoring.ts';
 /** The most a team can be given as a head start. */
 const MAX_HEAD_START_SECONDS = 30;
 const ADMISSION_DEFAULT = process.env['PUBQUIZ_ADMISSION_DEFAULT'] !== 'off';
+/** Teams must join from a phone (or tablet): a laptop opening the join link is turned away. Off for tests and simulations. */
+const PHONES_ONLY_DEFAULT = process.env['PUBQUIZ_PHONES_ONLY_DEFAULT'] !== 'off';
 const READ_OUT_DEFAULT = process.env['PUBQUIZ_READOUT_DEFAULT'] !== 'off';
 
 export const MAX_TEAMS = 30;
 export const ABSOLUTE_MAX_TEAMS = 100;
 export { MAX_NAME_LENGTH };
-export const MAX_TEXT_ANSWER = 100;
+export { MAX_TEXT_ANSWER };
 /**
  * Most network delay we'll subtract from a team's answer time. Also how long a question stays
  * open after its deadline, so an answer sent in time over a slow connection still counts.
@@ -80,6 +83,8 @@ export interface GameSnapshot {
   version: 1;
   phase: Phase;
   questionIndex: number;
+  /** When this was taken: an open question is restored paused from this moment, so it keeps the time it had left. */
+  snapshotAt?: number;
   openedAt: number;
   endsAt: number;
   teams: { id: string; token: string; code: string; name: string; answers: [number, Answer][] }[];
@@ -103,6 +108,7 @@ export interface GameSnapshot {
   prizes?: string[];
   entryFee?: string;
   requireAdmission?: boolean;
+  phonesOnly?: boolean;
   pending?: { id: string; token: string; code: string; name: string; answers: [number, Answer][] }[];
   closeEarly?: boolean;
   readShown?: number;
@@ -148,26 +154,6 @@ function shuffledOrder(length: number): number[] {
   }
 }
 
-function answerText(q: Question): string {
-  switch (q.type) {
-    case 'multiple-choice':
-      return q.options[q.answer]!;
-    case 'picture':
-    case 'music':
-      return q.accept.join(' / ');
-    case 'ordering':
-      return q.items.join(' → ');
-    case 'letter':
-      return `${q.letter}: ${q.answer}`;
-    case 'number':
-      return q.tolerance > 0 ? `${q.answer} (give or take ${q.tolerance})` : String(q.answer);
-    case 'nearest':
-      return String(q.answer);
-    case 'buzzer':
-      return q.answer;
-  }
-}
-
 /**
  * Server-authoritative quiz state.
  * lobby → open → closed → reveal → leaderboard → open (next question) … → finished
@@ -210,10 +196,14 @@ export class Game {
   startOnLastAnswer = true;
   /** The host has closed the door: no new teams can join (teams already in can still rejoin). */
   joiningLocked = false;
+  /** The open question was paused because the program restarted, not by the host; cleared when the clock resumes. */
+  restoredPaused = false;
   /** What it costs to play, shown on the start screen ('' for free). */
   entryFee = '';
   /** Teams wait in `pending` until the host admits them (after they've paid). */
   requireAdmission = ADMISSION_DEFAULT;
+  /** Only phones and tablets may join; a desktop browser is turned away (checked by the server when a team joins). */
+  phonesOnly = PHONES_ONLY_DEFAULT;
   readonly pending = new Map<string, Team>();
   /** Optional prizes for 1st, 2nd and 3rd ('' when not set). */
   prizes: string[] = ['', '', ''];
@@ -438,6 +428,12 @@ export class Game {
   setRequireAdmission(on: boolean): void {
     this.requireAdmission = on;
     if (!on) this.admitAll();
+    this.changed();
+  }
+
+  /** Teams already in are not affected; this only decides who may join or rejoin from now on. */
+  setPhonesOnly(on: boolean): void {
+    this.phonesOnly = on;
     this.changed();
   }
 
@@ -735,42 +731,8 @@ export class Game {
 
   /** Checks an answer's shape and converts it to what is stored. */
   private validate(question: Question, value: AnswerValue): Result<AnswerValue> {
-    switch (question.type) {
-      case 'multiple-choice':
-        if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value >= question.options.length) {
-          return fail('That is not one of the options.');
-        }
-        return { ok: true, value };
-      case 'picture':
-      case 'music': {
-        if (typeof value !== 'string') return fail('Type an answer.');
-        const text = value.trim().replace(/\s+/g, ' ');
-        if (!text) return fail('Type an answer.');
-        if (text.length > MAX_TEXT_ANSWER) return fail(`Answers can be at most ${MAX_TEXT_ANSWER} characters.`);
-        return { ok: true, value: text };
-      }
-      case 'letter': {
-        const key = typeof value === 'string' ? value.toUpperCase() : '';
-        if (!/^[A-Z]$/.test(key) && !LETTER_GROUPS.includes(key)) return fail('Tap a key.');
-        return { ok: true, value: key };
-      }
-      case 'number':
-      case 'nearest':
-        if (typeof value !== 'number' || !Number.isFinite(value) || Math.abs(value) > 1e12) return fail('Type a number.');
-        return { ok: true, value };
-      case 'buzzer':
-        return fail('Press the buzzer.');
-      case 'ordering': {
-        const display = this.displayOrderFor(this.questionIndex, ORDERING_ITEMS);
-        const valid =
-          Array.isArray(value) &&
-          value.length === ORDERING_ITEMS &&
-          new Set(value).size === ORDERING_ITEMS &&
-          value.every((v) => Number.isInteger(v) && v >= 0 && v < ORDERING_ITEMS);
-        if (!valid) return fail(`Put all ${ORDERING_ITEMS} items in order.`);
-        return { ok: true, value: value.map((d) => display[d]!) };
-      }
-    }
+    // Ordering answers are positions in the shuffled list this team saw.
+    return validateAnswer(question, value, question.type === 'ordering' ? this.displayOrderFor(this.questionIndex, ORDERING_ITEMS) : undefined);
   }
 
   /** Host marks every typed answer that normalises to `key` as right or wrong. */
@@ -918,6 +880,7 @@ export class Game {
     if (this.pausedAt === undefined) return;
     const shift = this.now() - this.pausedAt;
     this.pausedAt = undefined;
+    this.restoredPaused = false;
     this.openedAt += shift;
     this.endsAt += shift;
     for (const [teamId, at] of this.sentAt) this.sentAt.set(teamId, at + shift);
@@ -995,6 +958,7 @@ export class Game {
       version: 1,
       phase: this.phase,
       questionIndex: this.questionIndex,
+      snapshotAt: this.now(),
       openedAt: this.openedAt,
       endsAt: this.endsAt,
       teams: [...this.teams.values()].map((t) => ({ id: t.id, token: t.token, code: t.code, name: t.name, answers: [...t.answers] })),
@@ -1018,6 +982,7 @@ export class Game {
       prizes: this.prizes,
       entryFee: this.entryFee,
       requireAdmission: this.requireAdmission,
+      phonesOnly: this.phonesOnly,
       pending: [...this.pending.values()].map((t) => ({ id: t.id, token: t.token, code: t.code, name: t.name, answers: [] })),
       closeEarly: this.closeEarly,
       readShown: this.readShown,
@@ -1056,6 +1021,7 @@ export class Game {
     game.prizes = snapshot.prizes ?? game.prizes;
     game.entryFee = snapshot.entryFee ?? game.entryFee;
     game.requireAdmission = snapshot.requireAdmission ?? ADMISSION_DEFAULT;
+    game.phonesOnly = snapshot.phonesOnly ?? PHONES_ONLY_DEFAULT;
     for (const t of snapshot.pending ?? []) game.pending.set(t.id, { ...t, connected: false, answers: new Map() });
     game.startOnLastAnswer = snapshot.startOnLastAnswer ?? game.startOnLastAnswer;
     game.closeEarly = snapshot.closeEarly ?? game.closeEarly;
@@ -1063,7 +1029,13 @@ export class Game {
     for (const index of snapshot.skipped ?? []) game.skipped.add(index);
     for (const [index, order] of snapshot.displayOrders) game.displayOrders.set(index, order);
     for (const [index, marks] of snapshot.overrides) game.overrides.set(index, new Map(marks));
-    if (game.phase === 'open' && game.pausedAt === undefined) game.startTimer();
+    // A question that was open when the program stopped comes back paused, with the time it had left: the clock
+    // must not have run on while nobody could answer. The host presses Resume when the room is ready.
+    if (game.phase === 'open' && game.pausedAt === undefined) {
+      // Paused from the moment of the last save, so the time left is what was left then.
+      game.pausedAt = Math.min(snapshot.snapshotAt ?? game.now(), game.now());
+      game.restoredPaused = true;
+    }
     // A buzz that was still waiting out its short window when the program stopped is settled now.
     const buzzing = game.buzzStates.get(game.questionIndex);
     if (game.phase === 'open' && buzzing && !buzzing.current && buzzing.queue.length) game.settleBuzz(game.questionIndex);
@@ -1172,8 +1144,7 @@ export class Game {
   // Marking and scores
 
   private isCorrectText(questionIndex: number, accepted: string[], given: string): boolean {
-    const override = this.overrides.get(questionIndex)?.get(normalise(given));
-    return override ?? matchAnswer(given, accepted) !== 'none';
+    return isRight({ type: 'picture', accept: accepted } as Question, given, this.overrides.get(questionIndex)?.get(normalise(given)));
   }
 
   /** Points for an answer, including the bonus for being among the quickest correct teams. */
@@ -1285,21 +1256,16 @@ export class Game {
       scoreAnswer({ correct, points, answerMs: answer.answerMs, durationMs, speedFactor });
 
     switch (q.type) {
-      case 'multiple-choice': {
-        const correct = answer.value === q.answer;
+      case 'multiple-choice':
+      case 'letter':
+      case 'number': {
+        const correct = isRight(q, answer.value);
         return { correct, points: timed(correct, q.points) };
       }
+      case 'text':
       case 'picture':
       case 'music': {
         const correct = this.isCorrectText(questionIndex, q.accept, answer.value as string);
-        return { correct, points: timed(correct, q.points) };
-      }
-      case 'letter': {
-        const correct = (answer.value as string).includes(q.letter ?? '');
-        return { correct, points: timed(correct, q.points) };
-      }
-      case 'number': {
-        const correct = Math.abs((answer.value as number) - q.answer) <= q.tolerance + 1e-9;
         return { correct, points: timed(correct, q.points) };
       }
       case 'buzzer': {
@@ -1316,8 +1282,7 @@ export class Game {
       }
       case 'ordering': {
         // Half the points for items in the right place, half as a bonus for the whole order (with speed bonus).
-        const order = answer.value as number[];
-        const right = order.filter((item, position) => item === position).length;
+        const right = itemsInPlace(answer.value as number[]);
         const perItem = Math.round(q.points / (2 * ORDERING_ITEMS));
         const bonusPool = q.points - perItem * ORDERING_ITEMS;
         const correct = right === ORDERING_ITEMS;
@@ -1524,6 +1489,7 @@ export class Game {
       seconds: q.seconds,
       remainingMs: this.phase === 'open' ? Math.max(0, this.endsAt - (this.pausedAt ?? this.now())) : undefined,
       paused: this.phase === 'open' && this.pausedAt !== undefined ? true : undefined,
+      pausedByRestart: this.phase === 'open' && this.pausedAt !== undefined && this.restoredPaused ? true : undefined,
     };
   }
 
@@ -1542,6 +1508,7 @@ export class Game {
     switch (q.type) {
       case 'multiple-choice':
         return q.options[answer.value as number]!;
+      case 'text':
       case 'picture':
       case 'music':
       case 'letter':
@@ -1742,6 +1709,7 @@ export class Game {
       showJoin: this.showJoin,
       entryFee: this.entryFee,
       requireAdmission: this.requireAdmission,
+      phonesOnly: this.phonesOnly,
       pendingTeams: [...this.pending.values()].map((t) => ({ id: t.id, name: t.name, code: t.code, connected: t.connected })),
       readOut: this.readOut,
       startOnLastAnswer: this.startOnLastAnswer,

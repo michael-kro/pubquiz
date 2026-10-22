@@ -1,0 +1,101 @@
+# When a release (or a hotfix) lands on main with a new version in package.json: tag it, publish the GitHub release
+# with the changelog section as its notes, keep only that release on the releases page (older tags stay), build the
+# image for the tag, and open the merge back into develop.
+name: Publish release
+
+on:
+  push:
+    branches: [main]
+    paths: [package.json]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+  pull-requests: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          # With the release token the merge-back pull request gets its checks and can merge itself; without it,
+          # tagging and publishing still work and the merge-back waits for a person.
+          token: ${{ secrets.RELEASE_TOKEN || github.token }}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Which version, and is it new?
+        id: version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null 2>&1; then
+            echo "v$version is already tagged; nothing to publish."
+            echo "new=no" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=yes" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Tag and publish the release
+        if: steps.version.outputs.new == 'yes'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          node scripts/release.ts notes "$VERSION" > notes.md
+          git config user.name 'pubquiz release'
+          git config user.email 'release@users.noreply.github.com'
+          git tag -a "v$VERSION" -m "pubquiz $VERSION"
+          git push origin "v$VERSION"
+          gh release create "v$VERSION" --title "pubquiz $VERSION" --notes-file notes.md --latest
+          # Only the newest release is kept on the releases page; the tags of the older ones remain.
+          for old in $(gh release list --limit 100 --json tagName --jq ".[] | select(.tagName != \"v$VERSION\") | .tagName"); do
+            gh release delete "$old" --yes
+          done
+          echo "Published v$VERSION" >> "$GITHUB_STEP_SUMMARY"
+
+      # Run by the tag, so the image gets its version tags (a release created by a workflow does not start other workflows).
+      - name: Build the image for the tag
+        if: steps.version.outputs.new == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: gh workflow run docker-image.yml --ref "v$VERSION"
+
+      # On a branch cut from develop with main merged in, so it is up to date with develop as the rulesets require.
+      - name: Open the merge back into develop
+        if: steps.version.outputs.new == 'yes'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN || github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          branch="merge-back/v$VERSION"
+          if gh pr list --base develop --head "$branch" --state open --json number --jq 'length' | grep -qv '^0$'; then
+            echo "The merge-back pull request is already open."
+            exit 0
+          fi
+          git fetch origin develop
+          git checkout -b "$branch" origin/develop
+          if ! git merge --no-edit origin/main; then
+            echo "::error::main does not merge cleanly into develop; merge it by hand."
+            exit 1
+          fi
+          if git diff --quiet origin/develop; then
+            echo "develop already has everything on main; nothing to merge back."
+            exit 0
+          fi
+          git push origin "$branch"
+          gh pr create --base develop --head "$branch" --title "Merge main back into develop after v$VERSION" \
+            --body "Brings the release commit (and any hotfix) for v$VERSION back into develop. Opened by publish.yml; it merges itself once the checks are green."
+          gh pr merge "$branch" --auto --merge || echo "Auto-merge could not be enabled; merge the pull request by hand once it is green."

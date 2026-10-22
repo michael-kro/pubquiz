@@ -173,8 +173,9 @@ test('the screen link survives a restart, and /results.csv needs the host key', 
   const key = first.screenKey;
   const base = `http://127.0.0.1:${first.port}`;
   assert.equal((await fetch(`${base}/results.csv`)).status, 404);
-  assert.equal((await fetch(`${base}/results.csv?key=${first.screenKey}`)).status, 404, 'the TV key is not enough');
-  const ok = await fetch(`${base}/results.csv?key=fixed-host-key-for-testing`);
+  assert.equal((await fetch(`${base}/results.csv`, { headers: { 'x-host-key': first.screenKey } })).status, 404, 'the TV key is not enough');
+  assert.equal((await fetch(`${base}/results.csv?key=fixed-host-key-for-testing`)).status, 404, 'a key in the address is not accepted');
+  const ok = await fetch(`${base}/results.csv`, { headers: { 'x-host-key': 'fixed-host-key-for-testing' } });
   assert.equal(ok.status, 200);
   assert.match(ok.headers.get('content-type') ?? '', /text\/csv/);
   await first.close();

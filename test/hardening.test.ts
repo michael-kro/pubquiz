@@ -81,6 +81,44 @@ test('the game uses the name check, and the host can turn the word filter off', 
   open.dispose();
 });
 
+test('keys travel in headers and in the link fragment, never in a request address', async () => {
+  // A key in a URL passes through any proxy (the internet link included) and can sit in its logs. The host link carries
+  // its key after the #, which browsers keep to themselves, and the pages fetch clips, QR codes and downloads with the
+  // key in a header. A key given in the address is simply not a key.
+  const server = await start();
+  assert.match(server.hostUrl, /\/host#key=/);
+  assert.doesNotMatch(server.hostUrl, /\?key=/);
+  const base = `http://127.0.0.1:${server.port}`;
+  // (The library API is covered the same way in library.test.ts; this server has no library.)
+  for (const [path, inAddress] of [
+    ['/results.csv', 404],
+    ['/host-qr.svg', 401],
+  ] as const) {
+    assert.equal((await fetch(`${base}${path}?key=${server.hostKey}`)).status, inAddress, `${path} with the key in the address`);
+    assert.equal((await fetch(`${base}${path}`, { headers: { 'x-host-key': server.hostKey } })).status, 200, `${path} with the key in a header`);
+  }
+  await server.close();
+});
+
+test('a WebSocket upgrade from another website is refused; the app itself and non-browser clients connect', async () => {
+  const server = await start();
+  const attempt = (headers: Record<string, string>) =>
+    new Promise<'open' | 'refused'>((resolve) => {
+      const ws = new WebSocket(`ws://127.0.0.1:${server.port}/ws`, { headers });
+      ws.once('open', () => {
+        ws.terminate();
+        resolve('open');
+      });
+      ws.once('unexpected-response', () => resolve('refused'));
+      ws.once('error', () => resolve('refused'));
+    });
+  assert.equal(await attempt({ Origin: 'https://evil.example' }), 'refused', 'another site');
+  assert.equal(await attempt({ Origin: `http://127.0.0.1:${server.port}` }), 'open', 'the app page, by the address it was opened on');
+  assert.equal(await attempt({ Origin: 'null' }), 'refused', 'an opaque origin');
+  assert.equal(await attempt({}), 'open', 'a client that is not a browser');
+  await server.close();
+});
+
 test('an oversized WebSocket frame closes that connection and nothing else', async () => {
   // Found by the fuzz test: without an error listener on each socket, ws's "Max payload size exceeded" was an
   // uncaught exception, so one 5 KB frame from anyone with the join link took the whole server down.

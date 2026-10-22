@@ -5,6 +5,8 @@ import { h, LETTERS } from './common.js';
 
 const TYPES = {
   'multiple-choice': 'Multiple choice',
+  'true-false': 'True or false',
+  text: 'Typed answer',
   picture: 'Picture',
   music: 'Music',
   ordering: 'Put in order',
@@ -34,10 +36,12 @@ function normalise(text) {
 }
 
 function blankQuestion(type = 'multiple-choice', from = {}) {
-  const keep = { text: from.text ?? '', seconds: from.seconds, points: from.points, image: from.image, info: from.info };
+  const keep = { text: from.text ?? '', seconds: from.seconds, points: from.points, image: from.image, info: from.info, topic: from.topic, explain: from.explain, hint: from.hint };
   for (const k of Object.keys(keep)) if (keep[k] === undefined) delete keep[k];
   const typed = {
     'multiple-choice': { options: ['', '', '', ''], answer: 0 },
+    'true-false': { answer: true },
+    text: { accept: [''] },
     picture: { accept: [''] },
     music: { accept: [''] },
     ordering: { items: Array(ORDERING_ITEMS).fill('') },
@@ -47,8 +51,8 @@ function blankQuestion(type = 'multiple-choice', from = {}) {
     buzzer: { answer: '' },
   }[type];
   // Carry the answer across where the types are similar.
-  if ((type === 'picture' || type === 'music') && from.accept) typed.accept = [...from.accept];
-  if ((type === 'picture' || type === 'music') && from.type === 'letter' && from.answer) typed.accept = [from.answer];
+  if ((type === 'text' || type === 'picture' || type === 'music') && from.accept) typed.accept = [...from.accept];
+  if ((type === 'text' || type === 'picture' || type === 'music') && from.type === 'letter' && from.answer) typed.accept = [from.answer];
   if (type === 'letter' && from.accept?.[0]) typed.answer = from.accept[0];
   return { key: newKey(), type, ...keep, ...typed };
 }
@@ -100,7 +104,7 @@ async function prepareImage(file) {
  * Mounts the editor for quiz `id` into `container`.
  * `api(method, path, body)` calls the host API; `onExit()` goes back to the library; `onRun()` after a quiz starts.
  */
-export async function mountEditor(container, { id, hostKey, api, onExit, onRun }) {
+export async function mountEditor(container, { id, api, blobUrlFor, downloadWithKey, notice, onExit, onRun }) {
   const loaded = await api('GET', `/quizzes/${id}`);
   const model = toModel(loaded.draft);
   if (model.rounds.length === 0) model.rounds.push({ key: newKey(), name: 'Round 1', questions: [blankQuestion()] });
@@ -112,8 +116,27 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
   let runProblems = [];
   let dragKey = null;
 
-  const imageUrl = (path) =>
-    /^https?:\/\//i.test(path) ? path : `/api/quizzes/${encodeURIComponent(id)}/images/${encodeURIComponent(path.replace(/^images\//, ''))}?key=${encodeURIComponent(hostKey)}`;
+  // This quiz's pictures and clips are fetched with the key in a header and shown from blob URLs, so the key never sits
+  // in an address. A preview shows blank until its file arrives, then the editor redraws.
+  const mediaBlobs = new Map();
+  const mediaPending = new Set();
+  const mediaUrl = (kind, path) => {
+    if (/^https?:\/\//i.test(path)) return path;
+    const apiPath = `/api/quizzes/${encodeURIComponent(id)}/${kind}/${encodeURIComponent(path.replace(kind === 'images' ? /^images\// : /^audio\//, ''))}`;
+    if (mediaBlobs.has(apiPath)) return mediaBlobs.get(apiPath);
+    if (!mediaPending.has(apiPath)) {
+      mediaPending.add(apiPath);
+      blobUrlFor(apiPath)
+        .then((url) => {
+          mediaBlobs.set(apiPath, url);
+          render();
+        })
+        .catch(() => {})
+        .finally(() => mediaPending.delete(apiPath));
+    }
+    return '';
+  };
+  const imageUrl = (path) => mediaUrl('images', path);
 
   function find(key) {
     for (const [r, round] of model.rounds.entries()) {
@@ -293,6 +316,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
   }
 
   async function uploadImage(question, file) {
+    mediaBlobs.clear(); // a replaced file must not show its old preview
     const status = container.querySelector('[data-problem="image"]');
     if (status) status.textContent = 'Uploading…';
     try {
@@ -400,10 +424,10 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
     changed({ structure: true });
   }
 
-  const audioUrl = (path) =>
-    /^https?:\/\//i.test(path) ? path : `/api/quizzes/${encodeURIComponent(id)}/audio/${encodeURIComponent(path.replace(/^audio\//, ''))}?key=${encodeURIComponent(hostKey)}`;
+  const audioUrl = (path) => mediaUrl('audio', path);
 
   async function uploadAudio(question, file) {
+    mediaBlobs.clear();
     const status = container.querySelector('[data-problem="audio"]');
     if (status) status.textContent = 'Uploading…';
     try {
@@ -416,6 +440,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
   }
 
   async function uploadRevealClip(question, file) {
+    mediaBlobs.clear();
     try {
       const result = await api('POST', `/quizzes/${id}/audio?name=${encodeURIComponent(file.name)}`, file);
       question.revealAudio = result.path;
@@ -496,6 +521,23 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
 
   function typeFields(q) {
     switch (q.type) {
+      case 'true-false':
+        return field(
+          'The statement is',
+          h(
+            'div',
+            { class: 'list-editor tf-choice' },
+            [true, false].map((value) =>
+              h(
+                'label',
+                { class: 'check' },
+                h('input', { type: 'radio', name: `answer-${q.key}`, checked: q.answer === value, onchange: () => { q.answer = value; changed(); } }),
+                value ? ' True' : ' False',
+              ),
+            ),
+          ),
+          'answer',
+        );
       case 'multiple-choice':
         return field(
           'Options (tick the right one)',
@@ -540,6 +582,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           ),
           'options',
         );
+      case 'text':
       case 'picture':
       case 'music':
         return [
@@ -555,7 +598,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           'Accepted answers',
           listEditor(q, 'accept', { min: 1, max: 10, label: 'Answer', placeholder: (i) => (i === 0 ? 'The answer' : 'Another way to write it') }),
           'accept',
-          'Teams type their answer. Small typos, capitals and "the" are forgiven, and you check every answer before the reveal.',
+          q.type === 'text' ? 'Teams type their answer. Capitals, small typos and "the" are forgiven: matching answers start ticked, the rest unticked, and you check them all once the question closes, before the reveal. Marking is easier on the laptop than on a phone.' : 'Teams type their answer. Small typos, capitals and "the" are forgiven, and you check every answer before the reveal.',
         ),
         ];
       case 'ordering':
@@ -727,6 +770,32 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
         q.info = v.trim() ? v : undefined;
         changed();
       }, { maxlength: '300' }), 'info'),
+      // For practice mode: what it is about, why the answer is right, and a nudge or three.
+      h(
+        'details',
+        { class: 'practice-fields', open: Boolean(q.topic || q.explain || q.hint) },
+        h('summary', {}, '🎓 For practice (optional)'),
+        field('Topic (progress is shown by topic; the round name if left blank)', textInput(q.topic, (v) => {
+          q.topic = v.trim() ? v : undefined;
+          changed();
+        }, { maxlength: '60', placeholder: 'e.g. Fractions' }), 'topic'),
+        field('Explanation (why the answer is right, shown after the question in practice)', h('textarea', {
+          rows: 2,
+          maxlength: '600',
+          oninput: (e) => {
+            q.explain = e.target.value.trim() ? e.target.value : undefined;
+            changed();
+          },
+        }, q.explain ?? ''), 'explain'),
+        field('Hints (one per line, up to three, given one at a time when asked)', h('textarea', {
+          rows: 2,
+          oninput: (e) => {
+            const lines = e.target.value.split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 3);
+            q.hint = lines.length === 0 ? undefined : lines.length === 1 ? lines[0] : lines;
+            changed();
+          },
+        }, Array.isArray(q.hint) ? q.hint.join('\n') : (q.hint ?? '')), 'hint'),
+      ),
       q.type === 'nearest' || q.type === 'buzzer' ? null : h(
         'label',
         { class: 'check' },
@@ -960,11 +1029,16 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           return h('div', { class: 'options' }, q.options.map((o, i) =>
             h('div', { class: `option opt-${i}${i === q.answer ? ' chosen' : ''}` }, h('span', { class: 'letter' }, LETTERS[i]), h('span', {}, o || '…')),
           ));
+        case 'true-false':
+          return h('div', { class: 'options' }, ['True', 'False'].map((o, i) =>
+            h('div', { class: `option opt-${i}${(q.answer ? 0 : 1) === i ? ' chosen' : ''}` }, h('span', { class: 'letter' }, LETTERS[i]), h('span', {}, o)),
+          ));
         case 'buzzer':
           return h('div', { class: 'center' }, h('div', { class: 'big-buzzer', style: 'width:150px;margin:12px auto;font-size:1.3rem' }, 'BUZZ!'));
         case 'number':
         case 'nearest':
           return h('div', { class: 'text-answer' }, h('input', { disabled: true, placeholder: 'Type a number' }), h('div', { class: 'primary fake-button' }, 'Submit answer'));
+        case 'text':
         case 'picture':
         case 'music':
           return h('div', { class: 'text-answer' }, h('input', { disabled: true, placeholder: 'Type your answer' }), h('div', { class: 'primary fake-button' }, 'Submit answer'));
@@ -1021,7 +1095,7 @@ export async function mountEditor(container, { id, hostKey, api, onExit, onRun }
           h('span', { class: 'problem-count' }),
           h('span', { class: 'save-status', role: 'status' }),
           h('button', { type: 'button', onclick: openBank }, '📚 Question bank'),
-          h('a', { class: 'button', href: `/api/quizzes/${id}/export.zip?key=${encodeURIComponent(hostKey)}`, onclick: () => flush() }, 'Export'),
+          h('button', { type: 'button', onclick: async () => { await flush(); downloadWithKey(`/api/quizzes/${id}/export.zip`, `${id}.zip`).catch((error) => notice?.(error.message)); } }, 'Export'),
           h('button', { type: 'button', class: 'primary', onclick: run }, 'Run quiz ▶'),
         ),
         h('ul', { class: 'editor-problems', hidden: true }),

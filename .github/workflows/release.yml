@@ -1,0 +1,93 @@
+# The weekly release: every Friday morning (or by hand), if anything is under "Unreleased" in CHANGELOG.md,
+# cut a release branch from develop with the version bumped and the changelog dated, open the pull request into
+# main and let it merge itself once every check is green. publish.yml then tags, publishes and builds the image.
+#
+# Needs the RELEASE_TOKEN secret (a fine-grained personal access token: contents, pull requests and actions,
+# read and write, on this repository): checks never run on a pull request opened with the workflow's own token.
+name: Release
+
+on:
+  schedule:
+    - cron: '0 9 * * 5'
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump (auto: minor, as every 0.x release with something in it is a feature release)'
+        type: choice
+        options: [auto, minor, patch, major]
+        default: auto
+      dry_run:
+        description: 'Only show what would be released'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the release token is there
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo "::error::RELEASE_TOKEN is not set. Add a fine-grained personal access token (contents, pull requests, actions: read and write) as a repository secret, or release by hand as in docs/RELEASING.md."
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+
+      - name: Anything to release?
+        id: check
+        run: |
+          if node scripts/release.ts unreleased; then
+            echo "release=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "Nothing under Unreleased in CHANGELOG.md: no release this week."
+            echo "release=no" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dry run
+        if: steps.check.outputs.release == 'yes' && inputs.dry_run
+        env:
+          BUMP: ${{ inputs.bump || 'auto' }}
+        run: node scripts/release.ts prepare "$BUMP" --dry-run
+
+      - name: Cut the release branch and open the pull request
+        if: steps.check.outputs.release == 'yes' && !inputs.dry_run
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          BUMP: ${{ inputs.bump || 'auto' }}
+        run: |
+          set -euo pipefail
+          tag=$(node scripts/release.ts prepare "$BUMP")
+          git config user.name 'pubquiz release'
+          git config user.email 'release@users.noreply.github.com'
+          git checkout -b "release/$tag"
+          git add CHANGELOG.md package.json package-lock.json
+          git commit -m "Release $tag"
+          git push origin "release/$tag"
+          {
+            echo "Release **$tag**, cut from \`develop\` by the weekly release workflow. It merges itself once every check is green; close it to skip this week."
+            echo
+            cat release-notes.md
+            echo
+            echo "After the merge, \`publish.yml\` tags \`$tag\`, creates the GitHub release, builds the image and opens the merge back into \`develop\`."
+          } > pr-body.md
+          gh pr create --base main --head "release/$tag" --title "Release $tag" --body-file pr-body.md
+          gh pr merge "release/$tag" --auto --merge
+          echo "Opened the release pull request for $tag" >> "$GITHUB_STEP_SUMMARY"
