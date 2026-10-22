@@ -218,11 +218,14 @@ test('HTTP upload fuzzing: malformed, mislabelled and oversized files to every u
   await t.test('quiz pictures and audio, and the JSON that saves or copies a quiz', async () => {
     for (let i = 0; i < ITERATIONS; i++) {
       const id = gen.chance(0.8) ? quizId : gen.pick(['nope', '..', `../${quizId}`, `${quizId}/..`, '%2e%2e', encodeURIComponent('..\\..')]);
-      switch (gen.int(4)) {
+      switch (gen.int(6)) {
         case 0: await send('image', 'POST', `/api/quizzes/${id}/images${query({ name: gen.name('image') })}`, hostHeaders(), gen.body('image')); break;
         case 1: await send('audio', 'POST', `/api/quizzes/${id}/audio${query({ name: gen.name('audio') })}`, hostHeaders(), gen.body('audio')); break;
         case 2: await send('save', 'PUT', `/api/quizzes/${id}`, { ...hostHeaders(), 'content-type': 'application/json' }, Buffer.from(gen.pick(JSONS))); break;
-        default: await send('duplicate', 'POST', `/api/quizzes/${id}/duplicate`, { ...hostHeaders(), 'content-type': 'application/json' }, Buffer.from(gen.pick(JSONS)));
+        case 3: await send('duplicate', 'POST', `/api/quizzes/${id}/duplicate`, { ...hostHeaders(), 'content-type': 'application/json' }, Buffer.from(gen.pick(JSONS))); break;
+        // Practice mode takes JSON too (the host key is accepted there): starting a session and answering.
+        case 4: await send('practice-start', 'POST', `/api/practice/learners/${encodeURIComponent(gen.pick(['Fuzz', gen.pick(TITLES), '..', '%00', 'x'.repeat(300)]))}/sessions`, { ...hostHeaders(), 'content-type': 'application/json' }, Buffer.from(gen.pick([...JSONS, `{"quizId":"${id}","mode":"learn"}`, `{"quizId":"${id}","mode":"test","count":1e9,"only":[-1,1e9,"x"]}`]))); break;
+        default: await send('practice-act', 'POST', `/api/practice/learners/Fuzz/current/${gen.pick(['answer', 'next', 'back', 'skip', 'flag', 'reveal', 'finish', 'abandon', '..', 'nope'])}`, { ...hostHeaders(), 'content-type': 'application/json' }, Buffer.from(gen.pick([...JSONS, '{"value":0}', '{"value":[0,1,2,3,4]}', '{"value":"' + 'x'.repeat(5000) + '"}', '{"value":{"__proto__":1}}', '{"value":1e400}'])));
       }
     }
     await alive();

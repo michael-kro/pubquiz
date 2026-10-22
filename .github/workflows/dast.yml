@@ -1,6 +1,7 @@
-# Dynamic scanning with OWASP ZAP against the running app (stage 3 of docs/plans/ci-and-security.md).
-# Every pull request gets a quick passive scan; a deeper active scan runs nightly. The active scan attacks the app,
-# so it only ever runs against a throwaway copy started inside the job, never against anything real.
+# Dynamic scanning against the running app.
+# Every pull request gets a quick passive ZAP scan; nightly, a deeper active ZAP scan and nuclei's misconfiguration
+# and exposure templates. The active scans attack the app, so they only ever run against a throwaway copy started
+# inside the job, never against anything real.
 name: DAST
 
 on:
@@ -27,6 +28,7 @@ concurrency:
 
 env:
   ZAP_IMAGE: ghcr.io/zaproxy/zaproxy:stable
+  NUCLEI_IMAGE: projectdiscovery/nuclei:v3.11.1
 
 jobs:
   baseline:
@@ -55,19 +57,25 @@ jobs:
     name: ZAP full (active) scan
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.scan == 'full')
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Start the app on a throwaway library
         run: bash scripts/ci-start-app.sh
       - name: ZAP full (active) scan, as the signed-in host
         run: bash scripts/ci-zap.sh full
+      # Misconfigurations and exposed files, from nuclei's community templates; fails on medium severity or above.
+      - name: nuclei misconfiguration and exposure scan, as the signed-in host
+        if: always()
+        run: bash scripts/ci-nuclei.sh
       - name: Keep the reports
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: zap-full
-          path: ${{ runner.temp }}/zap
+          path: |
+            ${{ runner.temp }}/zap
+            ${{ runner.temp }}/nuclei
           if-no-files-found: ignore
       - name: App log
         if: always()

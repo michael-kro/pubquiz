@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { loadQuizFile, parseQuiz, QuizError } from '../server/quiz.ts';
+import { hintsOf, loadQuizFile, parseQuiz, QuizError } from '../server/quiz.ts';
 
 const VALID = `
 title: Test
@@ -92,4 +92,21 @@ test('loads images next to the quiz file and reports missing ones', async () => 
   await assert.rejects(loadQuizFile(join(dir, 'quiz.yaml')), (e: QuizError) => /can't find nope.png/.test(e.issues[0]!));
   await writeFile(join(dir, 'quiz.yaml'), ONE('{ type: picture, text: Q, image: notes.txt, accept: [x] }'));
   await assert.rejects(loadQuizFile(join(dir, 'quiz.yaml')), (e: QuizError) => /use a .jpg/.test(e.issues[0]!));
+});
+
+test('true/false questions are played as two-option multiple choice; practice fields are accepted and checked', () => {
+  const quiz = parseQuiz(ONE('{ type: true-false, text: "The Sun is a star.", answer: true, topic: Space, explain: "It is a ball of hot gas that makes its own light.", hint: ["Think about what makes light.", "Planets only reflect light."] }'));
+  const q = quiz.questions[0]!;
+  assert.equal(q.type, 'multiple-choice');
+  assert.deepEqual((q as { options: string[] }).options, ['True', 'False']);
+  assert.equal((q as { answer: number }).answer, 0);
+  assert.equal(q.topic, 'Space');
+  assert.match(q.explain!, /hot gas/);
+  assert.deepEqual(hintsOf(q), ['Think about what makes light.', 'Planets only reflect light.']);
+  assert.equal((parseQuiz(ONE('{ type: true-false, text: Q, answer: false }')).questions[0] as { answer: number }).answer, 1);
+  assert.deepEqual(hintsOf(parseQuiz(ONE('{ type: number, text: Q, answer: 1, hint: "Count them." }')).questions[0]!), ['Count them.']);
+  assert.deepEqual(hintsOf(parseQuiz(ONE('{ type: number, text: Q, answer: 1 }')).questions[0]!), []);
+  assert.match(issuesOf(ONE('{ type: true-false, text: Q, answer: yes please }'))[0]!, /answer: must be true or false/);
+  assert.match(issuesOf(ONE('{ type: number, text: Q, answer: 1, hint: [a, b, c, d] }'))[0]!, /hint/);
+  assert.match(issuesOf(ONE('{ type: number, text: Q, answer: 1, explain: "" }'))[0]!, /explain/);
 });

@@ -1,5 +1,6 @@
 import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 import { checkTeamName, MAX_NAME_LENGTH } from './limits.ts';
+import { answerText, isRight, itemsInPlace, MAX_TEXT_ANSWER, validateAnswer } from './marking.ts';
 import { matchAnswer, normalise } from './matching.ts';
 import type { AnswerValue, BreakView, HostView, Phase, QuestionView, ReviewGroup, StandingRow, TeamView } from './protocol.ts';
 import { isTextAnswer, LETTER_GROUPS, ORDERING_ITEMS, POINTS_UNIT, type Question, type Quiz } from './quiz.ts';
@@ -18,7 +19,7 @@ const READ_OUT_DEFAULT = process.env['PUBQUIZ_READOUT_DEFAULT'] !== 'off';
 export const MAX_TEAMS = 30;
 export const ABSOLUTE_MAX_TEAMS = 100;
 export { MAX_NAME_LENGTH };
-export const MAX_TEXT_ANSWER = 100;
+export { MAX_TEXT_ANSWER };
 /**
  * Most network delay we'll subtract from a team's answer time. Also how long a question stays
  * open after its deadline, so an answer sent in time over a slow connection still counts.
@@ -148,26 +149,6 @@ function shuffledOrder(length: number): number[] {
     }
     // Never show an ordering question already in the right order.
     if (order.some((v, i) => v !== i)) return order;
-  }
-}
-
-function answerText(q: Question): string {
-  switch (q.type) {
-    case 'multiple-choice':
-      return q.options[q.answer]!;
-    case 'picture':
-    case 'music':
-      return q.accept.join(' / ');
-    case 'ordering':
-      return q.items.join(' → ');
-    case 'letter':
-      return `${q.letter}: ${q.answer}`;
-    case 'number':
-      return q.tolerance > 0 ? `${q.answer} (give or take ${q.tolerance})` : String(q.answer);
-    case 'nearest':
-      return String(q.answer);
-    case 'buzzer':
-      return q.answer;
   }
 }
 
@@ -746,42 +727,8 @@ export class Game {
 
   /** Checks an answer's shape and converts it to what is stored. */
   private validate(question: Question, value: AnswerValue): Result<AnswerValue> {
-    switch (question.type) {
-      case 'multiple-choice':
-        if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value >= question.options.length) {
-          return fail('That is not one of the options.');
-        }
-        return { ok: true, value };
-      case 'picture':
-      case 'music': {
-        if (typeof value !== 'string') return fail('Type an answer.');
-        const text = value.trim().replace(/\s+/g, ' ');
-        if (!text) return fail('Type an answer.');
-        if (text.length > MAX_TEXT_ANSWER) return fail(`Answers can be at most ${MAX_TEXT_ANSWER} characters.`);
-        return { ok: true, value: text };
-      }
-      case 'letter': {
-        const key = typeof value === 'string' ? value.toUpperCase() : '';
-        if (!/^[A-Z]$/.test(key) && !LETTER_GROUPS.includes(key)) return fail('Tap a key.');
-        return { ok: true, value: key };
-      }
-      case 'number':
-      case 'nearest':
-        if (typeof value !== 'number' || !Number.isFinite(value) || Math.abs(value) > 1e12) return fail('Type a number.');
-        return { ok: true, value };
-      case 'buzzer':
-        return fail('Press the buzzer.');
-      case 'ordering': {
-        const display = this.displayOrderFor(this.questionIndex, ORDERING_ITEMS);
-        const valid =
-          Array.isArray(value) &&
-          value.length === ORDERING_ITEMS &&
-          new Set(value).size === ORDERING_ITEMS &&
-          value.every((v) => Number.isInteger(v) && v >= 0 && v < ORDERING_ITEMS);
-        if (!valid) return fail(`Put all ${ORDERING_ITEMS} items in order.`);
-        return { ok: true, value: value.map((d) => display[d]!) };
-      }
-    }
+    // Ordering answers are positions in the shuffled list this team saw.
+    return validateAnswer(question, value, question.type === 'ordering' ? this.displayOrderFor(this.questionIndex, ORDERING_ITEMS) : undefined);
   }
 
   /** Host marks every typed answer that normalises to `key` as right or wrong. */
@@ -1185,8 +1132,7 @@ export class Game {
   // Marking and scores
 
   private isCorrectText(questionIndex: number, accepted: string[], given: string): boolean {
-    const override = this.overrides.get(questionIndex)?.get(normalise(given));
-    return override ?? matchAnswer(given, accepted) !== 'none';
+    return isRight({ type: 'picture', accept: accepted } as Question, given, this.overrides.get(questionIndex)?.get(normalise(given)));
   }
 
   /** Points for an answer, including the bonus for being among the quickest correct teams. */
@@ -1298,21 +1244,15 @@ export class Game {
       scoreAnswer({ correct, points, answerMs: answer.answerMs, durationMs, speedFactor });
 
     switch (q.type) {
-      case 'multiple-choice': {
-        const correct = answer.value === q.answer;
+      case 'multiple-choice':
+      case 'letter':
+      case 'number': {
+        const correct = isRight(q, answer.value);
         return { correct, points: timed(correct, q.points) };
       }
       case 'picture':
       case 'music': {
         const correct = this.isCorrectText(questionIndex, q.accept, answer.value as string);
-        return { correct, points: timed(correct, q.points) };
-      }
-      case 'letter': {
-        const correct = (answer.value as string).includes(q.letter ?? '');
-        return { correct, points: timed(correct, q.points) };
-      }
-      case 'number': {
-        const correct = Math.abs((answer.value as number) - q.answer) <= q.tolerance + 1e-9;
         return { correct, points: timed(correct, q.points) };
       }
       case 'buzzer': {
@@ -1329,8 +1269,7 @@ export class Game {
       }
       case 'ordering': {
         // Half the points for items in the right place, half as a bonus for the whole order (with speed bonus).
-        const order = answer.value as number[];
-        const right = order.filter((item, position) => item === position).length;
+        const right = itemsInPlace(answer.value as number[]);
         const perItem = Math.round(q.points / (2 * ORDERING_ITEMS));
         const bonusPool = q.points - perItem * ORDERING_ITEMS;
         const correct = right === ORDERING_ITEMS;

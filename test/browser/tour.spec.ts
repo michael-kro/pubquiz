@@ -214,6 +214,36 @@ test('a whole quiz on every screen: host on a laptop and a phone, the TV and a t
       }
     });
 
+    await test.step('practice mode: a learner answers a question and sees the feedback', async () => {
+      const practiceKey = createHmac('sha256', key).update('practice').digest('base64url').slice(0, 24);
+      const learner = await open('learner-tablet', `${base}/practice#key=${practiceKey}`, { width: 820, height: 1180 }, true);
+      await sleep(800);
+      expect(await learner.page.evaluate('location.href'), 'the key is taken out of the address bar').not.toContain('key=');
+      await check('practice-name');
+      await learner.page.locator('input[name=learner]').fill('Tour Learner');
+      await learner.page.locator('form').first().evaluate((f) => (f as HTMLFormElement).requestSubmit());
+      await sleep(800);
+      await check('practice-home');
+      await learner.page.getByRole('button', { name: 'Practise' }).first().click();
+      await sleep(300);
+      await check('practice-options');
+      await learner.page.getByRole('button', { name: 'Start ▶' }).click();
+      await sleep(800);
+      await check('practice-question');
+      await learner.page.locator('.option').first().click();
+      await sleep(600);
+      await check('practice-feedback');
+      await expect(learner.page.locator('.pr-feedback')).toBeVisible();
+      await learner.page.getByRole('button', { name: '‹ Quizzes' }).click();
+      await sleep(400);
+      await learner.page.getByRole('button', { name: 'Finish now' }).click();
+      await sleep(800);
+      await check('practice-results');
+      await expect(learner.page.locator('.pr-pct')).toBeVisible();
+      await learner.page.context().close();
+      views.splice(views.indexOf(learner), 1);
+    });
+
     await test.step('teams join and are admitted', async () => {
       const res = await fetch(`${base}/api/quizzes/tour-quiz/run`, { method: 'POST', headers: { 'x-host-key': key, 'content-type': 'application/json' }, body: JSON.stringify({ fresh: true }) });
       expect(res.status, 'the quiz starts').toBe(200);

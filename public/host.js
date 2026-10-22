@@ -271,7 +271,8 @@ function advance() {
 // Space, → and PageDown (what presentation clickers send) all move on.
 /** Escape closes whichever pop-up is open, the one on top first. Returns whether there was one. */
 function closeTopPopup() {
-  if (hostQrOpen) hostQrOpen = false;
+  if (practiceOpen) practiceOpen = false;
+  else if (hostQrOpen) hostQrOpen = false;
   else if (headStartOpen) headStartOpen = false;
   else if (clipsOpen) clipsOpen = false;
   else if (settingsOpen) settingsOpen = false;
@@ -382,7 +383,7 @@ function render() {
     return;
   }
   if (state.phase === 'idle') {
-    keepFocus(() => draw(openHostWarning(state), libraryView(state), hostQrOverlay(state), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : null));
+    keepFocus(() => draw(openHostWarning(state), libraryView(state), hostQrOverlay(state), practiceOverlay(), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : null));
     return;
   }
   keepFocus(() => draw(
@@ -397,6 +398,7 @@ function render() {
     codesOverlay(state),
     joinOverlay(state),
     hostQrOverlay(state),
+    practiceOverlay(),
     headStartOverlay(state),
     clipsOverlay(),
     settingsOverlay(),
@@ -640,6 +642,7 @@ function libraryView(s) {
       h('a', { class: 'button', href: '#branding' }, 'Branding'),
       h('button', { type: 'button', onclick: openSettings, title: 'Where your quizzes are kept' }, '⚙ Settings'),
       isPhone() ? null : h('button', { type: 'button', onclick: () => { hostQrOpen = true; render(); }, title: 'A QR code to open this host page on your phone' }, '📲 Host on my phone'),
+      h('button', { type: 'button', onclick: openPractice, title: 'A link for one person to work through a quiz at their own pace, with the answers' }, '🎓 Practice'),
       h(
         'label',
         { class: 'button' },
@@ -1940,6 +1943,93 @@ let codesOpen = false;
 
 /** A big, easy-to-read list of every team and its rejoin code, for when a phone dies or someone changes device. */
 let hostQrOpen = false;
+
+// Practice mode: a separate page with its own key, for one learner at a time. The host hands over the link or the QR code.
+let practiceOpen = false;
+let practiceLink = '';
+let practiceLearners = [];
+let practiceProgress = null; // { name, attempts, topics, hardest, due, … } for the learner being looked at
+
+async function openPractice() {
+  try {
+    practiceLink = (await api('GET', '/practice/link')).url;
+    practiceLearners = await api('GET', '/practice/learners');
+    practiceProgress = null;
+    practiceOpen = true;
+  } catch (error) {
+    showNotice(error.message);
+  }
+  render();
+}
+
+/** The parent's or teacher's view: how a learner is getting on, from their saved attempts. */
+async function showLearner(name) {
+  try {
+    practiceProgress = await api('GET', `/practice/learners/${encodeURIComponent(name)}/progress`);
+  } catch (error) {
+    showNotice(error.message);
+  }
+  render();
+}
+
+function learnerProgressPanel() {
+  if (practiceProgress) {
+    const p = practiceProgress;
+    const when = (iso) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    return h(
+      'div',
+      { class: 'practice-learners' },
+      h('div', { class: 'codes-head' }, h('h3', {}, `📈 ${p.name}`), h('button', { type: 'button', onclick: () => { practiceProgress = null; render(); } }, '‹ All learners')),
+      p.attempts.length === 0
+        ? h('p', { class: 'muted' }, 'No finished attempts yet.')
+        : [
+            h('p', {}, `${p.attempts.length} ${p.attempts.length === 1 ? 'attempt' : 'attempts'} · ${p.answered} questions · ${p.percent}% right overall${p.reviewing ? ` · ${p.reviewing} to keep an eye on` : ''}`),
+            p.topics.length ? h('p', { class: 'muted small' }, 'Weakest topics: ', p.topics.slice(0, 4).map((t) => `${t.round} ${t.percent}%`).join(' · ')) : null,
+            h('ul', { class: 'practice-attempts' }, p.attempts.slice(-8).reverse().map((a) => h('li', {}, h('span', {}, `${when(a.finishedAt)} · ${a.quizTitle} · ${a.kind ?? a.mode}`), h('strong', {}, `${a.right}/${a.total}`)))),
+            p.hardest.length ? h('p', { class: 'muted small' }, 'Missed most: ', p.hardest.slice(0, 3).map((x) => `“${x.text}” (${x.misses})`).join(' · ')) : null,
+            h('button', { type: 'button', onclick: () => downloadWithKey(`/api/practice/learners/${encodeURIComponent(p.name)}/export.csv`, `${p.name}.csv`).catch((error) => showNotice(error.message)) }, '⬇ CSV of every attempt'),
+          ],
+    );
+  }
+  if (!practiceLearners.length) return h('p', { class: 'muted small' }, 'Nobody has practised yet. Once someone has, their attempts show up here.');
+  return h(
+    'div',
+    { class: 'practice-learners' },
+    h('h3', {}, 'Learners'),
+    h('ul', { class: 'practice-attempts' }, practiceLearners.map((l) => h('li', {}, h('button', { type: 'button', class: 'link-button', onclick: () => showLearner(l.name) }, l.name), h('span', { class: 'muted small' }, `${l.sessions} ${l.sessions === 1 ? 'attempt' : 'attempts'}${l.lastAt ? ` · last ${new Date(l.lastAt).toLocaleDateString()}` : ''}`)))),
+  );
+}
+
+function practiceOverlay() {
+  if (TV || !practiceOpen) return null;
+  const close = () => {
+    practiceOpen = false;
+    render();
+  };
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(practiceLink);
+      showNotice('Link copied.');
+    } catch {
+      showNotice('Could not copy; select the link and copy it.');
+    }
+  };
+  return h(
+    'div',
+    { class: 'codes-overlay', role: 'dialog', 'aria-label': 'Practice', onclick: (e) => e.target === e.currentTarget && close() },
+    h(
+      'div',
+      { class: 'codes-card join-card practice-card' },
+      h('h2', {}, '🎓 Practice'),
+      h('p', { class: 'muted' }, 'One person works through a quiz at their own pace: no teams, no clock, the answer and the explanation after each question, and a breakdown at the end. Good for revising for a test.'),
+      h('img', { class: 'qr', src: imageWithKey('/practice-qr.svg'), alt: 'QR code for the practice page' }),
+      h('p', { class: 'copy-link' }, h('code', {}, practiceLink), ' ', h('button', { type: 'button', onclick: copy }, '📋 Copy link')),
+      h('p', { class: 'muted small' }, 'The link has its own key: anyone with it can practise any quiz in your library and see the answers, so give it to learners, not teams. Changing the host key changes it too.'),
+      learnerProgressPanel(),
+      h('div', { class: 'card-actions' }, h('a', { class: 'button primary', href: practiceLink, target: '_blank', rel: 'noopener' }, 'Open practice here'), h('button', { type: 'button', onclick: close }, 'Close')),
+    ),
+  );
+}
 
 /** A QR code of this host page's own address, to scan with the host's phone. Shows on the laptop only. */
 function hostQrOverlay(s) {

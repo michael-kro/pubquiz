@@ -31,10 +31,11 @@ Quizzes, pictures, sound clips, branding, saved games and results all live in on
 - About 1,150 ready-made questions in 19 topics are built in: the editor's **Question bank**.
 - Let an AI write one: give it [docs/AI-QUIZ-GUIDE.md](docs/AI-QUIZ-GUIDE.md) and a topic.
 - Question types: multiple choice, picture (optionally revealed slowly), music, ordering, first letter, number, closest wins and buzzer, plus wager and halving rounds. See [docs/QUIZ-FORMAT.md](docs/QUIZ-FORMAT.md).
+- **🎓 Practice**: any quiz doubles as revision for one person, at their own pace, with the answers and explanations as they go. The host screen gives the link.
 
 ## Docs
 
-- [Host guide](docs/HOST-GUIDE.md): everything the host screen does, hosting from your phone, how phones connect, and what to do when something goes wrong.
+- [Host guide](docs/HOST-GUIDE.md): everything the host screen does, hosting from your phone, practice mode, how phones connect, and what to do when something goes wrong.
 - [Writing a quiz](docs/QUIZ-FORMAT.md), and [writing one with AI](docs/AI-QUIZ-GUIDE.md).
 - [Development](docs/DEVELOPMENT.md): running from source, code layout, tests, Docker, CI and security scanning.
 - [Releasing](docs/RELEASING.md): a release every two weeks; `feature/` and `fix/` branches off `develop`, `hotfix/` off `main`; every change is a pull request that passes CI and adds a line to [CHANGELOG.md](CHANGELOG.md).
