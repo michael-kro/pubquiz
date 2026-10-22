@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **⏻ Shut down** from the host screen: under the network pill, next to the close-by-itself timer, a button stops the whole program at the end of the night. Every screen is told first, the internet link closes, and an unfinished quiz offers Resume when the program is started again.
 ## 0.2.0 — 2026-10-22
 
 - **Weekly releases, by themselves:** every Friday a workflow cuts the release from `develop` (version bumped, changelog dated), opens the pull request into `main` and merges it when green; a second workflow then tags, publishes the GitHub release, builds the image and opens the merge back into `develop`. `scripts/release.ts` does the changelog and version work, by hand too. The fortnightly reminder issue is gone.
