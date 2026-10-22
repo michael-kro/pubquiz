@@ -31,7 +31,9 @@ const slug = (text: string) =>
 
 /** Tidy a file name into a readable title: "the-big-one_v2.mp3" becomes "The big one v2". */
 function titleFromName(filename: string): string {
-  const stem = filename.slice(0, filename.length - extname(filename).length).replace(/[-_]+/g, ' ').trim();
+  // Only the last part of a path: a title never shows folders, however the file was named.
+  const bare = filename.split(/[\\/]/).pop() ?? filename;
+  const stem = bare.slice(0, bare.length - extname(bare).length).replace(/[-_]+/g, ' ').trim();
   return (stem.charAt(0).toUpperCase() + stem.slice(1)).slice(0, 80) || 'Clip';
 }
 
