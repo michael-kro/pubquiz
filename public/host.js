@@ -770,22 +770,23 @@ function libraryView(s) {
                 h(
                   'div',
                   { class: 'card-actions' },
+                  // Run is the one with words; the rest are icons with the word as the tooltip (and for screen readers).
                   q.unfinished
                     ? [
                         h('button', { class: 'primary', disabled: q.problems > 0, onclick: () => runQuiz(q.id) }, 'Resume ▶'),
-                        h('button', { disabled: q.problems > 0, onclick: () => confirm('Start again from the beginning? The unfinished scores are lost.') && runQuiz(q.id, true) }, 'Start over'),
+                        h('button', { class: 'icon-button', title: 'Start over', 'aria-label': `Start "${q.title}" over`, disabled: q.problems > 0, onclick: () => confirm('Start again from the beginning? The unfinished scores are lost.') && runQuiz(q.id, true) }, '↺'),
                       ]
                     : h('button', { class: 'primary', disabled: q.problems > 0, onclick: () => runQuiz(q.id) }, 'Run ▶'),
-                  h('a', { class: 'button', href: `#edit/${q.id}` }, 'Edit'),
-                  h('button', { onclick: act(() => api('POST', `/quizzes/${q.id}/duplicate`)) }, 'Duplicate'),
+                  h('a', { class: 'button icon-button', href: `#edit/${q.id}`, title: 'Edit', 'aria-label': `Edit "${q.title}"` }, '✏️'),
+                  h('button', { class: 'icon-button', title: 'Duplicate', 'aria-label': `Duplicate "${q.title}"`, onclick: act(() => api('POST', `/quizzes/${q.id}/duplicate`)) }, '📑'),
                   // On a phone the card keeps to running and editing; exporting and deleting are laptop jobs.
-                  isPhone() ? null : h('button', { type: 'button', onclick: () => downloadWithKey(`/api/quizzes/${q.id}/export.zip`, `${q.id}.zip`).catch((error) => showNotice(error.message)) }, 'Export'),
+                  isPhone() ? null : h('button', { type: 'button', class: 'icon-button', title: 'Export (a zip with the pictures)', 'aria-label': `Export "${q.title}"`, onclick: () => downloadWithKey(`/api/quizzes/${q.id}/export.zip`, `${q.id}.zip`).catch((error) => showNotice(error.message)) }, '⬇'),
                   isPhone()
                     ? null
                     : h(
                         'button',
-                        { class: 'danger', onclick: act(async () => confirm(`Delete "${q.title}"?`) && (await api('DELETE', `/quizzes/${q.id}`))) },
-                        'Delete',
+                        { class: 'danger icon-button', title: 'Delete', 'aria-label': `Delete "${q.title}"`, onclick: act(async () => confirm(`Delete "${q.title}"?`) && (await api('DELETE', `/quizzes/${q.id}`))) },
+                        '🗑',
                       ),
                 ),
               ),
