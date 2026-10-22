@@ -278,9 +278,10 @@ function closeTopPopup() {
   else if (settingsOpen) settingsOpen = false;
   else if (codesOpen) codesOpen = false;
   else if (state?.showJoin && !TV) socket?.send({ t: 'show-join', shown: false });
-  else if (moreOpen || breakMenuOpen) {
+  else if (moreOpen || breakMenuOpen || libraryMoreOpen) {
     moreOpen = false;
     breakMenuOpen = false;
+    libraryMoreOpen = false;
   } else return false;
   render();
   return true;
@@ -641,8 +642,7 @@ function libraryView(s) {
         : null,
       h('a', { class: 'button', href: '#branding' }, 'Branding'),
       h('button', { type: 'button', onclick: openSettings, title: 'Where your quizzes are kept' }, '⚙ Settings'),
-      isPhone() ? null : h('button', { type: 'button', onclick: () => { hostQrOpen = true; render(); }, title: 'A QR code to open this host page on your phone' }, '📲 Host on my phone'),
-      h('button', { type: 'button', onclick: openPractice, title: 'A link for one person to work through a quiz at their own pace, with the answers' }, '🎓 Practice'),
+      libraryMoreMenu(),
       h(
         'label',
         { class: 'button' },
@@ -1173,12 +1173,30 @@ function breakStage(s) {
 
 let breakMenuOpen = false;
 document.addEventListener('click', (event) => {
-  if ((breakMenuOpen || moreOpen) && !event.target.closest?.('.break-menu-wrap')) {
+  if ((breakMenuOpen || moreOpen || libraryMoreOpen) && !event.target.closest?.('.break-menu-wrap')) {
     breakMenuOpen = false;
     moreOpen = false;
+    libraryMoreOpen = false;
     render();
   }
 });
+
+// The library screen's ⋯ menu: the less-used things, so the bar stays short.
+let libraryMoreOpen = false;
+function libraryMoreMenu() {
+  const items = [
+    ...(isPhone() ? [] : [['📲 Host on my phone', () => { hostQrOpen = true; }]]),
+    ['🎓 Practice', openPractice],
+  ];
+  return h(
+    'span',
+    { class: 'break-menu-wrap more-menu-wrap' },
+    h('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': String(libraryMoreOpen), title: 'More', 'aria-label': 'More actions', onclick: () => { libraryMoreOpen = !libraryMoreOpen; render(); } }, '⋯'),
+    libraryMoreOpen
+      ? h('div', { class: 'break-menu', role: 'menu' }, items.map(([label, run]) => h('button', { type: 'button', role: 'menuitem', onclick: () => { libraryMoreOpen = false; run(); render(); } }, label)))
+      : null,
+  );
+}
 
 /** The Break button and its choice of lengths, shown between questions. */
 let moreOpen = false;
@@ -1199,7 +1217,8 @@ function moreControl(s) {
   return h(
     'span',
     { class: 'break-menu-wrap more-menu-wrap' },
-    h('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': String(moreOpen), title: 'More actions', 'aria-label': 'More actions', onclick: () => { moreOpen = !moreOpen; render(); } }, isPhone() ? '⋯' : '⋯ More'),
+    // Opening one menu closes the other: on a phone both are sheets in the same place, and two at once looked stuck.
+    h('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': String(moreOpen), title: 'More actions', 'aria-label': 'More actions', onclick: () => { moreOpen = !moreOpen; breakMenuOpen = false; render(); } }, isPhone() ? '⋯' : '⋯ More'),
     moreOpen
       ? h('div', { class: 'break-menu', role: 'menu' }, items.map(([label, run]) => h('button', { role: 'menuitem', onclick: () => { moreOpen = false; run(); render(); } }, label)))
       : null,
@@ -1215,7 +1234,7 @@ function breakControl(s, compact = false) {
   return h(
     'span',
     { class: 'break-menu-wrap' },
-    h('button', { 'aria-haspopup': 'true', 'aria-expanded': String(breakMenuOpen), onclick: () => { breakMenuOpen = !breakMenuOpen; render(); }, title: 'Show a break screen with fun facts', 'aria-label': 'Break' }, compact ? '☕' : '☕ Break'),
+    h('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': String(breakMenuOpen), onclick: () => { breakMenuOpen = !breakMenuOpen; moreOpen = false; render(); }, title: 'Show a break screen with fun facts', 'aria-label': 'Break' }, compact ? '☕' : '☕ Break'),
     breakMenuOpen
       ? h(
           'div',
