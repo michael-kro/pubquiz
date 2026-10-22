@@ -19,8 +19,6 @@ Run a live pub quiz from your laptop. Teams join on their own phones by scanning
 4. **Put the QR code on the TV**: **TV ↗** opens a page for it. Teams scan the code, type a team name, and they are in.
 5. **Run the quiz** with the yellow button (or Space): **Start quiz → Close question → Reveal answer → Next question**.
 
-There is no downloadable program: one that opens without a warning on macOS and Windows needs a paid signing certificate, and this is a free project.
-
 ## Your files
 
 Quizzes, pictures, sound clips, branding, saved games and results all live in one folder: `~/PubQuiz` (`C:\Users\<you>\PubQuiz` on Windows). Back it up and you have everything. Change it under **⚙ Settings**, or with `--quizzes <folder>` or `PUBQUIZ_HOME`.
