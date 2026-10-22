@@ -2,7 +2,7 @@
 
 ## Schedule
 
-**A release every week, on a Thursday morning, by itself.** The `Release` workflow runs at 09:00 UTC each Thursday (and whenever you press "Run workflow" on it): if `CHANGELOG.md` has anything under "Unreleased", it cuts a `release/vX.Y.Z` branch from `develop` with the version bumped and the changelog section dated, opens the pull request into `main`, and lets it merge itself once every check is green. A red check holds the release; closing the pull request skips the week. A week with nothing in it is skipped by itself.
+**A release every week, on a Friday morning, by itself.** The `Release` workflow runs at 09:00 UTC each Friday (and whenever you press "Run workflow" on it): if `CHANGELOG.md` has anything under "Unreleased", it cuts a `release/vX.Y.Z` branch from `develop` with the version bumped and the changelog section dated, opens the pull request into `main`, and lets it merge itself once every check is green. A red check holds the release; closing the pull request skips the week. A week with nothing in it is skipped by itself.
 
 Once that merge lands on `main`, the `Publish release` workflow tags `vX.Y.Z`, creates the GitHub release with the changelog section as its notes (only the newest release is kept on the releases page; older tags remain), builds the image for the tag, and opens the merge of `main` back into `develop`, which also merges itself when green.
 
