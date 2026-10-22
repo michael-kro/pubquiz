@@ -97,6 +97,8 @@ const QuestionSchema = z.discriminatedUnion('type', [
   // `uncover`: the picture starts hidden behind black tiles that drop away as the time runs out.
   z.object({ type: z.literal('picture'), ...common, image: text, accept, uncover: z.boolean().optional() }).strict(),
   z.object({ type: z.literal('music'), ...common, accept }).strict(),
+  // Teams type the answer; the host checks every answer after the question closes, before the reveal.
+  z.object({ type: z.literal('text'), ...common, accept }).strict(),
   // Teams type a number. Right if it matches, give or take `tolerance`.
   z.object({ type: z.literal('number'), ...common, answer: number, tolerance: z.number().min(0).max(1e12).default(0) }).strict(),
   // Buzzin': teams race to buzz, the first answers out loud, and the host judges. A wrong answer locks that team out.
@@ -141,7 +143,7 @@ const QuestionSchema = z.discriminatedUnion('type', [
       message: 'items must all be different',
       path: ['items'],
     }),
-], { error: 'type must be one of: multiple-choice, true-false, picture, music, ordering, letter, number, nearest, buzzer' });
+], { error: 'type must be one of: multiple-choice, true-false, text, picture, music, ordering, letter, number, nearest, buzzer' });
 
 /** The keys of the grouped letter keypad: single letters, except the rare ones: QV and XZ. */
 export const LETTER_GROUPS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'T', 'U', 'QV', 'W', 'Y', 'XZ'];
@@ -260,8 +262,8 @@ export interface Quiz {
   media: Map<string, Media>;
 }
 
-export function isTextAnswer(q: Question): q is Extract<Question, { type: 'picture' | 'music' }> {
-  return q.type === 'picture' || q.type === 'music';
+export function isTextAnswer(q: Question): q is Extract<Question, { type: 'text' | 'picture' | 'music' }> {
+  return q.type === 'text' || q.type === 'picture' || q.type === 'music';
 }
 
 export interface QuizIssue {

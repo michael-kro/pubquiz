@@ -8,6 +8,7 @@ A quiz is one `quiz.yaml` file, plus an `images/` folder if it has pictures. Wri
 |---|---|---|
 | `multiple-choice` | 2–6 coloured buttons | `options`, and `answer`: the right option's position counting from 0 |
 | `true-false` | Two buttons, True and False | `answer: true` or `answer: false` (played as a two-option multiple choice) |
+| `text` | A text box | `accept`: the answers to accept. Matching answers start ticked and the rest unticked; you check them all once the question closes, before the reveal (easier on a laptop than a phone) |
 | `picture` | The picture and a text box | `image` and `accept`: the answers to accept. `uncover: true` reveals the picture slowly behind black tiles |
 | `music` | A text box (you play the track) | `accept` |
 | `ordering` | 5 items, shuffled, to drag into order | `items`, listed in the correct order |

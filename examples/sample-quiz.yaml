@@ -53,6 +53,10 @@ rounds:
         text: In which year did the Berlin Wall fall?
         options: ["1987", "1989", "1991", "1993"]
         answer: 1
+      - type: text
+        text: What is the capital of France?
+        accept: [Paris]
+        info: Teams type this one; you tick the answers once the question closes.
 
   - name: Pot Luck
     questions:

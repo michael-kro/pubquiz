@@ -51,7 +51,7 @@ test('parses a valid quiz, flattening rounds and applying defaults', () => {
 
 test('the bundled sample quiz is valid', async () => {
   const quiz = parseQuiz(await readFile(new URL('../examples/sample-quiz.yaml', import.meta.url), 'utf8'));
-  assert.equal(quiz.questions.length, 22);
+  assert.equal(quiz.questions.length, 23);
 });
 
 test('reports an answer outside the options with its location', () => {
@@ -109,4 +109,12 @@ test('true/false questions are played as two-option multiple choice; practice fi
   assert.match(issuesOf(ONE('{ type: true-false, text: Q, answer: yes please }'))[0]!, /answer: must be true or false/);
   assert.match(issuesOf(ONE('{ type: number, text: Q, answer: 1, hint: [a, b, c, d] }'))[0]!, /hint/);
   assert.match(issuesOf(ONE('{ type: number, text: Q, answer: 1, explain: "" }'))[0]!, /explain/);
+});
+
+test('the text type: typed answers with an accept list, no picture', () => {
+  const q = parseQuiz(ONE('{ type: text, text: Q, accept: [Paris, "City of Light"] }')).questions[0]!;
+  assert.equal(q.type, 'text');
+  assert.deepEqual((q as { accept: string[] }).accept, ['Paris', 'City of Light']);
+  assert.match(issuesOf(ONE('{ type: text, text: Q }'))[0]!, /accept/);
+  assert.match(issuesOf(ONE('{ type: text, text: Q, accept: [Paris], options: [a, b] }'))[0]!, /options/);
 });

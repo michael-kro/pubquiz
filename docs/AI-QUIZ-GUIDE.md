@@ -43,6 +43,7 @@ Every question has `type` and `text` (required). Optional on any question: `seco
 | `number` | `answer:` a number, optional `tolerance:` (give or take) | Exact numbers: years, counts. |
 | `nearest` | `answer:` a number | The closest guess wins. Good for "how many/how tall" bonus questions. |
 | `ordering` | `items:` exactly **5** items **in the correct order** | The app shuffles them for teams. Items must all be different. |
+| `text` | `accept:` a list of acceptable typed answers | Teams type the answer; the host checks every answer after the question closes. Use when multiple choice would give it away. |
 | `picture` | `image:` and `accept:` a list of acceptable typed answers | Add `uncover: true` to reveal the picture slowly behind black tiles. Needs a picture file. |
 | `music` | `accept:` a list of acceptable typed answers | The host plays the track; teams type the answer. |
 | `buzzer` | `answer:` (for the host), optional `penalty:` | Teams race to buzz; the host judges. |

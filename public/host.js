@@ -1196,7 +1196,7 @@ function stage(s) {
 
 /** Time's up: the answer, for the host to check (and change) before it goes on the screens. */
 function answerReview(s, q) {
-  if (q.type === 'buzzer' || q.type === 'picture' || q.type === 'music') return null; // Typed answers have their own review list.
+  if (q.type === 'buzzer' || q.type === 'text' || q.type === 'picture' || q.type === 'music') return null; // Typed answers have their own review list.
   const edit = (() => {
     if (!q.editable) return null;
     if (q.type === 'multiple-choice') return h('span', { class: 'muted' }, 'Click an option below to change it.');
@@ -1577,6 +1577,7 @@ function questionBody(s, q, reveal) {
         s.summary ? h('p', { class: 'letter-counts' }, s.summary.split(/\s{2,}/).map((count) => h('span', {}, count))) : null,
       );
 
+    case 'text':
     case 'picture':
     case 'music':
       if (s.phase === 'open') return null;
@@ -1601,8 +1602,9 @@ function reviewPanel(s, q) {
       { class: 'review-help' },
       'Mark the answers, then reveal. Accepted: ',
       h('strong', {}, q.answerText),
-      '. Exact and close matches start ticked.',
+      '. Exact and close matches start ticked; the rest count as wrong unless you tick them.',
     ),
+    isPhone() && s.review.length > 4 ? h('p', { class: 'review-help muted small' }, '📱 Lots to mark: this is easier on the laptop, where the same list is waiting.') : null,
     h(
       'ul',
       {},

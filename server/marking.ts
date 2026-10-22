@@ -20,6 +20,7 @@ export function validateAnswer(question: Question, value: AnswerValue, display?:
         return fail('That is not one of the options.');
       }
       return { ok: true, value };
+    case 'text':
     case 'picture':
     case 'music': {
       if (typeof value !== 'string') return fail('Type an answer.');
@@ -61,6 +62,7 @@ export function isRight(question: Question, value: AnswerValue, textOverride?: b
   switch (question.type) {
     case 'multiple-choice':
       return value === question.answer;
+    case 'text':
     case 'picture':
     case 'music':
       return textOverride ?? matchAnswer(value as string, question.accept) !== 'none';
@@ -87,6 +89,7 @@ export function answerText(q: Question): string {
   switch (q.type) {
     case 'multiple-choice':
       return q.options[q.answer]!;
+    case 'text':
     case 'picture':
     case 'music':
       return q.accept.join(' / ');
