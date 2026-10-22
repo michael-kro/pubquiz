@@ -21,8 +21,6 @@ Run a live pub quiz from your laptop. Teams join on their own phones by scanning
 
 Teams join through a free, encrypted internet link (Cloudflare, no account), so the laptop needs an internet connection, and the venue Wi-Fi is never exposed: the program listens on the laptop only. No internet at the venue? Share your phone's connection with the laptop.
 
-There is no downloadable program: one that opens without a warning on macOS and Windows needs a paid signing certificate, and this is a free project.
-
 ## Your files
 
 Quizzes, pictures, sound clips, branding, saved games and results all live in one folder: `~/PubQuiz` (`C:\Users\<you>\PubQuiz` on Windows). Back it up and you have everything. Change it under **⚙ Settings**, or with `--quizzes <folder>` or `PUBQUIZ_HOME`.
