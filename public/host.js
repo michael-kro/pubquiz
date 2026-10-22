@@ -1420,6 +1420,7 @@ function questionControls(s) {
   return h(
     'div',
     { class: 'question-controls' },
+    q.pausedByRestart ? h('p', { class: 'restart-note', role: 'status' }, '⏸ Paused: the program was restarted with this question open. Phones are back in with their scores. Press Resume (P) when everyone is ready.') : null,
     s.phase === 'open'
       ? [
           // While a team is answering a Buzzin' question the clock is held by the game; judging them releases it.
