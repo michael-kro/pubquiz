@@ -4,7 +4,7 @@ import { mkdir, mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { chooseLibraryDir, changeLibraryDir, defaultLibraryDir, SettingsError } from '../server/settings.ts';
+import { chooseLibraryDir, changeLibraryDir, defaultLibraryDir, readSavedTunnelHours, saveTunnelHours, SettingsError } from '../server/settings.ts';
 import { parseQuiz } from '../server/quiz.ts';
 import { createQuizServer } from '../server/server.ts';
 
@@ -92,4 +92,25 @@ test('over HTTP: host only, shows the folder and where it came from, and refuses
   assert.equal(refused.status, 409);
   assert.match(((await refused.json()) as { error: string }).error, /--quizzes/);
   await fixed.close();
+});
+
+test('the internet-link hours are remembered beside the library folder, and a bad value is ignored', async () => {
+  const home = await mkdtemp(join(tmpdir(), 'pubquiz-cfg-'));
+  const before = process.env['PUBQUIZ_CONFIG_DIR'];
+  process.env['PUBQUIZ_CONFIG_DIR'] = home;
+  try {
+    assert.equal(await readSavedTunnelHours(), undefined);
+    await saveTunnelHours(6);
+    assert.equal(await readSavedTunnelHours(), 6);
+    await writeFile(join(home, 'config.json'), JSON.stringify({ libraryDir: '/tmp/somewhere', tunnelHours: 6 }));
+    await saveTunnelHours(0);
+    assert.deepEqual(JSON.parse(await readFile(join(home, 'config.json'), 'utf8')), { libraryDir: '/tmp/somewhere', tunnelHours: 0 }, 'other settings survive');
+    await writeFile(join(home, 'config.json'), JSON.stringify({ tunnelHours: 'six' }));
+    assert.equal(await readSavedTunnelHours(), undefined);
+    await writeFile(join(home, 'config.json'), '{not json');
+    assert.equal(await readSavedTunnelHours(), undefined);
+  } finally {
+    if (before === undefined) delete process.env['PUBQUIZ_CONFIG_DIR'];
+    else process.env['PUBQUIZ_CONFIG_DIR'] = before;
+  }
 });

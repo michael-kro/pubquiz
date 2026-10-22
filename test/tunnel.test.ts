@@ -208,3 +208,107 @@ test('a team can carry on from another phone (or a new link) with its team code'
   for (const c of [phone, other, stranger]) await c.close();
   await server.close();
 });
+
+test('with a maximum uptime, the link says when it will close, closes itself then, and start() opens a fresh window', async () => {
+  const fake = fakeProvider();
+  const statuses: NetworkStatus[] = [];
+  let expired = 0;
+  const manager = new TunnelManager({
+    provider: fake.provider,
+    port: 1,
+    check: async () => true,
+    onStatus: (s) => statuses.push(s),
+    retryDelaysMs: [10],
+    firstCheckDelayMs: 1,
+    maxUptimeMs: 250,
+    onExpire: () => expired++,
+  });
+  const before = Date.now();
+  manager.start();
+  const up = await until(statuses, (s) => s.state === 'up');
+  const expiresAt = Date.parse(up.expiresAt!);
+  assert.ok(expiresAt >= before + 250 && expiresAt <= Date.now() + 250, `about 250 ms from start: ${up.expiresAt}`);
+
+  // A restart inside the window keeps the same deadline.
+  fake.kill('cloudflared stopped.');
+  const back = await until(statuses, (s) => s.state === 'up' && s.publicUrl === 'https://tunnel-2.example');
+  assert.equal(back.expiresAt, up.expiresAt);
+
+  await new Promise((resolve) => setTimeout(resolve, expiresAt - Date.now() + 60));
+  assert.equal(expired, 1, 'closed by itself, once');
+  assert.ok(fake.stops() >= 2, 'the tunnel process was stopped');
+  const count = statuses.length;
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  assert.equal(statuses.length, count, 'no retry after closing on purpose');
+
+  manager.start();
+  const again = await until(statuses, (s) => s.state === 'up' && s.publicUrl === 'https://tunnel-3.example');
+  assert.ok(Date.parse(again.expiresAt!) > expiresAt, 'a new window');
+  manager.stop();
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  assert.equal(expired, 1, 'stopping by hand does not count as expiring');
+});
+
+test('without a maximum uptime nothing is scheduled and no closing time is reported', async () => {
+  const fake = fakeProvider();
+  const statuses: NetworkStatus[] = [];
+  const manager = new TunnelManager({ provider: fake.provider, port: 1, check: async () => true, onStatus: (s) => statuses.push(s), firstCheckDelayMs: 1 });
+  manager.start();
+  const up = await until(statuses, (s) => s.state === 'up');
+  assert.equal(up.expiresAt, undefined);
+  manager.stop();
+});
+
+test('the limit can be changed while a link is up: it still counts from when the link opened, and "never" cancels the close', async () => {
+  const fake = fakeProvider();
+  const statuses: NetworkStatus[] = [];
+  let expired = 0;
+  const manager = new TunnelManager({ provider: fake.provider, port: 1, check: async () => true, onStatus: (s) => statuses.push(s), firstCheckDelayMs: 1, maxUptimeMs: 10_000, onExpire: () => expired++ });
+  manager.start();
+  const up = await until(statuses, (s) => s.state === 'up');
+  const opened = Date.parse(up.expiresAt!) - 10_000;
+
+  manager.setMaxUptime(200); // shorter: closes 200 ms after it opened, not 200 ms from now
+  const shortened = statuses.at(-1)!;
+  assert.equal(shortened.state, 'up');
+  assert.equal(Date.parse(shortened.expiresAt!), opened + 200);
+  await new Promise((resolve) => setTimeout(resolve, 320));
+  assert.equal(expired, 1, 'closed at the shortened time');
+
+  manager.start();
+  await until(statuses, (s) => s.state === 'up' && s.publicUrl === 'https://tunnel-2.example');
+  manager.setMaxUptime(undefined); // never
+  assert.equal(statuses.at(-1)!.expiresAt, undefined);
+  await new Promise((resolve) => setTimeout(resolve, 320));
+  assert.equal(expired, 1, 'no close once the limit is off');
+  manager.setMaxUptime(50); // and back on: a link already past the new limit closes at once
+  await new Promise((resolve) => setTimeout(resolve, 80));
+  assert.equal(expired, 2);
+  manager.stop();
+});
+
+test('the host can set the hours over the socket; a team cannot', async () => {
+  const quiz = parseQuiz('title: T\nrounds:\n  - name: R\n    questions:\n      - { type: letter, text: Q, answer: Abba }\n');
+  const hours: number[] = [];
+  const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, allowEmptyStart: true, quiz, port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1', onTunnelHours: (h) => hours.push(h) });
+  const host = await Client.connect(server.port);
+  host.send({ t: 'host', key: server.hostKey });
+  await host.state('lobby');
+  host.send({ t: 'tunnel-hours', hours: 6 });
+  host.send({ t: 'tunnel-hours', hours: 0 });
+  host.send({ t: 'tunnel-hours', hours: 999 }); // refused by the schema
+  await host.waitFor((m) => m.t === 'error' && /Unrecognised/.test(m.message));
+  assert.deepEqual(hours, [6, 0]);
+  server.setNetwork({ ...server.network, maxHours: 6 });
+  const view = await host.state('lobby', (v) => v.network.maxHours === 6);
+  assert.equal(view.network.maxHours, 6);
+  const team = await Client.connect(server.port);
+  team.send({ t: 'join', room: server.roomCode, name: 'Nosy', phone: true });
+  await team.waitFor((m) => m.t === 'joined');
+  team.send({ t: 'tunnel-hours', hours: 1 });
+  assert.equal((await team.waitFor((m) => m.t === 'error')).message, 'Only the host can do that.');
+  assert.deepEqual(hours, [6, 0]);
+  await host.close();
+  await team.close();
+  await server.close();
+});
