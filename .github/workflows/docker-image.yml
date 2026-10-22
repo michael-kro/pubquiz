@@ -57,7 +57,7 @@ jobs:
       # Signed provenance on GitHub too, so anyone can check an image came from this repository's workflow:
       #   gh attestation verify oci://ghcr.io/michael-kro/pubquiz:<version> --owner michael-kro
       - name: Attest the image's build provenance
-        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.2.0
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v3.2.0
         with:
           subject-name: ghcr.io/${{ github.repository }}
           subject-digest: ${{ steps.build.outputs.digest }}
