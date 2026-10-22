@@ -16,7 +16,13 @@ Run a live pub quiz from your laptop. Teams join on their own phones by scanning
    docker logs pubquiz        # prints the host link
    ```
    Linux: add `--user $(id -u):$(id -g)` so files stay yours. Windows: use `-v "%USERPROFILE%\PubQuiz:/data/quizzes"`.
-   **To update** (a new release every Friday): `docker pull` again, then `docker rm -f pubquiz` and the same `docker run`; your quizzes and settings are in the folder and the volume, not the container. `docker run` alone keeps using whatever `latest` it already has.
+   **To update** (a new release every Friday): your quizzes and settings are in the folder and the volume, not the container, so:
+   ```sh
+   docker pull ghcr.io/michael-kro/pubquiz:latest
+   docker rm -f pubquiz       # then the same docker run as above
+   docker image prune -f      # drops the old image, now that nothing uses it
+   ```
+   `docker run` alone keeps using whatever `latest` it already has.
 3. **Open the host link**, press **Add a sample quiz to try**, then **Run ▶**.
 4. **Put the QR code on the TV**: **TV ↗** opens a page for it. Teams scan the code, type a team name, and they are in.
 5. **Run the quiz** with the yellow button (or Space): **Start quiz → Close question → Reveal answer → Next question**.
