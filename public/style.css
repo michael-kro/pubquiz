@@ -1185,3 +1185,12 @@ body.pr-no-clock .pr-clock { display: none; }
 /* Quiz cards: the actions after Run are icons, the word in the tooltip. */
 .card-actions .icon-button { min-width: 44px; padding: 8px 12px; font-size: 1.15rem; line-height: 1; text-align: center; }
 .card-actions .icon-button.danger { font-size: 1.1rem; }
+/* The network pill is a button on the host: same look, a pointer, and the internet-link panel behind it. */
+button.network-pill { font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+button.network-pill:hover { filter: brightness(1.15); }
+.network-card { text-align: left; display: grid; gap: 10px; max-width: 560px; }
+.network-card .copy-link { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.network-card .copy-link code { overflow-wrap: anywhere; }
+.network-hours { display: grid; gap: 6px; font-weight: 600; }
+.network-hours select { font: inherit; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); color: var(--text); border: 0; }
+.network-hours .muted { font-weight: 400; }

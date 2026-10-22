@@ -271,7 +271,8 @@ function advance() {
 // Space, → and PageDown (what presentation clickers send) all move on.
 /** Escape closes whichever pop-up is open, the one on top first. Returns whether there was one. */
 function closeTopPopup() {
-  if (practiceOpen) practiceOpen = false;
+  if (networkOpen) networkOpen = false;
+  else if (practiceOpen) practiceOpen = false;
   else if (hostQrOpen) hostQrOpen = false;
   else if (headStartOpen) headStartOpen = false;
   else if (clipsOpen) clipsOpen = false;
@@ -384,7 +385,8 @@ function render() {
     return;
   }
   if (state.phase === 'idle') {
-    keepFocus(() => draw(openHostWarning(state), libraryView(state), hostQrOverlay(state), practiceOverlay(), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : null));
+    // The network banner shows here too: an internet link that closed by itself should be explained wherever the host is looking.
+    keepFocus(() => draw(openHostWarning(state), networkBanner(state), libraryView(state), hostQrOverlay(state), practiceOverlay(), networkOverlay(state), clipsOverlay(), settingsOverlay(), notice ? h('div', { class: 'notice', role: 'alert' }, notice) : null));
     return;
   }
   keepFocus(() => draw(
@@ -400,6 +402,7 @@ function render() {
     joinOverlay(state),
     hostQrOverlay(state),
     practiceOverlay(),
+    networkOverlay(state),
     headStartOverlay(state),
     clipsOverlay(),
     settingsOverlay(),
@@ -416,11 +419,69 @@ const NETWORK_LABELS = {
   down: '⚠️ Internet link down',
 };
 
+const closesAt = (network) => (network.expiresAt && network.state === 'up' ? new Date(network.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
+
+/** The network state. On the host it is a button that opens the internet-link panel; the TV just shows it. */
 function networkPill(network, compact = false) {
   const key = network.mode === 'lan' ? 'lan' : network.state;
+  const closes = closesAt(network) ? `Closes by itself at ${closesAt(network)}` : '';
+  const detail = [network.message, closes].filter(Boolean).join(' · ');
+  const words = NETWORK_LABELS[key].replace(/^\S+\s/, '');
+  const attrs = TV ? {} : { type: 'button', onclick: () => { networkOpen = true; render(); } };
   // On a phone the pill is just its emoji, with the words as the tooltip and for screen readers.
-  if (compact) return h('span', { class: `network-pill compact ${key}`, role: 'img', 'aria-label': NETWORK_LABELS[key].replace(/^\S+\s/, ''), title: `${NETWORK_LABELS[key].replace(/^\S+\s/, '')}${network.message ? `: ${network.message}` : ''}` }, NETWORK_LABELS[key].split(' ')[0]);
-  return h('span', { class: `network-pill ${key}`, title: network.message ?? '' }, NETWORK_LABELS[key]);
+  if (compact) return h(TV ? 'span' : 'button', { ...attrs, class: `network-pill compact ${key}`, 'aria-label': `${words}. Internet link settings`, title: `${words}${detail ? `: ${detail}` : ''}` }, NETWORK_LABELS[key].split(' ')[0]);
+  return h(TV ? 'span' : 'button', { ...attrs, class: `network-pill ${key}`, title: detail || (TV ? '' : 'Internet link settings') }, NETWORK_LABELS[key]);
+}
+
+// The internet-link panel: what the link is, when it closes, and how long links may stay open.
+let networkOpen = false;
+const TUNNEL_HOUR_CHOICES = [[0, 'Never (until the program stops)'], [1, 'After 1 hour'], [2, 'After 2 hours'], [4, 'After 4 hours'], [6, 'After 6 hours'], [8, 'After 8 hours'], [12, 'After 12 hours'], [24, 'After 24 hours']];
+
+function networkOverlay(s) {
+  if (TV || !networkOpen || !s) return null;
+  const n = s.network;
+  const close = () => {
+    networkOpen = false;
+    render();
+  };
+  const key = n.mode === 'lan' ? 'lan' : n.state;
+  const canSwitch = n.mode === 'tunnel' || n.tunnelAvailable;
+  const choices = TUNNEL_HOUR_CHOICES.some(([h]) => h === (n.maxHours ?? 0)) ? TUNNEL_HOUR_CHOICES : [...TUNNEL_HOUR_CHOICES, [n.maxHours, `After ${n.maxHours} hours`]];
+  return h(
+    'div',
+    { class: 'codes-overlay', role: 'dialog', 'aria-label': 'Internet link', onclick: (e) => e.target === e.currentTarget && close() },
+    h(
+      'div',
+      { class: 'codes-card network-card' },
+      h('div', { class: 'codes-head' }, h('h2', {}, NETWORK_LABELS[key]), h('button', { type: 'button', onclick: close }, 'Close')),
+      n.mode === 'tunnel' && n.state === 'up' && n.publicUrl ? h('p', { class: 'copy-link' }, h('code', {}, n.publicUrl.replace(/^https?:\/\//, '')), ' ', h('button', { type: 'button', onclick: () => copyText(n.publicUrl) }, '📋 Copy')) : null,
+      n.message ? h('p', { class: n.mode === 'lan' ? 'muted' : 'error' }, n.message) : null,
+      n.mode === 'tunnel' && n.state === 'up' ? h('p', { class: 'muted' }, closesAt(n) ? `Closes by itself at ${closesAt(n)}.` : 'Stays open until the program stops.') : null,
+      n.mode === 'lan' ? h('p', { class: 'muted' }, "Local Wi-Fi only: teams' phones must be on the same Wi-Fi as this laptop.") : null,
+      canSwitch
+        ? h(
+            'label',
+            { class: 'network-hours' },
+            'Close the internet link by itself ',
+            h(
+              'select',
+              { 'aria-label': 'Close the internet link by itself after', onchange: (e) => socket.send({ t: 'tunnel-hours', hours: Number(e.target.value) }) },
+              choices.map(([hours, label]) => h('option', { value: String(hours), selected: (n.maxHours ?? 0) === hours }, label)),
+            ),
+            h('span', { class: 'muted small' }, ' A quiz night needs the link for an evening, not till morning. Remembered for next time; a new link can be opened any time.'),
+          )
+        : h('p', { class: 'muted small' }, 'Started without an internet link (--lan).'),
+      canSwitch
+        ? h(
+            'div',
+            { class: 'card-actions' },
+            n.mode === 'tunnel'
+              ? h('button', { type: 'button', onclick: () => { socket.send({ t: 'network', action: 'use-lan' }); close(); } }, 'Switch to local Wi-Fi')
+              : h('button', { type: 'button', class: 'primary', onclick: () => { socket.send({ t: 'network', action: 'use-tunnel' }); close(); } }, 'Use the internet link'),
+          )
+        : null,
+    ),
+  );
 }
 
 /** The address to show people: the short link if there is one, else the full one, without the https://. */
@@ -491,8 +552,8 @@ function networkBanner(s) {
   if (n.mode === 'lan' && n.tunnelAvailable) {
     return h(
       'div',
-      { class: 'network-banner calm' },
-      h('span', {}, "Local Wi-Fi only: teams' phones must be on the same Wi-Fi as this laptop."),
+      { class: `network-banner${n.message ? '' : ' calm'}`, role: n.message ? 'alert' : undefined },
+      h('span', {}, n.message ? h('strong', {}, n.message, ' ') : null, "Local Wi-Fi only: teams' phones must be on the same Wi-Fi as this laptop."),
       h('button', { onclick: () => socket.send({ t: 'network', action: 'use-tunnel' }) }, 'Use the internet link'),
     );
   }

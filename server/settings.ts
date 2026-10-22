@@ -19,21 +19,40 @@ export const defaultLibraryDir = () => join(homedir(), 'PubQuiz');
 
 const configPath = () => join(appHome(), 'config.json');
 
-export async function readSavedLibraryDir(): Promise<string | undefined> {
+/** The settings file: a few keys, each read on its own so a bad one never spoils the others. */
+async function readConfig(): Promise<Record<string, unknown>> {
   try {
-    const parsed = JSON.parse(await readFile(configPath(), 'utf8')) as { libraryDir?: unknown };
-    return typeof parsed.libraryDir === 'string' && isAbsolute(parsed.libraryDir) ? parsed.libraryDir : undefined;
+    const parsed: unknown = JSON.parse(await readFile(configPath(), 'utf8'));
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
   } catch {
-    return undefined;
+    return {};
   }
 }
 
-async function writeSavedLibraryDir(dir: string): Promise<void> {
+/** Changes some settings and keeps the rest; written whole, never half. */
+async function patchConfig(patch: Record<string, unknown>): Promise<void> {
   await mkdir(appHome(), { recursive: true });
   const tmp = `${configPath()}.tmp`;
-  await writeFile(tmp, JSON.stringify({ libraryDir: dir }, null, 1));
+  await writeFile(tmp, JSON.stringify({ ...(await readConfig()), ...patch }, null, 1));
   await rename(tmp, configPath());
 }
+
+export async function readSavedLibraryDir(): Promise<string | undefined> {
+  const { libraryDir } = await readConfig();
+  return typeof libraryDir === 'string' && isAbsolute(libraryDir) ? libraryDir : undefined;
+}
+
+const writeSavedLibraryDir = (dir: string) => patchConfig({ libraryDir: dir });
+
+export const MAX_TUNNEL_HOURS = 168;
+
+/** After how many hours the internet link closes by itself (0: never), as chosen on the host screen. */
+export async function readSavedTunnelHours(): Promise<number | undefined> {
+  const { tunnelHours } = await readConfig();
+  return typeof tunnelHours === 'number' && Number.isFinite(tunnelHours) && tunnelHours >= 0 && tunnelHours <= MAX_TUNNEL_HOURS ? tunnelHours : undefined;
+}
+
+export const saveTunnelHours = (hours: number) => patchConfig({ tunnelHours: hours });
 
 /** The command line wins, then PUBQUIZ_HOME, then the folder chosen in the app, then ~/PubQuiz. */
 export async function chooseLibraryDir(option: string | undefined): Promise<FolderChoice> {

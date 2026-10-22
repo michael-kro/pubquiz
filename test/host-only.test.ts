@@ -48,6 +48,7 @@ const HOST_ONLY_SAMPLES: Record<string, object> = {
   kick: { teamId: 'x' },
   mark: { key: 'x', correct: true },
   network: { action: 'use-lan' },
+  'tunnel-hours': { hours: 6 },
   'end-quiz': {},
   photos: { enabled: false },
   'remove-photo': { teamId: 'x' },
