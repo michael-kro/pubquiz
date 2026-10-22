@@ -12,7 +12,7 @@ import type { Library } from './library.ts';
 import type { BrandingSource } from './branding.ts';
 import { ClipError, ClipStore, MAX_CLIP_BYTES } from './clips.ts';
 import { changeLibraryDir, defaultLibraryDir, SettingsError, type FolderChoice } from './settings.ts';
-import { clientAddress, isLocalRequest, TokenBucket, WindowCounter } from './limits.ts';
+import { clientAddress, isLocalRequest, looksLocalName, TokenBucket, WindowCounter } from './limits.ts';
 import { MAX_PHOTO_BYTES, PhotoStore, sniffImage } from './photos.ts';
 import * as practice from './practice.ts';
 import { cleanLearnerName, currentSession, PracticeError, PracticeStore, startSession } from './practice.ts';
@@ -47,6 +47,7 @@ const MESSAGES_PER_SECOND = 10;
 const MAX_DROPPED_MESSAGES = 200;
 /** Wrong room codes and wrong team codes an address may try per minute. */
 const MAX_JOIN_GUESSES_PER_MINUTE = 20;
+const MAX_KEY_GUESSES_PER_MINUTE = 20;
 
 /** Sent with every page: the host key arrives in the host page's link, so nothing may leak it as a referrer. `blob:` is for the pictures and clips the pages fetch with the key in a header. */
 const PAGE_HEADERS = {
@@ -209,6 +210,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   const instanceId = randomBytes(9).toString('base64url');
   const joinGuesses = new WindowCounter(MAX_JOIN_GUESSES_PER_MINUTE, 60_000);
   const photoUploads = new WindowCounter(5, 60_000);
+  // Wrong host, screen or practice keys, per address, for anyone but the laptop itself (a stale tab there must never
+  // lock the host out). The keys are far too long to guess, so this only stops noise.
+  const keyGuesses = new WindowCounter(MAX_KEY_GUESSES_PER_MINUTE, 60_000);
   const perAddress = new Map<string, number>();
   // Derived from the host key, so a TV left on /screen reconnects after a restart.
   const deriveScreenKey = () => createHmac('sha256', hostKey).update('screen').digest('base64url').slice(0, 24);
@@ -502,7 +506,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
           conn.ws.close(4001, 'not local');
           return;
         }
+        if (!conn.local && keyGuesses.blocked(conn.address)) {
+          send(conn, { t: 'error', message: 'Too many wrong keys. Wait a minute and try again.' });
+          conn.ws.close(4001, 'too many');
+          return;
+        }
         if (!isHostKey(msg.key)) {
+          if (!conn.local) keyGuesses.add(conn.address);
           send(conn, { t: 'error', message: 'Wrong host key. Use the host link printed when the quiz started.' });
           conn.ws.close(4001, 'bad key');
           return;
@@ -512,7 +522,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         return;
 
       case 'screen':
+        if (!conn.local && keyGuesses.blocked(conn.address)) {
+          send(conn, { t: 'error', message: 'Too many wrong keys. Wait a minute and try again.' });
+          conn.ws.close(4001, 'too many');
+          return;
+        }
         if (!keyIs(screenKey, msg.key)) {
+          if (!conn.local) keyGuesses.add(conn.address);
           send(conn, { t: 'error', message: 'Wrong screen link. Open the TV link from the host screen.' });
           conn.ws.close(4001, 'bad key');
           return;
@@ -1352,7 +1368,21 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     res.end(body);
   }
 
-  const httpServer = createServer((req, res) => {
+  // Slow or half-open connections are dropped quickly. Node's own defaults wait a minute or more, which lets one
+  // machine hold hundreds of sockets open. Uploads are small, so two minutes for a whole request is generous.
+  const httpServer = createServer({ headersTimeout: 10_000, requestTimeout: 120_000, connectionsCheckingInterval: 2_000 }, (req, res) => {
+    const presentsKey = ['x-host-key', 'x-screen-key', 'x-practice-key'].some((name) => req.headers[name] !== undefined);
+    if (presentsKey && !isLocalRequest(req)) {
+      const address = clientAddress(req);
+      if (keyGuesses.blocked(address)) {
+        res.writeHead(429, { 'content-type': 'application/json', 'retry-after': '60', ...PAGE_HEADERS });
+        res.end(JSON.stringify({ error: 'Too many wrong keys. Wait a minute and try again.' }));
+        return;
+      }
+      res.on('finish', () => {
+        if (res.statusCode === 401) keyGuesses.add(address);
+      });
+    }
     handleHttp(req, res).catch(() => {
       if (!res.headersSent) res.writeHead(500);
       res.end();
@@ -1363,21 +1393,21 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   // cannot quietly open a connection. Clients that are not browsers send no origin and are judged on their keys.
   const originAllowed = (origin: string | undefined, hostHeader: string | undefined): boolean => {
     if (!origin) return true;
-    let originHost: string;
-    try {
-      originHost = new URL(origin).host.toLowerCase();
-    } catch {
-      return false;
-    }
-    const ownHosts = [hostHeader, baseUrl, network.publicUrl].flatMap((value) => {
-      if (!value) return [];
+    const hostOf = (value: string | undefined): string | undefined => {
+      if (!value) return undefined;
       try {
-        return [(value.includes('://') ? new URL(value) : new URL(`http://${value}`)).host.toLowerCase()];
+        return (value.includes('://') ? new URL(value) : new URL(`http://${value}`)).host.toLowerCase();
       } catch {
-        return [];
+        return undefined;
       }
-    });
-    return ownHosts.includes(originHost);
+    };
+    const originHost = hostOf(origin);
+    if (!originHost) return false;
+    // The configured addresses, and the internet link, are always this server.
+    if ([baseUrl, network.publicUrl].some((value) => hostOf(value) === originHost)) return true;
+    // Otherwise the name must match the Host header AND look like a local one. A name that merely matches Host is
+    // not enough: a website can point its own domain at this laptop (DNS rebinding) and then Host and Origin agree.
+    return hostOf(hostHeader) === originHost && looksLocalName(originHost);
   };
   const wss = new WebSocketServer({
     server: httpServer,
