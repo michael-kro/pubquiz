@@ -72,6 +72,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: gh workflow run docker-image.yml --ref "v$VERSION"
 
+      # On a branch cut from develop with main merged in, so it is up to date with develop as the rulesets require.
       - name: Open the merge back into develop
         if: steps.version.outputs.new == 'yes'
         env:
@@ -79,10 +80,22 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
-          if gh pr list --base develop --head main --state open --json number --jq 'length' | grep -qv '^0$'; then
-            echo "A merge-back pull request is already open."
+          branch="merge-back/v$VERSION"
+          if gh pr list --base develop --head "$branch" --state open --json number --jq 'length' | grep -qv '^0$'; then
+            echo "The merge-back pull request is already open."
             exit 0
           fi
-          gh pr create --base develop --head main --title "Merge main back into develop after v$VERSION" \
+          git fetch origin develop
+          git checkout -b "$branch" origin/develop
+          if ! git merge --no-edit origin/main; then
+            echo "::error::main does not merge cleanly into develop; merge it by hand."
+            exit 1
+          fi
+          if git diff --quiet origin/develop; then
+            echo "develop already has everything on main; nothing to merge back."
+            exit 0
+          fi
+          git push origin "$branch"
+          gh pr create --base develop --head "$branch" --title "Merge main back into develop after v$VERSION" \
             --body "Brings the release commit (and any hotfix) for v$VERSION back into develop. Opened by publish.yml; it merges itself once the checks are green."
-          gh pr merge main --auto --merge || echo "Auto-merge could not be enabled; merge the pull request by hand once it is green."
+          gh pr merge "$branch" --auto --merge || echo "Auto-merge could not be enabled; merge the pull request by hand once it is green."
