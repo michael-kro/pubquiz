@@ -117,6 +117,8 @@ export interface ServerOptions {
   onNetworkAction?: (action: 'use-lan' | 'use-tunnel') => void;
   /** Called when the host sets after how many hours the internet link closes by itself (0: never). */
   onTunnelHours?: (hours: number) => void;
+  /** Called when the host asks for the program to stop; everyone has been told by then. */
+  onShutdown?: () => void;
   pingIntervalMs?: number;
 }
 
@@ -773,6 +775,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
       case 'tunnel-hours':
         if (hostOnly()) options.onTunnelHours?.(msg.hours);
+        return;
+
+      case 'shutdown':
+        if (!hostOnly()) return;
+        console.log('Shutting down: asked from the host screen.');
+        for (const c of connections) send(c, { t: 'shutdown' });
+        options.onShutdown?.();
         return;
 
       case 'kick': {
