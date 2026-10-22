@@ -1632,7 +1632,7 @@ export class Game {
     };
   }
 
-  hostView(): Omit<HostView, 'roomCode' | 'joinUrl' | 'lanJoinUrl' | 'qrVersion' | 'network' | 'canEnd' | 'screenKey'> {
+  hostView(): Omit<HostView, 'roomCode' | 'joinUrl' | 'qrVersion' | 'network' | 'canEnd' | 'screenKey'> {
     const teams = [...this.teams.values()];
     const standings = this.standings();
     const scores = new Map(standings.map((row) => [row.teamId, row.score]));

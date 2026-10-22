@@ -6,7 +6,8 @@ services:
     # On Linux, set PUBQUIZ_UID and PUBQUIZ_GID to your own ids (id -u, id -g) in a .env file so files in ~/PubQuiz stay yours.
     user: "${PUBQUIZ_UID:-1000}:${PUBQUIZ_GID:-1000}"
     ports:
-      - "${PUBQUIZ_PORT:-3000}:3000"
+      # 127.0.0.1: only this computer can open the host screen directly. Teams come in through the internet link.
+      - "127.0.0.1:${PUBQUIZ_PORT:-3000}:3000"
     volumes:
       # Your quizzes, clips, branding and saved games, in your own folder (~/PubQuiz). Make it first if it does not
       # exist (mkdir -p ~/PubQuiz). Another folder: PUBQUIZ_LIBRARY=/path docker compose up -d
@@ -29,14 +30,10 @@ services:
       PUBQUIZ_SHORT_LINKS: "${PUBQUIZ_SHORT_LINKS:-0}"
       # Testing only, leave at 0: 1 lets anyone who can reach the address open /host and /screen without the key.
       PUBQUIZ_OPEN_HOST: "${PUBQUIZ_OPEN_HOST:-0}"
-      # No internet at the venue? Set PUBQUIZ_LAN to 1 and PUBQUIZ_PUBLIC_HOST to this computer's
-      # address on the venue Wi-Fi (e.g. 192.168.1.20), so the QR code points at the right place.
-      PUBQUIZ_LAN: "0"
       # Close the internet link by itself after this many hours (0 = never). A quiz night needs it for an
       # evening, not till morning; the host screen can open a new one at any time.
       PUBQUIZ_TUNNEL_HOURS: "${PUBQUIZ_TUNNEL_HOURS:-0}"
-      PUBQUIZ_PUBLIC_HOST: ""
-      # Already have a public address for this (your own name over HTTPS, a VPS, Tailscale Funnel)? Put it here instead.
+      # Already have a public https:// address for this (your own name, a VPS, Tailscale Funnel)? Put it here instead.
       PUBQUIZ_PUBLIC_URL: ""
     restart: unless-stopped
 

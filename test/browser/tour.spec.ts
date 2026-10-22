@@ -85,7 +85,7 @@ test('a whole quiz on every screen: host on a laptop and a phone, the TV and a t
   };
 
   // The server, as a host would run it.
-  const server = spawn(process.execPath, ['server/main.ts', '--quizzes', library, '-p', String(port), '--lan', '--no-open', '--wifi-ssid', 'QuizNight', '--wifi-password', 'beer1234'], {
+  const server = spawn(process.execPath, ['server/main.ts', '--quizzes', library, '-p', String(port), '--public-url', base, '--no-open'], {
     cwd: ROOT,
     env: { ...process.env, PUBQUIZ_CONFIG_DIR: join(work, 'config') },
     stdio: ['ignore', 'pipe', 'pipe'],

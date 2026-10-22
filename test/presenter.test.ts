@@ -148,7 +148,7 @@ test('the TV screen sees the quiz but never the answer before the reveal, and ha
   assert.equal(closed.review, undefined);
 
   tv.send({ t: 'advance' });
-  tv.send({ t: 'network', action: 'use-lan' });
+  tv.send({ t: 'network', action: 'use-tunnel' });
   assert.equal((await tv.waitFor((m) => m.t === 'error')).message, 'Only the host can do that.');
   assert.equal(server.game!.phase, 'closed', 'the TV could not advance the quiz');
 

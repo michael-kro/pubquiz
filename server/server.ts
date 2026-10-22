@@ -17,7 +17,6 @@ import { MAX_PHOTO_BYTES, PhotoStore, sniffImage } from './photos.ts';
 import * as practice from './practice.ts';
 import { cleanLearnerName, currentSession, PracticeError, PracticeStore, startSession } from './practice.ts';
 import { loadBundledFacts, pickFacts } from './facts.ts';
-import { lanAddress, wifiQrText } from './net.ts';
 import type { ShortLinks } from './shortlink.ts';
 import { parseClientMessage, type HostIdleView, type HostView, type ServerMessage } from './protocol.ts';
 import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
@@ -93,8 +92,6 @@ export interface ServerOptions {
   onHostKeyChange?(key: string): void;
   /** Name, colours and logo for every page. */
   branding?: BrandingSource;
-  /** The Wi-Fi network teams can join, shown as a QR code beside the join code (for a hotspot). */
-  wifi?: { ssid: string; password?: string };
   /** Let teams add a photo (the host can still switch it off). Default on. */
   photos?: boolean;
   /** Turn off the team-name word filter. */
@@ -110,12 +107,12 @@ export interface ServerOptions {
   /** Keeps the host link the same across restarts. Defaults to the resumed session's key, or a new one. */
   hostKey?: string;
   port?: number;
-  /** Interface to listen on. Defaults to all interfaces so phones can connect. */
+  /** Interface to listen on. Defaults to this machine only: teams reach the quiz through the internet link (HTTPS), never over the local network. */
   bindHost?: string;
-  /** Host name or IP put in the join link. Defaults to the laptop's LAN address. */
+  /** Host name or IP in the address of this machine itself (tests). Defaults to localhost. */
   publicHost?: string;
-  /** Called when the host asks to switch between the internet link and local Wi-Fi. */
-  onNetworkAction?: (action: 'use-lan' | 'use-tunnel') => void;
+  /** Called when the host asks to open the internet link again (after it closed or failed). */
+  onNetworkAction?: (action: 'use-tunnel') => void;
   /** Called when the host sets after how many hours the internet link closes by itself (0: never). */
   onTunnelHours?: (hours: number) => void;
   /** Called when the host asks for the program to stop; everyone has been told by then. */
@@ -136,7 +133,8 @@ export interface QuizServer {
   readonly hostUrl: string;
   /** The link teams use right now: the internet link when it's up, otherwise the local address. */
   readonly joinUrl: string;
-  readonly lanJoinUrl: string;
+  /** The address on this machine itself. Teams never use it: they join through the internet link. */
+  readonly localJoinUrl: string;
   /** Random per run; /healthz returns it, so a tunnel check knows it reached this server. */
   instanceId: string;
   startQuiz(quiz: Quiz, session?: SessionOptions): Promise<void>;
@@ -228,7 +226,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   let shortLinks: ShortLinks | undefined;
   let qrSvg = '';
   let qrVersion = 0;
-  let network: NetworkStatus = { mode: 'lan' };
+  let network: NetworkStatus = { mode: 'local' };
 
   let broadcastQueued = false;
   function scheduleBroadcast(): void {
@@ -251,14 +249,12 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       ...active.game.hostView(),
       roomCode: active.roomCode,
       joinUrl,
-      lanJoinUrl: lanUrl(),
       qrVersion,
       network,
       ...(options.openHost ? { openHost: true } : {}),
       ...(shortLinks && (shortLinks.join || shortLinks.tv) ? { shortLinks } : {}),
       canEnd: Boolean(options.library),
       screenKey,
-      wifi: options.wifi,
     };
   }
 
@@ -313,7 +309,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     for (const conn of connections) sendState(conn);
   }
 
-  function lanUrl(): string {
+  function localUrl(): string {
     return active ? `${baseUrl}/?room=${active.roomCode}` : `${baseUrl}/`;
   }
 
@@ -1285,19 +1281,6 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       return;
     }
 
-    if (pathname === '/wifi-qr.svg') {
-      // The Wi-Fi password is in the code, so only the host and TV screens (which show it anyway) may fetch it.
-      const key = presentedKey(req);
-      if (!options.wifi || !((isHostKey(key) && hostAllowed(req)) || keyIs(screenKey, key))) {
-        res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
-        return;
-      }
-      const svg = await QRCode.toString(wifiQrText(options.wifi.ssid, options.wifi.password), { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
-      res.writeHead(200, { 'content-type': CONTENT_TYPES['.svg'], 'cache-control': 'no-store', ...PAGE_HEADERS });
-      res.end(svg);
-      return;
-    }
-
     if (pathname === '/results.csv') {
       if (!isHostKey(presentedKey(req)) || !hostAllowed(req) || !active) {
         res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
@@ -1406,7 +1389,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     });
   });
   // A browser sends the page's origin with the upgrade. It must be this server's own address, by whatever name it
-  // was reached (localhost, the Wi-Fi address, the internet link), so another website open in the same browser
+  // was reached (localhost, the internet link), so another website open in the same browser
   // cannot quietly open a connection. Clients that are not browsers send no origin and are judged on their keys.
   const originAllowed = (origin: string | undefined, hostHeader: string | undefined): boolean => {
     if (!origin) return true;
@@ -1486,11 +1469,11 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
   await new Promise<void>((resolveListen, rejectListen) => {
     httpServer.once('error', rejectListen);
-    httpServer.listen(options.port ?? 3000, options.bindHost ?? '0.0.0.0', () => resolveListen());
+    httpServer.listen(options.port ?? 3000, options.bindHost ?? '127.0.0.1', () => resolveListen());
   });
 
   const port = (httpServer.address() as AddressInfo).port;
-  baseUrl = `http://${options.publicHost ?? lanAddress() ?? 'localhost'}:${port}`;
+  baseUrl = `http://${options.publicHost ?? 'localhost'}:${port}`;
   if (options.quiz) await startQuiz(options.quiz, options.session);
   else await updateJoinUrl();
 
@@ -1519,8 +1502,8 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     get joinUrl() {
       return joinUrl;
     },
-    get lanJoinUrl() {
-      return lanUrl();
+    get localJoinUrl() {
+      return localUrl();
     },
     instanceId,
     startQuiz,

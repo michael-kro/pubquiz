@@ -1,5 +1,5 @@
 # Publishes a Docker image to the GitHub Container Registry each time a release is published:
-#   docker run -d -p 3000:3000 -v pubquiz-data:/data ghcr.io/<owner>/pubquiz:latest
+#   docker run -d -p 127.0.0.1:3000:3000 -v pubquiz-data:/data ghcr.io/<owner>/pubquiz:latest
 # It also runs by hand from the Actions tab ("Run workflow") to rebuild an image without a new release.
 name: Docker image
 

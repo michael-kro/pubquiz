@@ -309,7 +309,7 @@ test('every host action is refused for anyone without the host key, and changes 
     { t: 'skip' },
     { t: 'kick', teamId },
     { t: 'mark', key: 'abba', correct: true },
-    { t: 'network', action: 'use-lan' },
+    { t: 'network', action: 'use-tunnel' },
     { t: 'end-quiz' },
   ];
   for (const client of [stranger, team]) {

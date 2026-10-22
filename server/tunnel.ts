@@ -9,15 +9,16 @@ import { createInterface } from 'node:readline';
 export type TunnelState = 'starting' | 'up' | 'down';
 
 export interface NetworkStatus {
-  mode: 'lan' | 'tunnel';
+  /** 'local': no internet link at all (tests, and before the first one is set up). Teams cannot join on 'local' outside the laptop itself. */
+  mode: 'local' | 'tunnel';
   state?: TunnelState;
   provider?: string;
   /** The public https:// address, once the tunnel is up. */
   publicUrl?: string;
   /** Shown to the host when something is wrong. */
   message?: string;
-  /** Local mode chosen by the host, with an internet link available to switch back to. */
-  tunnelAvailable?: boolean;
+  /** The link was closed by the "close by itself" setting, so it stays down until the host opens a new one. */
+  closedByTimer?: boolean;
   /** When the link will be closed by itself, if that is set. */
   expiresAt?: string;
   /** The setting behind it: hours after opening (0: never), as the host can change it on the host screen. */
