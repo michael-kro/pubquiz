@@ -8,6 +8,7 @@ Run a live pub quiz from your laptop. Teams join on their own phones by scanning
 2. **Start it:**
    ```sh
    mkdir -p ~/PubQuiz
+   docker pull ghcr.io/michael-kro/pubquiz:latest
    docker run -d --name pubquiz -p 127.0.0.1:3000:3000 \
      -v ~/PubQuiz:/data/quizzes -v pubquiz-data:/data \
      --read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges \
@@ -15,13 +16,18 @@ Run a live pub quiz from your laptop. Teams join on their own phones by scanning
    docker logs pubquiz        # prints the host link
    ```
    Linux: add `--user $(id -u):$(id -g)` so files stay yours. Windows: use `-v "%USERPROFILE%\PubQuiz:/data/quizzes"`.
+   **To update** (a new release every Friday): your quizzes and settings are in the folder and the volume, not the container, so:
+   ```sh
+   docker pull ghcr.io/michael-kro/pubquiz:latest
+   docker rm -f pubquiz       # then the same docker run as above
+   docker image prune -f      # drops the old image, now that nothing uses it
+   ```
+   `docker run` alone keeps using whatever `latest` it already has.
 3. **Open the host link**, press **Add a sample quiz to try**, then **Run ▶**.
 4. **Put the QR code on the TV**: **TV ↗** opens a page for it. Teams scan the code, type a team name, and they are in.
 5. **Run the quiz** with the yellow button (or Space): **Start quiz → Close question → Reveal answer → Next question**.
 
 Teams join through a free, encrypted internet link (Cloudflare, no account), so the laptop needs an internet connection, and the venue Wi-Fi is never exposed: the program listens on the laptop only. No internet at the venue? Share your phone's connection with the laptop.
-
-There is no downloadable program: one that opens without a warning on macOS and Windows needs a paid signing certificate, and this is a free project.
 
 ## Your files
 
