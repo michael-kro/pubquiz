@@ -73,7 +73,8 @@ function main(argv: string[]): void {
         return;
       }
       writeFileSync('CHANGELOG.md', cut.changelog);
-      execFileSync('npm', ['version', version, '--no-git-tag-version', '--ignore-scripts'], { stdio: 'inherit' });
+      // npm prints the new version itself. Standard output is only the tag (the workflow uses it as a branch name), so npm's goes to standard error.
+      execFileSync('npm', ['version', version, '--no-git-tag-version', '--ignore-scripts'], { stdio: ['ignore', process.stderr, 'inherit'] });
       writeFileSync('release-notes.md', `${cut.notes}\n`);
       console.log(`v${version}`);
       return;
