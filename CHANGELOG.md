@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.3.0 — 2026-10-23
+
+- **Fix, the weekly release workflow:** its first real run failed because the release script printed the version twice and the workflow used both lines as a branch name. It prints the tag only now, with a test.
+- **README, Docker steps:** the quick start pulls the image before running it, the update steps now also run `docker image prune -f` to drop the old image, and the sentence about there being no downloadable program is gone.
+- **Breaking, no more plain HTTP on the local network:** the program now listens on the laptop itself only, and teams join through the HTTPS internet link, the one way in. Local Wi-Fi mode is gone, with `--lan`, `--public-host`, `--wifi-ssid` / `--wifi-password` (the venue Wi-Fi QR code) and the Docker variables `PUBQUI
+
 ## 0.2.0 — 2026-10-22
 
 - **Weekly releases, by themselves:** every Friday a workflow cuts the release from `develop` (version bumped, changelog dated), opens the pull request into `main` and merges it when green; a second workflow then tags, publishes the GitHub release, builds the image and opens the merge back into `develop`. `scripts/release.ts` does the changelog and version work, by hand too. The fortnightly reminder issue is gone.

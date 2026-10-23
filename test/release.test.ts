@@ -1,7 +1,9 @@
 // The release helper: versions and the changelog cut.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { bumpVersion, cutChangelog, notesFor, unreleasedLines } from '../scripts/release.ts';
 
@@ -66,4 +68,17 @@ test('the command line: next, unreleased, prepare --dry-run, notes', () => {
   }
   assert.ok(run('notes', 'v0.1.5').length > 0);
   assert.throws(() => run('next', 'huge'), /Unknown bump/);
+});
+
+test('prepare prints only the tag on standard output, because the workflow uses it as a branch name', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'release-prepare-'));
+  try {
+    for (const file of ['package.json', 'package-lock.json']) copyFileSync(file, join(dir, file));
+    writeFileSync(join(dir, 'CHANGELOG.md'), LOG);
+    const out = execFileSync(process.execPath, [resolve('scripts/release.ts'), 'prepare', 'minor'], { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    assert.match(out, /^v\d+\.\d+\.\d+\n$/, `standard output was ${JSON.stringify(out)}`);
+    assert.equal(JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')).version, out.trim().slice(1), 'the version in package.json is the one printed');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

@@ -141,7 +141,7 @@ test('stopping the manager cancels pending retries', async () => {
   assert.equal(statuses.length, count);
 });
 
-test('the server switches its join link and QR code with the network, and the host can switch modes', async () => {
+test('the server switches its join link and QR code with the network, and the host can ask for the link again', async () => {
   const quiz = parseQuiz('title: T\nrounds:\n  - name: R\n    questions:\n      - { type: letter, text: Q, answer: Abba }\n');
   const actions: string[] = [];
   const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, allowEmptyStart: true,
@@ -157,7 +157,7 @@ test('the server switches its join link and QR code with the network, and the ho
   const host = await Client.connect(server.port);
   host.send({ t: 'host', key: server.hostKey });
   const first = await host.state('lobby');
-  assert.equal(first.joinUrl, server.lanJoinUrl);
+  assert.equal(first.joinUrl, server.localJoinUrl);
   const qrBefore = await (await fetch(`${base}/qr.svg`)).text();
 
   server.setNetwork({ mode: 'tunnel', state: 'starting', provider: 'Fake' });
@@ -171,13 +171,13 @@ test('the server switches its join link and QR code with the network, and the ho
 
   server.setNetwork({ mode: 'tunnel', state: 'down', provider: 'Fake', message: 'Gone.' });
   const down = await host.state('lobby', (v) => v.network.state === 'down');
-  assert.equal(down.joinUrl, server.lanJoinUrl, 'falls back to the local link while the internet link is down');
+  assert.equal(down.joinUrl, server.localJoinUrl, 'only the address on this machine is left while the internet link is down, and the pages show no QR code for it');
 
-  host.send({ t: 'network', action: 'use-lan' });
+  host.send({ t: 'network', action: 'use-tunnel' });
   const team = await Client.connect(server.port);
   team.send({ t: 'network', action: 'use-tunnel' });
   assert.match((await team.waitFor((m) => m.t === 'error')).message, /Only the host/);
-  assert.deepEqual(actions, ['use-lan']);
+  assert.deepEqual(actions, ['use-tunnel'], 'the host asked once; the team was refused');
 
   for (const c of [host, team]) await c.close();
   await server.close();

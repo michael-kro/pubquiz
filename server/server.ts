@@ -12,12 +12,11 @@ import type { Library } from './library.ts';
 import type { BrandingSource } from './branding.ts';
 import { ClipError, ClipStore, MAX_CLIP_BYTES } from './clips.ts';
 import { changeLibraryDir, defaultLibraryDir, SettingsError, type FolderChoice } from './settings.ts';
-import { clientAddress, isLocalRequest, TokenBucket, WindowCounter } from './limits.ts';
+import { clientAddress, isLocalRequest, looksLocalName, TokenBucket, WindowCounter } from './limits.ts';
 import { MAX_PHOTO_BYTES, PhotoStore, sniffImage } from './photos.ts';
 import * as practice from './practice.ts';
 import { cleanLearnerName, currentSession, PracticeError, PracticeStore, startSession } from './practice.ts';
 import { loadBundledFacts, pickFacts } from './facts.ts';
-import { lanAddress, wifiQrText } from './net.ts';
 import type { ShortLinks } from './shortlink.ts';
 import { parseClientMessage, type HostIdleView, type HostView, type ServerMessage } from './protocol.ts';
 import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
@@ -48,6 +47,7 @@ const MESSAGES_PER_SECOND = 10;
 const MAX_DROPPED_MESSAGES = 200;
 /** Wrong room codes and wrong team codes an address may try per minute. */
 const MAX_JOIN_GUESSES_PER_MINUTE = 20;
+const MAX_KEY_GUESSES_PER_MINUTE = 20;
 
 /** Sent with every page: the host key arrives in the host page's link, so nothing may leak it as a referrer. `blob:` is for the pictures and clips the pages fetch with the key in a header. */
 const PAGE_HEADERS = {
@@ -92,8 +92,6 @@ export interface ServerOptions {
   onHostKeyChange?(key: string): void;
   /** Name, colours and logo for every page. */
   branding?: BrandingSource;
-  /** The Wi-Fi network teams can join, shown as a QR code beside the join code (for a hotspot). */
-  wifi?: { ssid: string; password?: string };
   /** Let teams add a photo (the host can still switch it off). Default on. */
   photos?: boolean;
   /** Turn off the team-name word filter. */
@@ -109,14 +107,16 @@ export interface ServerOptions {
   /** Keeps the host link the same across restarts. Defaults to the resumed session's key, or a new one. */
   hostKey?: string;
   port?: number;
-  /** Interface to listen on. Defaults to all interfaces so phones can connect. */
+  /** Interface to listen on. Defaults to this machine only: teams reach the quiz through the internet link (HTTPS), never over the local network. */
   bindHost?: string;
-  /** Host name or IP put in the join link. Defaults to the laptop's LAN address. */
+  /** Host name or IP in the address of this machine itself (tests). Defaults to localhost. */
   publicHost?: string;
-  /** Called when the host asks to switch between the internet link and local Wi-Fi. */
-  onNetworkAction?: (action: 'use-lan' | 'use-tunnel') => void;
+  /** Called when the host asks to open the internet link again (after it closed or failed). */
+  onNetworkAction?: (action: 'use-tunnel') => void;
   /** Called when the host sets after how many hours the internet link closes by itself (0: never). */
   onTunnelHours?: (hours: number) => void;
+  /** Called when the host asks for the program to stop; everyone has been told by then. */
+  onShutdown?: () => void;
   pingIntervalMs?: number;
 }
 
@@ -133,7 +133,8 @@ export interface QuizServer {
   readonly hostUrl: string;
   /** The link teams use right now: the internet link when it's up, otherwise the local address. */
   readonly joinUrl: string;
-  readonly lanJoinUrl: string;
+  /** The address on this machine itself. Teams never use it: they join through the internet link. */
+  readonly localJoinUrl: string;
   /** Random per run; /healthz returns it, so a tunnel check knows it reached this server. */
   instanceId: string;
   startQuiz(quiz: Quiz, session?: SessionOptions): Promise<void>;
@@ -209,6 +210,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   const instanceId = randomBytes(9).toString('base64url');
   const joinGuesses = new WindowCounter(MAX_JOIN_GUESSES_PER_MINUTE, 60_000);
   const photoUploads = new WindowCounter(5, 60_000);
+  // Wrong host, screen or practice keys, per address, for anyone but the laptop itself (a stale tab there must never
+  // lock the host out). The keys are far too long to guess, so this only stops noise.
+  const keyGuesses = new WindowCounter(MAX_KEY_GUESSES_PER_MINUTE, 60_000);
   const perAddress = new Map<string, number>();
   // Derived from the host key, so a TV left on /screen reconnects after a restart.
   const deriveScreenKey = () => createHmac('sha256', hostKey).update('screen').digest('base64url').slice(0, 24);
@@ -222,7 +226,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   let shortLinks: ShortLinks | undefined;
   let qrSvg = '';
   let qrVersion = 0;
-  let network: NetworkStatus = { mode: 'lan' };
+  let network: NetworkStatus = { mode: 'local' };
 
   let broadcastQueued = false;
   function scheduleBroadcast(): void {
@@ -245,14 +249,12 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       ...active.game.hostView(),
       roomCode: active.roomCode,
       joinUrl,
-      lanJoinUrl: lanUrl(),
       qrVersion,
       network,
       ...(options.openHost ? { openHost: true } : {}),
       ...(shortLinks && (shortLinks.join || shortLinks.tv) ? { shortLinks } : {}),
       canEnd: Boolean(options.library),
       screenKey,
-      wifi: options.wifi,
     };
   }
 
@@ -307,7 +309,7 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     for (const conn of connections) sendState(conn);
   }
 
-  function lanUrl(): string {
+  function localUrl(): string {
     return active ? `${baseUrl}/?room=${active.roomCode}` : `${baseUrl}/`;
   }
 
@@ -504,7 +506,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
           conn.ws.close(4001, 'not local');
           return;
         }
+        if (!conn.local && keyGuesses.blocked(conn.address)) {
+          send(conn, { t: 'error', message: 'Too many wrong keys. Wait a minute and try again.' });
+          conn.ws.close(4001, 'too many');
+          return;
+        }
         if (!isHostKey(msg.key)) {
+          if (!conn.local) keyGuesses.add(conn.address);
           send(conn, { t: 'error', message: 'Wrong host key. Use the host link printed when the quiz started.' });
           conn.ws.close(4001, 'bad key');
           return;
@@ -514,7 +522,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         return;
 
       case 'screen':
+        if (!conn.local && keyGuesses.blocked(conn.address)) {
+          send(conn, { t: 'error', message: 'Too many wrong keys. Wait a minute and try again.' });
+          conn.ws.close(4001, 'too many');
+          return;
+        }
         if (!keyIs(screenKey, msg.key)) {
+          if (!conn.local) keyGuesses.add(conn.address);
           send(conn, { t: 'error', message: 'Wrong screen link. Open the TV link from the host screen.' });
           conn.ws.close(4001, 'bad key');
           return;
@@ -773,6 +787,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
       case 'tunnel-hours':
         if (hostOnly()) options.onTunnelHours?.(msg.hours);
+        return;
+
+      case 'shutdown':
+        if (!hostOnly()) return;
+        console.log('Shutting down: asked from the host screen.');
+        for (const c of connections) send(c, { t: 'shutdown' });
+        options.onShutdown?.();
         return;
 
       case 'kick': {
@@ -1260,19 +1281,6 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       return;
     }
 
-    if (pathname === '/wifi-qr.svg') {
-      // The Wi-Fi password is in the code, so only the host and TV screens (which show it anyway) may fetch it.
-      const key = presentedKey(req);
-      if (!options.wifi || !((isHostKey(key) && hostAllowed(req)) || keyIs(screenKey, key))) {
-        res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
-        return;
-      }
-      const svg = await QRCode.toString(wifiQrText(options.wifi.ssid, options.wifi.password), { type: 'svg', margin: 1, errorCorrectionLevel: 'M' });
-      res.writeHead(200, { 'content-type': CONTENT_TYPES['.svg'], 'cache-control': 'no-store', ...PAGE_HEADERS });
-      res.end(svg);
-      return;
-    }
-
     if (pathname === '/results.csv') {
       if (!isHostKey(presentedKey(req)) || !hostAllowed(req) || !active) {
         res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
@@ -1360,32 +1368,46 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     res.end(body);
   }
 
-  const httpServer = createServer((req, res) => {
+  // Slow or half-open connections are dropped quickly. Node's own defaults wait a minute or more, which lets one
+  // machine hold hundreds of sockets open. Uploads are small, so two minutes for a whole request is generous.
+  const httpServer = createServer({ headersTimeout: 10_000, requestTimeout: 120_000, connectionsCheckingInterval: 2_000 }, (req, res) => {
+    const presentsKey = ['x-host-key', 'x-screen-key', 'x-practice-key'].some((name) => req.headers[name] !== undefined);
+    if (presentsKey && !isLocalRequest(req)) {
+      const address = clientAddress(req);
+      if (keyGuesses.blocked(address)) {
+        res.writeHead(429, { 'content-type': 'application/json', 'retry-after': '60', ...PAGE_HEADERS });
+        res.end(JSON.stringify({ error: 'Too many wrong keys. Wait a minute and try again.' }));
+        return;
+      }
+      res.on('finish', () => {
+        if (res.statusCode === 401) keyGuesses.add(address);
+      });
+    }
     handleHttp(req, res).catch(() => {
       if (!res.headersSent) res.writeHead(500);
       res.end();
     });
   });
   // A browser sends the page's origin with the upgrade. It must be this server's own address, by whatever name it
-  // was reached (localhost, the Wi-Fi address, the internet link), so another website open in the same browser
+  // was reached (localhost, the internet link), so another website open in the same browser
   // cannot quietly open a connection. Clients that are not browsers send no origin and are judged on their keys.
   const originAllowed = (origin: string | undefined, hostHeader: string | undefined): boolean => {
     if (!origin) return true;
-    let originHost: string;
-    try {
-      originHost = new URL(origin).host.toLowerCase();
-    } catch {
-      return false;
-    }
-    const ownHosts = [hostHeader, baseUrl, network.publicUrl].flatMap((value) => {
-      if (!value) return [];
+    const hostOf = (value: string | undefined): string | undefined => {
+      if (!value) return undefined;
       try {
-        return [(value.includes('://') ? new URL(value) : new URL(`http://${value}`)).host.toLowerCase()];
+        return (value.includes('://') ? new URL(value) : new URL(`http://${value}`)).host.toLowerCase();
       } catch {
-        return [];
+        return undefined;
       }
-    });
-    return ownHosts.includes(originHost);
+    };
+    const originHost = hostOf(origin);
+    if (!originHost) return false;
+    // The configured addresses, and the internet link, are always this server.
+    if ([baseUrl, network.publicUrl].some((value) => hostOf(value) === originHost)) return true;
+    // Otherwise the name must match the Host header AND look like a local one. A name that merely matches Host is
+    // not enough: a website can point its own domain at this laptop (DNS rebinding) and then Host and Origin agree.
+    return hostOf(hostHeader) === originHost && looksLocalName(originHost);
   };
   const wss = new WebSocketServer({
     server: httpServer,
@@ -1447,11 +1469,11 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
 
   await new Promise<void>((resolveListen, rejectListen) => {
     httpServer.once('error', rejectListen);
-    httpServer.listen(options.port ?? 3000, options.bindHost ?? '0.0.0.0', () => resolveListen());
+    httpServer.listen(options.port ?? 3000, options.bindHost ?? '127.0.0.1', () => resolveListen());
   });
 
   const port = (httpServer.address() as AddressInfo).port;
-  baseUrl = `http://${options.publicHost ?? lanAddress() ?? 'localhost'}:${port}`;
+  baseUrl = `http://${options.publicHost ?? 'localhost'}:${port}`;
   if (options.quiz) await startQuiz(options.quiz, options.session);
   else await updateJoinUrl();
 
@@ -1480,8 +1502,8 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
     get joinUrl() {
       return joinUrl;
     },
-    get lanJoinUrl() {
-      return lanUrl();
+    get localJoinUrl() {
+      return localUrl();
     },
     instanceId,
     startQuiz,

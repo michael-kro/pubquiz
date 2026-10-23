@@ -21,29 +21,27 @@ const USAGE = `Usage: pubquiz [quiz.yaml] [options]
 With no quiz file, opens your quiz library (${DEFAULT_LIBRARY}) on the host screen,
 where you can write, import and run quizzes. With a quiz file, runs that quiz straight away.
 
-Teams join over the internet by default (a free Cloudflare link, no account needed), so
-their phones can use 4G or any Wi-Fi. With no internet, use --lan and put the phones on
-the same Wi-Fi as this laptop (or this laptop's hotspot).
+Teams join over the internet (a free Cloudflare link, no account needed), so their phones can
+use 4G or any Wi-Fi. The quiz is never offered over plain HTTP on the local network: the program
+listens on this laptop only, and the internet link is the one way in. No internet at the venue?
+Share your phone's connection with the laptop.
 
 Options:
   -p, --port <n>         Port to listen on (default 3000)
-      --lan              Local Wi-Fi only: no internet link
       --tunnel <name>    Internet link to use: cloudflare (default) or ngrok
       --tunnel-hours <n> Close the internet link by itself after this many hours (e.g. 6). Also set by clicking the
                          network pill on the host screen, which is remembered. Default: never
       --short-links      Ask is.gd for a short address for the internet link (it is sent to is.gd; the host link never is)
-      --public-url <url> Use your own public address instead (e.g. a VPS or Tailscale Funnel)
-      --public-host <h>  Address to put in the local join link (default: this laptop's Wi-Fi address)
+      --public-url <url> Use your own https:// address instead (e.g. a VPS or Tailscale Funnel)
+      --bind <address>   Address to listen on (default 127.0.0.1, this laptop only; Docker sets 0.0.0.0 inside the container)
       --quizzes <dir>    Where the quiz library lives (default ${DEFAULT_LIBRARY}; or set PUBQUIZ_HOME,
                          or change it in the app under Settings)
       --branding <dir>   Folder with branding.json and a logo (name, colours, logo on every page).
                          Default: the "branding" folder inside your quiz library, editable from the host screen
-      --wifi-ssid <name>      Show a second QR code on the host and TV lobby so teams can join this Wi-Fi network
-      --wifi-password <pw>    The password for it (leave out for an open network)
       --no-photos        Don't let teams add a photo (the host can also switch photos off during a quiz)
       --no-name-filter   Allow any team name (the default blocks swearing; invisible characters are always removed)
       --host-pin <pin>   Let the host open /host by typing this PIN (6+ characters), e.g. from a phone
-      --host-local-only  Only allow the host screen on this laptop, not from the network or the internet link
+      --host-local-only  Only allow the host screen on this laptop, not through the internet link
       --new-key          Make a new host key now (the old host link and TV link stop working)
       --no-open          Don't open the host screen in a browser
       --fresh            Start over instead of resuming an unfinished quiz
@@ -99,6 +97,8 @@ async function main(): Promise<void> {
     allowPositionals: true,
     options: {
       port: { type: 'string', short: 'p', default: '3000' },
+      bind: { type: 'string', default: '127.0.0.1' },
+      // Removed options: still recognised so the reason is given instead of a bare "unknown option".
       'public-host': { type: 'string' },
       'no-open': { type: 'boolean', default: false },
       fresh: { type: 'boolean', default: false },
@@ -135,8 +135,13 @@ async function main(): Promise<void> {
   }
   let tunnelHours = tunnelHoursOption ?? (await readSavedTunnelHours()) ?? 0;
   if (tunnelHoursOption !== undefined) await saveTunnelHours(tunnelHoursOption).catch(() => {});
+  for (const removed of ['lan', 'public-host', 'wifi-ssid', 'wifi-password'] as const) {
+    if (values[removed]) fail(`--${removed} was removed: the quiz is no longer offered over plain HTTP on the local network. Teams join through the internet link. With no internet at the venue, share your phone's connection with the laptop.`);
+  }
   const publicUrl = values['public-url']?.replace(/\/+$/, '');
-  if (publicUrl && !/^https?:\/\//.test(publicUrl)) fail('--public-url must start with https:// (or http://).');
+  if (publicUrl && !/^https:\/\/|^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(publicUrl)) {
+    fail('--public-url must start with https:// (plain http is accepted only for localhost, to try things out).');
+  }
 
   if (values['open-host']) console.log('WARNING: --open-host is on. Anyone who can reach this address can run the quiz without a key. Use it for testing only.');
   const hostPin = values['host-pin'];
@@ -144,7 +149,6 @@ async function main(): Promise<void> {
     fail('--host-pin needs at least 6 characters. The quiz can be reached from the internet, so a short PIN could be guessed.');
   }
 
-  if (values['wifi-password'] && !values['wifi-ssid']) fail('--wifi-password needs --wifi-ssid too.');
   const quizPath = positionals[0];
   const single = quizPath ? await loadQuizArgument(quizPath, values.fresh) : undefined;
   const folder = await chooseLibraryDir(values.quizzes);
@@ -178,24 +182,21 @@ async function main(): Promise<void> {
       branding,
       nameFilter: !values['no-name-filter'],
       photos: !values['no-photos'],
-      wifi: values['wifi-ssid'] ? { ssid: values['wifi-ssid'], password: values['wifi-password'] || undefined } : undefined,
       port,
-      publicHost: values['public-host'],
+      bindHost: values.bind,
       onNetworkAction(action) {
-        if (action === 'use-lan') {
-          tunnel?.stop();
-          server?.setNetwork({ mode: 'lan', tunnelAvailable: true, maxHours: tunnelHours });
-          console.log('Switched to local Wi-Fi only.');
-        } else if (tunnel) {
-          tunnel.start();
-        }
+        if (action === 'use-tunnel') tunnel?.start();
+      },
+      onShutdown() {
+        // A moment for the "shutting down" message to reach every screen.
+        setTimeout(shutdown, 300);
       },
       onTunnelHours(hours) {
         tunnelHours = hours;
         void saveTunnelHours(hours).catch(() => {});
         tunnel?.setMaxUptime(hours ? hours * 3_600_000 : undefined);
-        // Not on the internet link right now: just show the new setting.
-        if (server && server.network.mode === 'lan') server.setNetwork({ ...server.network, maxHours: hours });
+        // Not on an open internet link right now: just show the new setting.
+        if (server && server.network.mode === 'tunnel' && server.network.closedByTimer) server.setNetwork({ ...server.network, maxHours: hours });
         console.log(hours ? `The internet link will close by itself ${hours === 1 ? 'an hour' : `${hours} hours`} after opening.` : 'The internet link stays open until the program stops.');
       },
     });
@@ -218,24 +219,16 @@ async function main(): Promise<void> {
   console.log(`
 ${heading}
 
-  Host screen:  ${server.hostUrl}${hostPin ? `\n  Host on a phone: open /host on the same address and type the PIN` : ''}${single ? `\n  ${values.lan ? 'Teams join: ' : 'Local link: '}  ${server.lanJoinUrl}\n  Room code:    ${server.roomCode}` : ''}
+  Host screen:  ${server.hostUrl}${hostPin ? `\n  Host on a phone: open /host on the same address and type the PIN` : ''}${single ? `\n  Room code:    ${server.roomCode}` : ''}
 
-${
-  values.lan
-    ? "Local Wi-Fi only: teams' phones must be on the same Wi-Fi as this laptop."
-    : publicUrl
-      ? `Teams join through ${publicUrl}`
-      : 'Setting up the internet link; the QR code on the host screen switches to it when ready.'
-}
+${publicUrl ? `Teams join through ${publicUrl}` : 'Setting up the internet link; the QR code on the host screen appears when it is ready.'}
 Press Ctrl+C to stop.
 `);
 
   const quizServer = server;
   if (publicUrl) {
     server.setNetwork({ mode: 'tunnel', state: 'up', provider: 'your own address', publicUrl });
-  } else if (values.lan) {
-    server.setNetwork({ mode: 'lan', maxHours: tunnelHours });
-  } else if (!values.lan) {
+  } else {
     let lastState: string | undefined;
     tunnel = new TunnelManager({
       port: server.port,
@@ -251,7 +244,7 @@ Press Ctrl+C to stop.
       onExpire() {
         const hours = tunnelHours === 1 ? 'an hour' : `${tunnelHours} hours`;
         quizServer.setShortLinks(undefined);
-        quizServer.setNetwork({ mode: 'lan', tunnelAvailable: true, maxHours: tunnelHours, message: `The internet link was closed after ${hours}, as set. Teams on it have lost the quiz; press "Use the internet link" to open a new one, or carry on over local Wi-Fi.` });
+        quizServer.setNetwork({ mode: 'tunnel', state: 'down', closedByTimer: true, maxHours: tunnelHours, message: `The internet link was closed after ${hours}, as set. Teams on it have lost the quiz; press "Use the internet link" to open a new one.` });
         console.log(`Internet link closed after ${hours}, as set. The host screen can open a new one.`);
       },
       onStatus(status: NetworkStatus) {
@@ -277,12 +270,14 @@ Press Ctrl+C to stop.
 
   if (!values['no-open']) openBrowser(server.hostUrl);
 
-  const shutdown = () => {
-    tunnel?.stop();
-    quizServer.close().finally(() => process.exit(0));
-  };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
+
+  /** Stops the internet link and the server, then the process (Ctrl+C, a stop signal, or the host screen's Shut down). */
+  function shutdown(): void {
+    tunnel?.stop();
+    quizServer.close().finally(() => process.exit(0));
+  }
 }
 
 await main();

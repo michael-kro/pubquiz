@@ -36,6 +36,7 @@ let pinError = '';
 
 let state = null;
 let fatal = null;
+let shutDown = false; // the host pressed Shut down: the program has stopped, so no reconnecting
 let notice = '';
 let noticeTimer;
 let library = { items: null, error: '' };
@@ -181,6 +182,9 @@ function connect() {
         key = message.key;
         rememberKey();
         showNotice('New host key saved in this browser. The old links no longer work; open the TV screen again from the TV screen button.');
+      } else if (message.t === 'shutdown') {
+        shutDown = true;
+        socket.stop();
       } else if (message.t === 'error') {
         if (state) showNotice(message.message);
         else if (!TV && storedKey() === key) {
@@ -350,6 +354,10 @@ function render() {
     app.replaceChildren(pinForm());
     return;
   }
+  if (shutDown) {
+    app.replaceChildren(h('section', { class: 'screen center' }, h('h1', {}, '⏻ Shut down'), h('p', {}, 'The quiz program has stopped, as asked from the host screen. Start it again to carry on: an unfinished quiz offers Resume, and phones come back in by themselves.')));
+    return;
+  }
   if (fatal) {
     app.replaceChildren(h('section', { class: 'screen center' }, h('h1', {}, "Can't open the host screen"), h('p', {}, fatal)));
     return;
@@ -413,7 +421,7 @@ function render() {
 }
 
 const NETWORK_LABELS = {
-  lan: '📶 Local Wi-Fi',
+  local: '🌐 No internet link',
   starting: '🌐 Connecting to the internet…',
   up: '🌐 Internet link',
   down: '⚠️ Internet link down',
@@ -423,7 +431,7 @@ const closesAt = (network) => (network.expiresAt && network.state === 'up' ? new
 
 /** The network state. On the host it is a button that opens the internet-link panel; the TV just shows it. */
 function networkPill(network, compact = false) {
-  const key = network.mode === 'lan' ? 'lan' : network.state;
+  const key = network.mode === 'local' ? 'local' : network.state;
   const closes = closesAt(network) ? `Closes by itself at ${closesAt(network)}` : '';
   const detail = [network.message, closes].filter(Boolean).join(' · ');
   const words = NETWORK_LABELS[key].replace(/^\S+\s/, '');
@@ -444,8 +452,8 @@ function networkOverlay(s) {
     networkOpen = false;
     render();
   };
-  const key = n.mode === 'lan' ? 'lan' : n.state;
-  const canSwitch = n.mode === 'tunnel' || n.tunnelAvailable;
+  const key = n.mode === 'local' ? 'local' : n.state;
+  const canReopen = n.mode === 'tunnel' && n.state === 'down';
   const choices = TUNNEL_HOUR_CHOICES.some(([h]) => h === (n.maxHours ?? 0)) ? TUNNEL_HOUR_CHOICES : [...TUNNEL_HOUR_CHOICES, [n.maxHours, `After ${n.maxHours} hours`]];
   return h(
     'div',
@@ -455,11 +463,9 @@ function networkOverlay(s) {
       { class: 'codes-card network-card' },
       h('div', { class: 'codes-head' }, h('h2', {}, NETWORK_LABELS[key]), h('button', { type: 'button', onclick: close }, 'Close')),
       n.mode === 'tunnel' && n.state === 'up' && n.publicUrl ? h('p', { class: 'copy-link' }, h('code', {}, n.publicUrl.replace(/^https?:\/\//, '')), ' ', h('button', { type: 'button', onclick: () => copyText(n.publicUrl) }, '📋 Copy')) : null,
-      n.message ? h('p', { class: n.mode === 'lan' ? 'muted' : 'error' }, n.message) : null,
+      n.message ? h('p', { class: n.closedByTimer ? 'muted' : 'error' }, n.message) : null,
       n.mode === 'tunnel' && n.state === 'up' ? h('p', { class: 'muted' }, closesAt(n) ? `Closes by itself at ${closesAt(n)}.` : 'Stays open until the program stops.') : null,
-      n.mode === 'lan' ? h('p', { class: 'muted' }, "Local Wi-Fi only: teams' phones must be on the same Wi-Fi as this laptop.") : null,
-      canSwitch
-        ? h(
+      h(
             'label',
             { class: 'network-hours' },
             'Close the internet link by itself ',
@@ -469,27 +475,55 @@ function networkOverlay(s) {
               choices.map(([hours, label]) => h('option', { value: String(hours), selected: (n.maxHours ?? 0) === hours }, label)),
             ),
             h('span', { class: 'muted small' }, ' A quiz night needs the link for an evening, not till morning. Remembered for next time; a new link can be opened any time.'),
-          )
-        : h('p', { class: 'muted small' }, 'Started without an internet link (--lan).'),
-      canSwitch
-        ? h(
-            'div',
-            { class: 'card-actions' },
-            n.mode === 'tunnel'
-              ? h('button', { type: 'button', onclick: () => { socket.send({ t: 'network', action: 'use-lan' }); close(); } }, 'Switch to local Wi-Fi')
-              : h('button', { type: 'button', class: 'primary', onclick: () => { socket.send({ t: 'network', action: 'use-tunnel' }); close(); } }, 'Use the internet link'),
-          )
+      ),
+      canReopen
+        ? h('div', { class: 'card-actions' }, h('button', { type: 'button', class: 'primary', onclick: () => { socket.send({ t: 'network', action: 'use-tunnel' }); close(); } }, n.closedByTimer ? 'Use the internet link' : 'Try again'))
         : null,
+      // The end of the night: stop the program itself, and with it the internet link.
+      h(
+        'div',
+        { class: 'shutdown-row' },
+        h(
+          'button',
+          {
+            type: 'button',
+            class: 'danger',
+            onclick: () => {
+              // From a phone there is no way back: the program can only be started again at the laptop.
+              const warning = isPhone()
+                ? 'You are on the phone. Once the program stops it can only be started again at the laptop that runs it (or with docker start): this phone cannot. Phones and the TV lose the quiz and the internet link closes; an unfinished quiz can be resumed then.\n\nShut the quiz program down now?'
+                : 'Shut the quiz program down? Phones and the TV lose the quiz; the internet link closes. An unfinished quiz can be resumed when the program is started again.';
+              if (confirm(warning)) {
+                socket.send({ t: 'shutdown' });
+                close();
+              }
+            },
+          },
+          '⏻ Shut down the quiz program',
+        ),
+        h('span', { class: 'muted small' }, isPhone() ? ' Stops everything until it is started again at the laptop; this phone cannot start it.' : ' Stops everything until it is started again (in Docker: docker start pubquiz).'),
+      ),
     ),
   );
 }
 
+/** Teams join through the internet link only, so there is nothing to scan or type until it is up. */
+function linkReady(s) {
+  return s.network.mode !== 'tunnel' || s.network.state === 'up';
+}
+
 /** The address to show people: the short link if there is one, else the full one, without the https://. */
 function joinText(s) {
+  if (!linkReady(s)) return 'Setting up the internet link…';
   return (s.shortLinks?.join ?? s.joinUrl).replace(/^https?:\/\//, '');
 }
 
-/** Copies text to the clipboard. Plain http addresses (the laptop's Wi-Fi address) have no clipboard API, so fall back to a hidden text box. */
+/** The join QR code, or a plain line while the internet link is still being set up. */
+function joinQr(s) {
+  return linkReady(s) ? h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }) : h('div', { class: 'qr qr-waiting' }, h('p', {}, '🌐 Setting up the internet link…'), h('p', { class: 'muted small' }, 'The code appears here when it is ready.'));
+}
+
+/** Copies text to the clipboard. The clipboard API can be missing (older browsers, some embedded views), so fall back to a hidden text box. */
 async function copyText(text) {
   try {
     await navigator.clipboard.writeText(text);
@@ -538,23 +572,15 @@ function openHostWarning(s) {
   return h('div', { class: 'open-host-warning', role: 'alert' }, h('strong', {}, '⚠ Testing mode: the host key is switched off.'), ' Anyone who opens this web address can control the quiz. Restart the app normally before a real quiz.');
 }
 
-/** Warning with a way out when the internet link is down, or a way back when the host chose local Wi-Fi. */
+/** Warning with a way back when the internet link is down or was closed by its timer. */
 function networkBanner(s) {
   const n = s.network;
   if (n.mode === 'tunnel' && n.state === 'down') {
     return h(
       'div',
       { class: 'network-banner', role: 'alert' },
-      h('span', {}, h('strong', {}, 'The internet link is down. '), n.message ?? ''),
-      h('button', { onclick: () => socket.send({ t: 'network', action: 'use-lan' }) }, 'Switch to local Wi-Fi'),
-    );
-  }
-  if (n.mode === 'lan' && n.tunnelAvailable) {
-    return h(
-      'div',
-      { class: `network-banner${n.message ? '' : ' calm'}`, role: n.message ? 'alert' : undefined },
-      h('span', {}, n.message ? h('strong', {}, n.message, ' ') : null, "Local Wi-Fi only: teams' phones must be on the same Wi-Fi as this laptop."),
-      h('button', { onclick: () => socket.send({ t: 'network', action: 'use-tunnel' }) }, 'Use the internet link'),
+      h('span', {}, h('strong', {}, n.closedByTimer ? 'The internet link is closed. ' : 'The internet link is down. '), n.message ?? ''),
+      h('button', { onclick: () => socket.send({ t: 'network', action: 'use-tunnel' }) }, n.closedByTimer ? 'Use the internet link' : 'Try again'),
     );
   }
   return null;
@@ -1044,20 +1070,13 @@ function stage(s) {
       return h(
         'div',
         { class: 'lobby' },
-        s.wifi
-          ? h(
-              'div',
-              { class: 'qr-pair' },
-              h('figure', { class: 'qr-step' }, h('img', { class: 'qr', src: imageWithKey('/wifi-qr.svg'), alt: `QR code to join the ${s.wifi.ssid} Wi-Fi network` }), h('figcaption', {}, h('strong', {}, '1. Join the Wi-Fi'), h('br'), s.wifi.ssid, s.wifi.password ? h('br') : null, s.wifi.password ? `Password: ${s.wifi.password}` : null)),
-              h('figure', { class: 'qr-step' }, h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }), h('figcaption', {}, h('strong', {}, '2. Open the quiz'))),
-            )
-          : h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }),
+        joinQr(s),
         h(
           'div',
           {},
           TV ? brandBlock() : null,
           h('h1', {}, 'Scan to join'),
-          h('p', { class: 'big' }, joinText(s), TV ? null : [' ', copyButton(() => s.shortLinks?.join ?? s.joinUrl)]),
+          h('p', { class: 'big' }, joinText(s), TV || !linkReady(s) ? null : [' ', copyButton(() => s.shortLinks?.join ?? s.joinUrl)]),
           h('p', { class: 'room-code-line' }, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
           h('p', { class: 'muted' }, 'One phone per team.'),
           TV ? [entryFeeBanner(s), prizeList(s.prizes, true)] : h('div', { class: 'lobby-extras' }, entryFeeEditor(s), prizesEditor(s)),
@@ -1085,9 +1104,6 @@ function stage(s) {
                 h('input', { type: 'checkbox', checked: s.allowEmptyStart, onchange: (e) => socket.send({ t: 'allow-empty-start', on: e.target.checked }) }),
                 ' ▶ Allow starting with no teams (for trying a quiz out)',
               ),
-          s.network.mode === 'tunnel' && s.network.state === 'starting'
-            ? h('p', { class: 'muted small' }, 'Setting up the internet link. Until then, teams need to be on the same Wi-Fi as this laptop.')
-            : null,
         ),
         TV ? tvTeams(s) : null,
       );
@@ -1268,7 +1284,7 @@ function moreControl(s) {
   const items = [
     ...(isPhone() && s.phase === 'reveal' && s.skipsLeaderboardNext ? [['🏆 Show leaderboard', () => socket.send({ t: 'leaderboard' })]] : []),
     ...(isPhone() ? [['🎵 Clips', openClips]] : [['📲 Host on my phone', () => { hostQrOpen = true; }]]),
-    ...(isPhone() ? [['📋 Copy join link', async () => showNotice((await copyText(s.shortLinks?.join ?? s.joinUrl)) ? 'Join link copied.' : 'Could not copy the link.')]] : []),
+    ...(isPhone() && linkReady(s) ? [['📋 Copy join link', async () => showNotice((await copyText(s.shortLinks?.join ?? s.joinUrl)) ? 'Join link copied.' : 'Could not copy the link.')]] : []),
     ['📱 Show join QR code', () => socket.send({ t: 'show-join', shown: true })],
     ...(s.canEndRound ? [['⏭ End round', () => endRound(s)]] : []),
     ...(s.canEnd ? [[s.phase === 'finished' ? '⏎ Back to quizzes' : '⏹ End quiz', () => endQuiz(s)]] : []),
@@ -2131,7 +2147,7 @@ function hostQrOverlay(s) {
       h('h2', {}, 'Host from your phone'),
       h('img', { class: 'qr', src: imageWithKey(`/host-qr.svg?v=${s.qrVersion ?? 0}`), alt: 'QR code for the host page' }),
       h('p', { class: 'muted' }, 'Scan this with your phone camera. ', s.openHost ? '' : 'The code contains the host key, so keep it to yourself. '),
-      h('p', { class: 'muted' }, s.network?.mode === 'tunnel' && s.network.state === 'up' ? 'It uses the internet link, so it works on any network.' : 'It uses this laptop’s Wi-Fi address, so the phone must be on the same Wi-Fi.'),
+      h('p', { class: 'muted' }, s.network?.mode === 'tunnel' && s.network.state === 'up' ? 'It uses the internet link, so it works on any network.' : 'The internet link is not ready yet, so this code only opens the host page on this laptop.'),
       h('button', { type: 'button', onclick: close }, 'Close'),
     ),
   );
@@ -2147,10 +2163,10 @@ function joinOverlay(s) {
     h(
       'div',
       { class: 'codes-card join-card' },
-      h('img', { class: 'qr', src: `/qr.svg?v=${s.qrVersion}`, alt: `QR code for ${s.joinUrl}` }),
+      joinQr(s),
       h('h1', {}, 'Scan to join'),
       h('p', { class: 'big' }, joinText(s)),
-      copyButton(() => s.shortLinks?.join ?? s.joinUrl),
+      linkReady(s) ? copyButton(() => s.shortLinks?.join ?? s.joinUrl) : null,
       h('p', {}, 'Room code ', h('span', { class: 'room-code' }, s.roomCode)),
       TV ? null : h('button', { type: 'button', onclick: close }, 'Hide QR code'),
     ),

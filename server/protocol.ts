@@ -59,9 +59,11 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('judge'), correct: z.boolean() }),
   z.object({ t: z.literal('kick'), teamId: z.string().max(200) }),
   z.object({ t: z.literal('mark'), key: z.string().max(400), correct: z.boolean() }),
-  z.object({ t: z.literal('network'), action: z.enum(['use-lan', 'use-tunnel']) }),
+  z.object({ t: z.literal('network'), action: z.enum(['use-tunnel']) }),
   /** After how many hours the internet link closes by itself (0: never). */
   z.object({ t: z.literal('tunnel-hours'), hours: z.number().min(0).max(168) }),
+  /** Stops the program. Everyone is told first; an unfinished quiz resumes when it is started again. */
+  z.object({ t: z.literal('shutdown') }),
   z.object({ t: z.literal('end-quiz') }),
   z.object({ t: z.literal('photos'), enabled: z.boolean() }),
   z.object({ t: z.literal('remove-photo'), teamId: z.string().max(200) }),
@@ -213,8 +215,6 @@ export interface HostView {
   maxTeams: number;
   roomCode: string;
   joinUrl: string;
-  /** The local-network link, offered as a fallback. */
-  lanJoinUrl: string;
   /** Changes whenever the QR code does, so the page reloads the image. */
   qrVersion: number;
   /** Short is.gd addresses for the internet link, when the host switched that on. */
@@ -227,8 +227,6 @@ export interface HostView {
   photosEnabled: boolean;
   /** After the reveal, the next press goes straight to the next question (the full leaderboard is skipped). */
   skipsLeaderboardNext: boolean;
-  /** The venue Wi-Fi, if the host set one up: shown on the host and TV lobby with its own QR code. */
-  wifi?: { ssid: string; password?: string };
   question?: QuestionView & { answerText: string; answer?: number; info?: string; answerEdited?: boolean; editable?: boolean; editValue?: number | string; hostText?: string };
   /** Show the team list on the TV. The host can hide it. */
   tvShowTeams: boolean;
@@ -307,6 +305,8 @@ export type ServerMessage =
   /** `no-quiz`: nothing is running right now (the program restarted, say); keep the token, the team will be let back in. `unknown`: the token or code means nothing here. */
   | { t: 'rejoin-failed'; reason: 'no-quiz' | 'unknown' }
   | { t: 'host-key'; key: string }
+  /** The program is shutting down on the host's say-so; pages stop reconnecting. */
+  | { t: 'shutdown' }
   | { t: 'play-clip'; name: string; title: string }
   | { t: 'stop-clips' }
   | { t: 'error'; message: string; code?: 'phones-only' }
