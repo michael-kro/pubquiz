@@ -59,7 +59,7 @@ const ClientMessageSchema = z.discriminatedUnion('t', [
   z.object({ t: z.literal('judge'), correct: z.boolean() }),
   z.object({ t: z.literal('kick'), teamId: z.string().max(200) }),
   z.object({ t: z.literal('mark'), key: z.string().max(400), correct: z.boolean() }),
-  z.object({ t: z.literal('network'), action: z.enum(['use-tunnel']) }),
+  z.object({ t: z.literal('network'), action: z.enum(['use-tunnel', 'speed-check']) }),
   /** After how many hours the internet link closes by itself (0: never). */
   z.object({ t: z.literal('tunnel-hours'), hours: z.number().min(0).max(168) }),
   /** Stops the program. Everyone is told first; an unfinished quiz resumes when it is started again. */

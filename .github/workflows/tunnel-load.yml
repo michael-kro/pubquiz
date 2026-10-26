@@ -1,0 +1,55 @@
+# The load test as on a quiz night: 30 simulated phones (and 5 more than fit) join through a real Cloudflare quick
+# tunnel, play a whole quiz with dropped connections, and every score is checked. Weekly and by hand, not on pull
+# requests: it depends on Cloudflare's free service, which a pull request should not wait on.
+name: Tunnel load test
+
+on:
+  schedule:
+    - cron: '41 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      teams:
+        description: 'Teams (30 is the most a quiz allows)'
+        default: '30'
+      questions:
+        description: 'Questions'
+        default: '10'
+      drop:
+        description: 'Chance per team per question that its connection drops (0-1)'
+        default: '0.1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tunnel-load
+  cancel-in-progress: true
+
+jobs:
+  tunnel-load:
+    name: Load test through a real tunnel
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # One more try, in case the free tunnel itself was having a bad moment.
+      - env:
+          TEAMS: ${{ inputs.teams || '30' }}
+          QUESTIONS: ${{ inputs.questions || '10' }}
+          DROP: ${{ inputs.drop || '0.1' }}
+        run: |
+          set -o pipefail
+          for attempt in 1 2; do
+            if node scripts/loadtest.ts --tunnel --teams "$TEAMS" --questions "$QUESTIONS" --drop "$DROP" | tee report.txt; then
+              { echo '```'; cat report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "Tunnel load test failed on attempt $attempt"
+          done
+          { echo '```'; cat report.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          exit 1

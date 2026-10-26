@@ -228,6 +228,7 @@ Press Ctrl+C to stop.
   const quizServer = server;
   if (publicUrl) {
     server.setNetwork({ mode: 'tunnel', state: 'up', provider: 'your own address', publicUrl });
+    void server.checkSpeed();
   } else {
     let lastState: string | undefined;
     tunnel = new TunnelManager({
@@ -254,6 +255,8 @@ Press Ctrl+C to stop.
         lastState = status.state;
         if (status.state === 'up') {
           console.log(`Internet link ready: ${status.publicUrl}`);
+          // Each new link is checked once, so a weak connection shows before the teams arrive.
+          void quizServer.checkSpeed();
           if (values['short-links'] && status.publicUrl) {
             void shortLinksFor(status.publicUrl, Boolean(values['open-host'])).then((links) => {
               quizServer.setShortLinks(links);

@@ -21,6 +21,7 @@ import type { ShortLinks } from './shortlink.ts';
 import { parseClientMessage, type HostIdleView, type HostView, type ServerMessage } from './protocol.ts';
 import { loadQuizFile, QuizError, type Quiz } from './quiz.ts';
 import { createSaver, hashQuiz, readSession, writeSession, type Session } from './session.ts';
+import { measureSpeed, SPEED_MAX_BYTES, type SpeedCheck } from './speedcheck.ts';
 import type { NetworkStatus } from './tunnel.ts';
 
 const ROUTES: Record<string, string> = { '/': 'play.html', '/host': 'host.html', '/screen': 'screen.html', '/practice': 'practice.html' };
@@ -137,6 +138,8 @@ export interface QuizServer {
   readonly localJoinUrl: string;
   /** Random per run; /healthz returns it, so a tunnel check knows it reached this server. */
   instanceId: string;
+  /** Measures the internet link's speed and shows the result on the host screen. Does nothing without an internet link. */
+  checkSpeed(): Promise<void>;
   startQuiz(quiz: Quiz, session?: SessionOptions): Promise<void>;
   endQuiz(): Promise<void>;
   setNetwork(status: NetworkStatus): void;
@@ -208,6 +211,8 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   const connections = new Set<Connection>();
   const teamConnections = new Map<string, Connection>();
   const instanceId = randomBytes(9).toString('base64url');
+  /** Only this server knows it: the speed check download is served to its own check, not to anyone on the internet. */
+  const speedKey = randomBytes(18).toString('base64url');
   const joinGuesses = new WindowCounter(MAX_JOIN_GUESSES_PER_MINUTE, 60_000);
   const photoUploads = new WindowCounter(5, 60_000);
   // Wrong host, screen or practice keys, per address, for anyone but the laptop itself (a stale tab there must never
@@ -227,6 +232,33 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   let qrSvg = '';
   let qrVersion = 0;
   let network: NetworkStatus = { mode: 'local' };
+  /** The last speed check of the current internet link, kept apart from the link's status so status updates keep it. */
+  let speed: SpeedCheck | undefined;
+  let speedRun: Promise<void> | undefined;
+  const networkView = (): NetworkStatus => (speed ? { ...network, speed } : network);
+
+  function checkSpeed(): Promise<void> {
+    const url = network.state === 'up' ? network.publicUrl : undefined;
+    if (!url) return Promise.resolve();
+    speedRun ??= (async () => {
+      speed = { state: 'checking', message: 'Checking the internet connection…' };
+      scheduleBroadcast();
+      let result: SpeedCheck;
+      try {
+        result = await measureSpeed(url, { key: speedKey });
+      } catch (error) {
+        result = { state: 'failed', message: `Couldn't check the connection: ${(error as Error).message}`, at: new Date().toISOString() };
+      }
+      // A link that changed while measuring needs its own check.
+      if (network.publicUrl === url) {
+        speed = result;
+        if (result.level) console.log(`Connection check: ${result.latencyMs} ms round trip, ${result.mbps} Mbit/s. ${result.message}`);
+        else console.log(result.message);
+        scheduleBroadcast();
+      }
+    })().finally(() => (speedRun = undefined));
+    return speedRun;
+  }
 
   let broadcastQueued = false;
   function scheduleBroadcast(): void {
@@ -244,13 +276,13 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
   }
 
   function hostView(): HostView | HostIdleView {
-    if (!active) return { phase: 'idle', library: Boolean(options.library), network, ...(options.openHost ? { openHost: true } : {}) };
+    if (!active) return { phase: 'idle', library: Boolean(options.library), network: networkView(), ...(options.openHost ? { openHost: true } : {}) };
     return {
       ...active.game.hostView(),
       roomCode: active.roomCode,
       joinUrl,
       qrVersion,
-      network,
+      network: networkView(),
       ...(options.openHost ? { openHost: true } : {}),
       ...(shortLinks && (shortLinks.join || shortLinks.tv) ? { shortLinks } : {}),
       canEnd: Boolean(options.library),
@@ -782,7 +814,9 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
         return;
 
       case 'network':
-        if (hostOnly()) options.onNetworkAction?.(msg.action);
+        if (!hostOnly()) return;
+        if (msg.action === 'speed-check') void checkSpeed();
+        else options.onNetworkAction?.(msg.action);
         return;
 
       case 'tunnel-hours':
@@ -1281,6 +1315,20 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       return;
     }
 
+    // Random bytes for the connection check, which this server fetches from itself through the internet link.
+    // Its own secret key only, so nobody else can use it to fill up the venue's connection.
+    if (pathname === '/speedcheck') {
+      const bytes = Number(url.searchParams.get('bytes'));
+      const key = req.headers['x-speed-key'];
+      if (!keyIs(speedKey, typeof key === 'string' ? key : undefined) || !Number.isInteger(bytes) || bytes < 1 || bytes > SPEED_MAX_BYTES) {
+        res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
+        return;
+      }
+      res.writeHead(200, { 'content-type': 'application/octet-stream', 'content-length': String(bytes), 'cache-control': 'no-store', ...PAGE_HEADERS });
+      res.end(randomBytes(bytes));
+      return;
+    }
+
     if (pathname === '/results.csv') {
       if (!isHostKey(presentedKey(req)) || !hostAllowed(req) || !active) {
         res.writeHead(404, NOT_FOUND_HEADERS).end('Not found');
@@ -1506,9 +1554,12 @@ export async function createQuizServer(options: ServerOptions): Promise<QuizServ
       return localUrl();
     },
     instanceId,
+    checkSpeed,
     startQuiz,
     endQuiz,
     setNetwork(status) {
+      // A speed check belongs to one link: a new address, or the link going down, clears it.
+      if (status.state !== 'up' || status.publicUrl !== network.publicUrl) speed = undefined;
       network = status;
       void updateJoinUrl().then(broadcast);
     },

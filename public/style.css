@@ -1183,6 +1183,8 @@ button.network-pill:hover { filter: brightness(1.15); }
 .network-card { text-align: left; display: grid; gap: 10px; max-width: 560px; }
 .network-card .copy-link { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .network-card .copy-link code { overflow-wrap: anywhere; }
+.network-speed { display: grid; gap: 6px; justify-items: start; }
+.network-speed p { margin: 0; }
 .network-hours { display: grid; gap: 6px; font-weight: 600; }
 .network-hours select { font: inherit; padding: 8px 10px; border-radius: 10px; background: var(--surface-2); color: var(--text); border: 0; }
 .network-hours .muted { font-weight: 400; }
