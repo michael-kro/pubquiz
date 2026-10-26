@@ -43,7 +43,7 @@ npm run try                              # a throwaway library and settings on p
 
 ## CI and security scanning
 
-Every push and pull request to `main` or `develop` runs:
+Every pull request into `main` runs these; `security.yml` runs again on the push to `main`:
 
 - `ci.yml`: typecheck and tests on Node 22.18 and 24, the load test and the fuzzers (with one retry), the screen tour (its screenshots are the `screen-tour` artifact of the run), `npm audit`, a secret scan of the whole history (gitleaks) and a workflow lint.
 - `security.yml`: Semgrep with the standard rule packs plus this app's own rules in `semgrep-rules/` (test them with `semgrep --test semgrep-rules/`), CodeQL, and hadolint and Trivy on the image. Also weekly.

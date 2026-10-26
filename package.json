@@ -17,7 +17,8 @@
     "typecheck": "tsc",
     "check": "npm run typecheck && npm test",
     "docker:build": "docker build -t pubquiz .",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "release": "node scripts/release.ts cut"
   },
   "license": "MIT",
   "engines": {

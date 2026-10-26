@@ -70,7 +70,7 @@ test('the command line: next, unreleased, prepare --dry-run, notes', () => {
   assert.throws(() => run('next', 'huge'), /Unknown bump/);
 });
 
-test('prepare prints only the tag on standard output, because the workflow uses it as a branch name', () => {
+test('prepare prints only the tag on standard output, because cut uses it as a branch name', () => {
   const dir = mkdtempSync(join(tmpdir(), 'release-prepare-'));
   try {
     for (const file of ['package.json', 'package-lock.json']) copyFileSync(file, join(dir, file));

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **One branch, releases on demand:** `develop` is gone and every change goes straight into `main` by pull request. `npm run release` cuts a release when there is something to release, instead of a workflow every Friday; it opens the pull request as you, so the `RELEASE_TOKEN` secret is no longer needed. Publishing no longer opens a merge back into `develop`. CI and the ZAP scan run once per pull request instead of again on the push.
+
 ## 0.3.0 — 2026-10-23
 
 - **Fix, the weekly release workflow:** its first real run failed because the release script printed the version twice and the workflow used both lines as a branch name. It prints the tag only now, with a test.
