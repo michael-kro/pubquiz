@@ -1,12 +1,11 @@
-# Checks that run on every push and pull request: types, tests, the load test, the browser screen tour, dependency audit, secret scan.
+# Checks that run on every pull request into main: types, tests, the load test, the browser screen tour, dependency audit,
+# secret scan. Not again on the push to main: the ruleset only merges a branch that is up to date, so it was already tested.
 # Semgrep, CodeQL and image scanning are in security.yml; ZAP and nuclei in dast.yml.
 name: CI
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

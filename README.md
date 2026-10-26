@@ -16,7 +16,7 @@ Run a live pub quiz from your laptop. Teams join on their own phones by scanning
    docker logs pubquiz        # prints the host link
    ```
    Linux: add `--user $(id -u):$(id -g)` so files stay yours. Windows: use `-v "%USERPROFILE%\PubQuiz:/data/quizzes"`.
-   **To update** (a new release every Friday): your quizzes and settings are in the folder and the volume, not the container, so:
+   **To update** (when there is a new release): your quizzes and settings are in the folder and the volume, not the container, so:
    ```sh
    docker pull ghcr.io/michael-kro/pubquiz:latest
    docker rm -f pubquiz       # then the same docker run as above
@@ -46,7 +46,7 @@ Quizzes, pictures, sound clips, branding, saved games and results all live in on
 - [Host guide](docs/HOST-GUIDE.md): everything the host screen does, hosting from your phone, practice mode, how phones connect, and what to do when something goes wrong.
 - [Writing a quiz](docs/QUIZ-FORMAT.md), and [writing one with AI](docs/AI-QUIZ-GUIDE.md).
 - [Development](docs/DEVELOPMENT.md): running from source, code layout, tests, Docker, CI and security scanning.
-- [Releasing](docs/RELEASING.md): a release every Friday, cut and published by a workflow; `feature/` and `fix/` branches off `develop`, `hotfix/` off `main`; every change is a pull request that passes CI and adds a line to [CHANGELOG.md](CHANGELOG.md).
+- [Releasing](docs/RELEASING.md): one branch, `main`; every change is a short-lived branch and a pull request that passes CI and adds a line to [CHANGELOG.md](CHANGELOG.md); `npm run release` cuts a release and a workflow publishes it.
 
 ## Licence
 

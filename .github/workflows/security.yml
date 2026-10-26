@@ -1,12 +1,13 @@
 # Static scanning: Semgrep (with this app's own rules), CodeQL, and the Docker image (hadolint and Trivy).
-# Also runs weekly, because new vulnerabilities are published against code that has not changed.
+# Also runs on the push to main (CodeQL compares each pull request with main's last analysis) and weekly, because new
+# vulnerabilities are published against code that has not changed.
 name: Security
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
   schedule:
     - cron: '23 5 * * 1'
   workflow_dispatch:

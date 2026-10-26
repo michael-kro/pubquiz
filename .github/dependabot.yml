@@ -3,8 +3,6 @@ version: 2
 updates:
   - package-ecosystem: npm
     directory: /
-    # Pull requests go to develop, like every other change; main only gets releases.
-    target-branch: develop
     schedule:
       interval: weekly
     # Wait a week before proposing a brand-new release, so a compromised release is noticed first.
@@ -16,8 +14,6 @@ updates:
     open-pull-requests-limit: 5
   - package-ecosystem: github-actions
     directory: /
-    # Pull requests go to develop, like every other change; main only gets releases.
-    target-branch: develop
     schedule:
       interval: weekly
     # Wait a week before proposing a brand-new release, so a compromised release is noticed first.
@@ -32,8 +28,6 @@ updates:
     ignore:
       - dependency-name: node
         update-types: ['version-update:semver-major']
-    # Pull requests go to develop, like every other change; main only gets releases.
-    target-branch: develop
     schedule:
       interval: weekly
     # Wait a week before proposing a brand-new release, so a compromised release is noticed first.
