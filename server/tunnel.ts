@@ -44,9 +44,7 @@ export interface TunnelProvider {
 const CLOUDFLARED_VERSION = '2026.10.4';
 // SHA-256 of each release file, from GitHub's release metadata. The Linux and Windows ones match the release notes;
 // the notes' macOS values never match the published .tgz files, in this release or earlier ones.
-// Moving to a newer release: wait a week after it is published, as Dependabot does, and check the image scan passes.
-// The exception was 2026.10.4, taken one day after release because 2026.10.1 had a certificate-checking flaw
-// (CVE-2026-111943, Go crypto/x509) in the component that secures the internet link.
+// Moving to a newer release: take it as soon as it fixes a vulnerability, check the image scan passes, and release.
 const CLOUDFLARED_FILES: Record<string, { file: string; sha256: string }> = {
   'darwin-arm64': {
     file: 'cloudflared-darwin-arm64.tgz',

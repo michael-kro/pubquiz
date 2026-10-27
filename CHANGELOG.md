@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- **Fix (security), cloudflared 2026.10.4:** the version before (2026.10.1) was built with a Go release whose certificate checking could be fooled by untrusted intermediate certificates (CVE-2026-111943), in the part that secures the internet link. 2026.10.4 fixes that and the compression bug that was accepted until 2026-11-02, so `.trivyignore.yaml` is gone. It was taken one day after its release, not the usual week, because of the certificate flaw.
+- **Fix (security), cloudflared 2026.10.4:** the version before (2026.10.1) was built with a Go release whose certificate checking could be fooled by untrusted intermediate certificates (CVE-2026-111943), in the part that secures the internet link. 2026.10.4 fixes that and the compression bug that was accepted until 2026-11-02, so `.trivyignore.yaml` is gone. Updates are no longer held back a week: Dependabot proposes new versions straight away, so vulnerable ones are replaced and released sooner.
 
 - **Connection check:** each time the internet link opens, the program measures the connection through it (round trip and speed, the way the phones' traffic goes) and shows 🟢 good, 🟡 OK or 🔴 weak in the internet-link panel, with **↻ Check again**. A weak connection also shows a banner before the quiz starts, suggesting a phone hotspot.
 - **Docker: the internet link is in the image.** `cloudflared` is fetched and checksum-checked when the image is built, so a container no longer downloads it on the night, which could be slow or fail on venue internet.
