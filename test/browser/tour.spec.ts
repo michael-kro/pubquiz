@@ -206,8 +206,8 @@ test('a whole quiz on every screen: host on a laptop and a phone, the TV and a t
         await sleep(1200);
         await check(label);
       }
-      for (const [label, text] of [['settings', 'Settings'], ['clips', 'Clips'], ['host-qr', 'Host on my phone']] as const) {
-        for (const v of hosts) await clickButton(v, text, { required: v === hostDesk }); // a phone has no "host on my phone"
+      for (const [label, text] of [['settings', 'Settings'], ['clips', 'Clips'], ['host-qr', 'Phone host']] as const) {
+        for (const v of hosts) await clickButton(v, text, { required: v === hostDesk }); // a phone has no "Phone host"
         await sleep(1000);
         await check(label);
         await pressEscape(hosts, label);

@@ -423,6 +423,14 @@ body.tv .lobby { min-height: 0; padding-top: 2vh; }
 .library { max-width: 1100px; margin: 0 auto; padding: 24px; }
 .library-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
 .library-bar h1 { margin: 0; }
+/* On a laptop the bar stays on one line: the network label (long while it connects) gives way, not the menu.
+   Narrower windows wrap as usual. */
+@media (min-width: 960px) {
+  .library-bar { flex-wrap: nowrap; }
+  .library-bar > * { flex-shrink: 0; }
+  .library-bar > .network-pill { flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+.empty-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .spacer { flex: 1; }
 .empty { text-align: center; padding: 15vh 16px; }
 .quiz-cards { list-style: none; padding: 0; margin: 0; display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
@@ -671,7 +679,7 @@ body.tv .lobby { min-height: 0; padding-top: 2vh; }
 @keyframes float-in { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
 .break-menu-wrap { position: relative; display: inline-block; }
 .break-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 15; display: grid; gap: 4px; min-width: 11em; padding: 8px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--surface-2); box-shadow: 0 12px 30px #0006; animation: float-in 0.15s ease-out both; }
-.break-menu button { text-align: left; background: var(--surface-2) !important; }
+.break-menu button { text-align: left; justify-content: flex-start !important; white-space: nowrap; background: var(--surface-2) !important; }
 
 /* Motion: screens slide in on a phase change; results pop; everything calm for reduced-motion */
 .screen-enter { animation: screen-in 0.35s ease-out both; }
