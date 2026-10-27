@@ -1,28 +1,24 @@
 # Keeps dependencies, the Docker base image and the workflow actions up to date, in a few grouped pull requests.
 version: 2
+# No cooldown: new versions are proposed straight away, so a vulnerable one can be replaced and released promptly.
+# A single developer reviews and releases each one; Semgrep's cooldown rule is skipped on purpose (nosemgrep below).
 updates:
-  - package-ecosystem: npm
+  - package-ecosystem: npm # nosemgrep: package_managers.dependabot.dependabot-missing-cooldown.dependabot-missing-cooldown
     directory: /
     schedule:
       interval: weekly
-    # Wait a week before proposing a brand-new release, so a compromised release is noticed first.
-    cooldown:
-      default-days: 7
     groups:
       minor-and-patch:
         update-types: [minor, patch]
     open-pull-requests-limit: 5
-  - package-ecosystem: github-actions
+  - package-ecosystem: github-actions # nosemgrep: package_managers.dependabot.dependabot-missing-cooldown.dependabot-missing-cooldown
     directory: /
     schedule:
       interval: weekly
-    # Wait a week before proposing a brand-new release, so a compromised release is noticed first.
-    cooldown:
-      default-days: 7
     groups:
       actions:
         patterns: ['*']
-  - package-ecosystem: docker
+  - package-ecosystem: docker # nosemgrep: package_managers.dependabot.dependabot-missing-cooldown.dependabot-missing-cooldown
     directory: /
     # A new Node major is a deliberate move (odd numbers are not LTS), not a weekly pull request.
     ignore:
@@ -30,6 +26,3 @@ updates:
         update-types: ['version-update:semver-major']
     schedule:
       interval: weekly
-    # Wait a week before proposing a brand-new release, so a compromised release is noticed first.
-    cooldown:
-      default-days: 7
