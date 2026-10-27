@@ -31,7 +31,7 @@ Teams join through a free, encrypted internet link (Cloudflare, no account), so 
 
 ## Your files
 
-Quizzes, pictures, sound clips, branding, saved games and results all live in one folder: `~/PubQuiz` (`C:\Users\<you>\PubQuiz` on Windows). Back it up and you have everything. Change it under **⚙ Settings**, or with `--quizzes <folder>` or `PUBQUIZ_HOME`.
+Quizzes, pictures, sound clips, branding, saved games and results all live in one folder: `~/PubQuiz` (`C:\Users\<you>\PubQuiz` on Windows). Back it up and you have everything. Change it under **⋯ More → ⚙ Settings**, or with `--quizzes <folder>` or `PUBQUIZ_HOME`.
 
 ## Make a quiz
 

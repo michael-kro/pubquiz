@@ -6,6 +6,7 @@ Everything the host screen does. The [README](../README.md) has the five-minute 
 
 Start the program and open the host link (`docker logs pubquiz` prints it; from source it opens by itself). It stays the same between runs, so bookmark it. It shows **Your quizzes**:
 
+- The quizzes screen keeps **🎵 Clips** and the 🍺 venue switch on its top bar, for use on the night. Everything for preparing a quiz is in **⋯ More**: New quiz, Import, Branding, Settings, Phone host and Practice.
 - **New quiz** opens the editor: pick a type for each question, upload pictures (big ones are shrunk), drag questions to reorder, and preview the phone. It saves as you type and flags anything that needs fixing.
 - **Import** a `.yaml` file or a `.zip` with `quiz.yaml` and `images/`. **Export** a `.zip` to back up or share.
 - **Run ▶** starts a quiz; **End quiz** comes back here. An unfinished quiz offers **Resume** or **Start over**.
@@ -43,7 +44,7 @@ Teams on equal points are separated by their quicker total answer time.
 
 ## Hosting from your phone
 
-Open the host link on your phone, or press **⋯ → 📲 Host on my phone** on the quizzes screen for a QR code of it. The screen becomes a remote: the question and answers, and big buttons along the bottom. **Clips**, **Show join QR code**, **End round** and **End quiz** are under **⋯**. Keep the laptop on: it runs the quiz, the phone only controls it.
+Open the host link on your phone, or press **⋯ More → 📲 Phone host** on the quizzes screen for a QR code of it. The screen becomes a remote: the question and answers, and big buttons along the bottom. **Clips**, **Show join QR code**, **End round** and **End quiz** are under **⋯**. Keep the laptop on: it runs the quiz, the phone only controls it.
 
 ## Sound clips
 
