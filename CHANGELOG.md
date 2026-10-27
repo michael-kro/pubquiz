@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Fix (security), cloudflared 2026.10.4:** the version before (2026.10.1) was built with a Go release whose certificate checking could be fooled by untrusted intermediate certificates (CVE-2026-111943), in the part that secures the internet link. 2026.10.4 fixes that and the compression bug that was accepted until 2026-11-02, so `.trivyignore.yaml` is gone. It was taken one day after its release, not the usual week, because of the certificate flaw.
+
 - **Connection check:** each time the internet link opens, the program measures the connection through it (round trip and speed, the way the phones' traffic goes) and shows 🟢 good, 🟡 OK or 🔴 weak in the internet-link panel, with **↻ Check again**. A weak connection also shows a banner before the quiz starts, suggesting a phone hotspot.
 - **Docker: the internet link is in the image.** `cloudflared` is fetched and checksum-checked when the image is built, so a container no longer downloads it on the night, which could be slow or fail on venue internet.
 - **cloudflared 2026.10.1** (was 2026.9.3), for everyone: it fixes denial-of-service bugs in the Go libraries it was built with, which the image scan found once `cloudflared` was in the image. One remaining finding, fixed only in a release from 2026-10-26, is accepted until 2026-11-02 in `.trivyignore.yaml`, when the scan fails again as a reminder to move to it.

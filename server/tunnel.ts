@@ -41,30 +41,32 @@ export interface TunnelProvider {
 
 // cloudflared: free "quick tunnels", no account needed.
 
-const CLOUDFLARED_VERSION = '2026.10.1';
+const CLOUDFLARED_VERSION = '2026.10.4';
 // SHA-256 of each release file, from GitHub's release metadata. The Linux and Windows ones match the release notes;
 // the notes' macOS values never match the published .tgz files, in this release or earlier ones.
 // Moving to a newer release: wait a week after it is published, as Dependabot does, and check the image scan passes.
+// The exception was 2026.10.4, taken one day after release because 2026.10.1 had a certificate-checking flaw
+// (CVE-2026-111943, Go crypto/x509) in the component that secures the internet link.
 const CLOUDFLARED_FILES: Record<string, { file: string; sha256: string }> = {
   'darwin-arm64': {
     file: 'cloudflared-darwin-arm64.tgz',
-    sha256: '647615df99d49cd179ea5e13ef760b9bbfb33630f6ae62f87e33dfadda60adcc',
+    sha256: '68b6bc4080ac1330234db2a9002d07f98b000537a1bd531a687b660d4160fa7f',
   },
   'darwin-x64': {
     file: 'cloudflared-darwin-amd64.tgz',
-    sha256: '3b0dbaf378337e9d7fb6cd235a76d1d6a7dee434c2d8edf9281164fb6a3837ab',
+    sha256: 'f11fbef4207d715892331917dafd437f032cf4b7137ed64dea3008338c1c613d',
   },
   'linux-x64': {
     file: 'cloudflared-linux-amd64',
-    sha256: '3bfc539f45d2620c71debb7a86be0efa737ed5ccbad9eb85c787116900e5c586',
+    sha256: 'ae5e8add7884b0531d66bbca4570d1de491ff6da51e4ebe7eb160cdf241d9e42',
   },
   'linux-arm64': {
     file: 'cloudflared-linux-arm64',
-    sha256: '2c65dfabf616c40efc7545d107d7a57ad5e21377e2964b7e88af19a238074a46',
+    sha256: '2b7203b4fb0ba28a0c1e12f8855ce2c25f76d266a8d5edafac5540b6812acff6',
   },
   'win32-x64': {
     file: 'cloudflared-windows-amd64.exe',
-    sha256: '4d2490e74082c5d48dbfedaf92576fa5bd1702379ab88eb7faa0cfbe8dc891b6',
+    sha256: '411b16d40c8d872243efeb52c550053d00af0a8a97fbb32e730fb8aba429eaa8',
   },
 };
 
