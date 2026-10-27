@@ -3,7 +3,8 @@ import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { chmod, mkdir, mkdtemp, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { appHome } from './settings.ts';
-import { join } from 'node:path';
+import type { SpeedCheck } from './speedcheck.ts';
+import { dirname, join } from 'node:path';
 import { createInterface } from 'node:readline';
 
 export type TunnelState = 'starting' | 'up' | 'down';
@@ -23,6 +24,8 @@ export interface NetworkStatus {
   expiresAt?: string;
   /** The setting behind it: hours after opening (0: never), as the host can change it on the host screen. */
   maxHours?: number;
+  /** The last check of the connection's speed through this link, if there was one. */
+  speed?: SpeedCheck;
 }
 
 export interface RunningTunnel {
@@ -38,28 +41,30 @@ export interface TunnelProvider {
 
 // cloudflared: free "quick tunnels", no account needed.
 
-const CLOUDFLARED_VERSION = '2026.9.3';
-// SHA-256 of each release file, from GitHub's release metadata (checked against the release notes).
+const CLOUDFLARED_VERSION = '2026.10.1';
+// SHA-256 of each release file, from GitHub's release metadata. The Linux and Windows ones match the release notes;
+// the notes' macOS values never match the published .tgz files, in this release or earlier ones.
+// Moving to a newer release: wait a week after it is published, as Dependabot does, and check the image scan passes.
 const CLOUDFLARED_FILES: Record<string, { file: string; sha256: string }> = {
   'darwin-arm64': {
     file: 'cloudflared-darwin-arm64.tgz',
-    sha256: '587c2cfb1c230fe36c7fa7727da78be459dae028cabe8c001291999350f07095',
+    sha256: '647615df99d49cd179ea5e13ef760b9bbfb33630f6ae62f87e33dfadda60adcc',
   },
   'darwin-x64': {
     file: 'cloudflared-darwin-amd64.tgz',
-    sha256: 'd1155d0837487f261183b15c1eab6c4ebcad9dc49b94675f1524c3564cea3977',
+    sha256: '3b0dbaf378337e9d7fb6cd235a76d1d6a7dee434c2d8edf9281164fb6a3837ab',
   },
   'linux-x64': {
     file: 'cloudflared-linux-amd64',
-    sha256: '77e26d8d900e0b8469f416239d14b5f296525fdf79fee6f511ef55609e3fbac2',
+    sha256: '3bfc539f45d2620c71debb7a86be0efa737ed5ccbad9eb85c787116900e5c586',
   },
   'linux-arm64': {
     file: 'cloudflared-linux-arm64',
-    sha256: 'aaeb2d7d0da3614634c7e03ab13487a1522c2e79165ed2929cfe23d5e95b326d',
+    sha256: '2c65dfabf616c40efc7545d107d7a57ad5e21377e2964b7e88af19a238074a46',
   },
   'win32-x64': {
     file: 'cloudflared-windows-amd64.exe',
-    sha256: 'f096265ec2fcbe9bb6e2d64268db167ced3fcbb83d894bdb9e2fcdb26f2ea7e2',
+    sha256: '4d2490e74082c5d48dbfedaf92576fa5bd1702379ab88eb7faa0cfbe8dc891b6',
   },
 };
 
@@ -85,6 +90,19 @@ export async function ensureCloudflared(log: (message: string) => void = () => {
   if (await stat(binary).then(() => true, () => false)) return binary;
 
   log(`Downloading cloudflared ${CLOUDFLARED_VERSION} (one-off, about 20–50 MB)…`);
+  await installCloudflared(binary);
+  log('cloudflared is ready.');
+  return binary;
+}
+
+/**
+ * Downloads this platform's cloudflared to `binary`, checked against its pinned SHA-256 first.
+ * The Docker image calls this at build time, so a container never downloads it on the night.
+ */
+export async function installCloudflared(binary: string): Promise<void> {
+  const release = CLOUDFLARED_FILES[`${process.platform}-${process.arch}`];
+  if (!release) throw new Error(`No cloudflared download for ${process.platform}-${process.arch}. Install cloudflared yourself.`);
+  const binDir = dirname(binary);
   const url = `https://github.com/cloudflare/cloudflared/releases/download/${CLOUDFLARED_VERSION}/${release.file}`;
   const response = await fetch(url);
   if (!response.ok) throw new Error(`Couldn't download cloudflared (HTTP ${response.status}).`);
@@ -112,8 +130,6 @@ export async function ensureCloudflared(log: (message: string) => void = () => {
   } finally {
     await rm(work, { recursive: true, force: true });
   }
-  log('cloudflared is ready.');
-  return binary;
 }
 
 /** Runs a tunnel process and resolves once `parse` finds its public URL in the output. */

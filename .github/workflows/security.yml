@@ -74,11 +74,12 @@ jobs:
         run: docker run --rm -i hadolint/hadolint < Dockerfile
       - name: Build the image
         run: docker build --pull -t pubquiz:ci .
-      # High and critical problems that have a fix available fail the build. Trivy also covers the packages the base image brings.
+      # High and critical problems that have a fix available fail the build. Trivy also covers the packages the base image
+      # brings and cloudflared. .trivyignore.yaml holds findings accepted for a limited time, each with its reason.
       - name: Trivy, image
         run: >-
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock
-          aquasec/trivy:latest image
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/src" -w /src
+          aquasec/trivy:latest image --ignorefile .trivyignore.yaml
           --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 pubquiz:ci
       # The repository itself: dependencies, secrets, and misconfigurations in the Dockerfile and compose file.
       - name: Trivy, repository

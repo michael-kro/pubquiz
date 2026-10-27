@@ -7,7 +7,16 @@ COPY package.json package-lock.json ./
 # No install scripts: none of the dependencies needs one, and a future compromised package could not run code at build time.
 RUN npm ci --omit=dev --ignore-scripts
 
-# Stage 2: the image that runs.
+# Stage 2: cloudflared, the internet link, fetched at build time so a container never downloads it on the night.
+# The app's own download code does it, so it is the same pinned version, checked against the same SHA-256.
+# Under a multi-platform build each platform's stage runs as that platform, so each image gets its own binary.
+FROM node:24-slim AS cloudflared
+WORKDIR /app
+COPY server ./server
+RUN node --input-type=module -e "import { installCloudflared } from './server/tunnel.ts'; await installCloudflared('/out/cloudflared');" \
+    && /out/cloudflared --version
+
+# Stage 3: the image that runs.
 FROM node:24-slim
 
 # cloudflared (the internet link) checks Cloudflare's certificate against the system's trusted list.
@@ -29,8 +38,10 @@ COPY server ./server
 COPY public ./public
 COPY examples ./examples
 COPY docker-entrypoint.sh ./
+# On the PATH, so the app uses it instead of downloading one.
+COPY --from=cloudflared /out/cloudflared /usr/local/bin/cloudflared
 
-# Quizzes, saved games, results and the downloaded cloudflared live in /data, so mount a volume there.
+# Quizzes, saved games and results live in /data, so mount a volume there.
 ENV HOME=/data
 # Writable by any user, so `docker run --user $(id -u):$(id -g)` works (on Linux, to keep your own files owned by you).
 RUN mkdir -p /data && chown node:node /data && chmod 1777 /data

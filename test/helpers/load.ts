@@ -22,6 +22,11 @@ export interface LoadOptions {
   thinkMs?: [number, number];
   /** More teams than the quiz allows, to check the cap holds. */
   extraTeams?: number;
+  /**
+   * Phones connect through a real Cloudflare quick tunnel, as on a quiz night, instead of the local delay proxy.
+   * The latency and jitter options are then ignored: the delay is whatever the internet adds.
+   */
+  tunnel?: boolean;
   log?: (line: string) => void;
 }
 
@@ -42,6 +47,8 @@ export interface LoadReport {
   drops: number;
   answersSent: number;
   answersMissing: number;
+  /** The tunnel's address, when the phones came through one. */
+  tunnelUrl?: string;
 }
 
 export interface Stats {
@@ -101,18 +108,18 @@ class Bot {
   private answeredQuestions = new Set<number>();
   private stopped = false;
   private readonly o: Required<Pick<LoadOptions, 'dropRate' | 'correctRate' | 'thinkMs'>>;
-  private readonly port: number;
+  private readonly url: string;
 
-  constructor(name: string, port: number, o: Required<Pick<LoadOptions, 'dropRate' | 'correctRate' | 'thinkMs'>>) {
+  constructor(name: string, url: string, o: Required<Pick<LoadOptions, 'dropRate' | 'correctRate' | 'thinkMs'>>) {
     this.name = name;
-    this.port = port;
+    this.url = url;
     this.o = o;
   }
 
   /** Opens the connection and joins. A connection that hasn't opened after a few seconds is abandoned, so one stuck socket can't stall everything. */
   connect(timeoutMs = 5000): Promise<void> {
     return new Promise((resolve, reject) => {
-      const ws = new WebSocket(`ws://127.0.0.1:${this.port}/ws`);
+      const ws = new WebSocket(this.url);
       this.ws = ws;
       const timer = setTimeout(() => {
         ws.terminate();
@@ -226,10 +233,37 @@ class Bot {
   }
 }
 
+/** Opens a Cloudflare quick tunnel to the port and waits until it really reaches this server. */
+async function openTunnel(port: number, instanceId: string, log: (line: string) => void): Promise<{ url: string; stop: () => void; lost: () => string | undefined }> {
+  const { cloudflaredProvider, ensureCloudflared } = await import('../../server/tunnel.ts');
+  const provider = cloudflaredProvider(await ensureCloudflared(log));
+  let lost: string | undefined;
+  const tunnel = await provider.start(port, (reason) => (lost = reason));
+  log(`tunnel at ${tunnel.url}, waiting until it reaches the server`);
+  // A name looked up too early can be remembered as "no such site" for a while, so wait a moment first, as the app does.
+  await sleep(5000);
+  const deadline = Date.now() + 90_000;
+  for (;;) {
+    try {
+      const res = await fetch(`${tunnel.url}/healthz`, { signal: AbortSignal.timeout(5000) });
+      if ((await res.text()) === instanceId) break;
+    } catch {
+      // Not yet.
+    }
+    if (Date.now() > deadline) {
+      tunnel.stop();
+      throw new Error('The tunnel never reached the server.');
+    }
+    await sleep(3000);
+  }
+  return { url: tunnel.url, stop: () => tunnel.stop(), lost: () => lost };
+}
+
 /** Runs a load test, but fails with a clear message instead of hanging if it takes far longer than a quiz of this size should. */
 export async function runLoad(options: LoadOptions): Promise<LoadReport> {
   const seconds = options.seconds ?? 10;
-  const limitMs = (options.questions * (seconds + 8) + 60) * 1000;
+  // A tunnel takes up to a couple of minutes to start and become reachable.
+  const limitMs = (options.questions * (seconds + 8) + 60 + (options.tunnel ? 180 : 0)) * 1000;
   let timer: NodeJS.Timeout | undefined;
   const deadline = new Promise<never>((_, reject) => {
     timer = setTimeout(() => reject(new Error(`The load test did not finish within ${Math.round(limitMs / 1000)} s`)), limitMs);
@@ -266,7 +300,21 @@ async function runLoadUnbounded(options: LoadOptions): Promise<LoadReport> {
     ...Array.from({ length: o.questions }, (_, i) => `      - { type: multiple-choice, text: "Question ${i + 1}", options: [a, b, c, d], answer: 0, seconds: ${o.seconds} }`),
   ].join('\n');
   const server = await createQuizServer({ closeEarly: true, lockOnStart: false, tvShowTeams: true, allowEmptyStart: true, quiz: parseQuiz(yaml), port: 0, bindHost: '127.0.0.1', publicHost: '127.0.0.1' });
-  const proxy = await delayProxy(server.port, o.latencyMs, o.jitterMs);
+  let proxy: Awaited<ReturnType<typeof delayProxy>> | undefined;
+  let tunnel: Awaited<ReturnType<typeof openTunnel>> | undefined;
+  let phoneUrl: string;
+  try {
+    if (options.tunnel) {
+      tunnel = await openTunnel(server.port, server.instanceId, log);
+      phoneUrl = `${tunnel.url.replace(/^https:/, 'wss:')}/ws`;
+    } else {
+      proxy = await delayProxy(server.port, o.latencyMs, o.jitterMs);
+      phoneUrl = `ws://127.0.0.1:${proxy.port}/ws`;
+    }
+  } catch (error) {
+    await server.close();
+    throw error;
+  }
   const loopDelay = monitorEventLoopDelay({ resolution: 5 });
   loopDelay.enable();
   const cpu0 = process.cpuUsage();
@@ -297,8 +345,8 @@ async function runLoadUnbounded(options: LoadOptions): Promise<LoadReport> {
     }
   };
 
-  const bots = Array.from({ length: o.teams }, (_, i) => new Bot(`Team ${String(i + 1).padStart(2, '0')}`, proxy.port, o));
-  const extras = Array.from({ length: o.extraTeams }, (_, i) => new Bot(`Extra ${i + 1}`, proxy.port, o));
+  const bots = Array.from({ length: o.teams }, (_, i) => new Bot(`Team ${String(i + 1).padStart(2, '0')}`, phoneUrl, o));
+  const extras = Array.from({ length: o.extraTeams }, (_, i) => new Bot(`Extra ${i + 1}`, phoneUrl, o));
   const sendTimes = new Map<number, number>();
   let peakRss = 0;
   const sampler = setInterval(() => (peakRss = Math.max(peakRss, process.memoryUsage().rss)), 250);
@@ -313,7 +361,9 @@ async function runLoadUnbounded(options: LoadOptions): Promise<LoadReport> {
 
     if (extras.length) {
       await Promise.all(extras.map((b) => b.connectWithRetry()));
-      await sleep(Math.max(300, o.latencyMs * 4));
+      // Wait for every extra team's answer (a real network's delay is unknown), but not for ever.
+      const answeredBy = Date.now() + Math.max(5000, o.latencyMs * 8);
+      while (!extras.every((b) => b.joined || b.rejected) && Date.now() < answeredBy) await sleep(50);
       const accepted = extras.filter((b) => b.joined).length;
       if (accepted > 0) problems.push(`${accepted} extra teams were let in beyond the ${o.teams} that fit`);
       if (!extras.every((b) => b.rejected)) problems.push('an extra team was neither accepted nor told why it was refused');
@@ -367,6 +417,7 @@ async function runLoadUnbounded(options: LoadOptions): Promise<LoadReport> {
       if (bot.view?.score !== expected) problems.push(`${bot.name}'s phone shows ${bot.view?.score}, expected ${expected}`);
       if (standings.get(bot.name) !== expected) problems.push(`${bot.name}: host standings say ${standings.get(bot.name)}, expected ${expected}`);
     }
+    if (tunnel?.lost()) problems.push(`the tunnel stopped during the test: ${tunnel.lost()}`);
     const unanswerable = bots.reduce((n, b) => n + b.drops, 0);
     const fanOut: number[] = [];
     const spread: number[] = [];
@@ -397,12 +448,14 @@ async function runLoadUnbounded(options: LoadOptions): Promise<LoadReport> {
       drops: unanswerable,
       answersSent: bots.reduce((n, b) => n + b.answersSent, 0),
       answersMissing: missing,
+      ...(tunnel ? { tunnelUrl: tunnel.url } : {}),
     };
   } finally {
     clearInterval(sampler);
     for (const bot of [...bots, ...extras]) bot.stop();
     host.terminate();
-    proxy.server.close();
+    proxy?.server.close();
+    tunnel?.stop();
     await server.close();
   }
 }

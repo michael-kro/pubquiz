@@ -465,6 +465,7 @@ function networkOverlay(s) {
       n.mode === 'tunnel' && n.state === 'up' && n.publicUrl ? h('p', { class: 'copy-link' }, h('code', {}, n.publicUrl.replace(/^https?:\/\//, '')), ' ', h('button', { type: 'button', onclick: () => copyText(n.publicUrl) }, '📋 Copy')) : null,
       n.message ? h('p', { class: n.closedByTimer ? 'muted' : 'error' }, n.message) : null,
       n.mode === 'tunnel' && n.state === 'up' ? h('p', { class: 'muted' }, closesAt(n) ? `Closes by itself at ${closesAt(n)}.` : 'Stays open until the program stops.') : null,
+      n.mode === 'tunnel' && n.state === 'up' ? speedSection(n.speed) : null,
       h(
             'label',
             { class: 'network-hours' },
@@ -504,6 +505,22 @@ function networkOverlay(s) {
         h('span', { class: 'muted small' }, isPhone() ? ' Stops everything until it is started again at the laptop; this phone cannot start it.' : ' Stops everything until it is started again (in Docker: docker start pubquiz).'),
       ),
     ),
+  );
+}
+
+const SPEED_ICONS = { good: '🟢', ok: '🟡', weak: '🔴' };
+
+/** The connection check: measured through the internet link when it opens, and again on request. */
+function speedSection(speed) {
+  const checking = speed?.state === 'checking';
+  const figures = speed?.state === 'done' ? `${speed.latencyMs} ms round trip · ${speed.mbps} Mbit/s` : '';
+  return h(
+    'div',
+    { class: `network-speed ${speed?.level ?? ''}` },
+    h('strong', {}, 'Connection'),
+    h('p', { class: speed?.state === 'failed' ? 'error' : '' }, speed ? `${speed.level ? `${SPEED_ICONS[speed.level]} ` : ''}${speed.message}` : 'Not checked yet.'),
+    figures ? h('p', { class: 'muted small' }, `${figures}, measured through the internet link, there and back.`) : null,
+    h('button', { type: 'button', disabled: checking, onclick: () => socket.send({ t: 'network', action: 'speed-check' }) }, checking ? 'Checking…' : '↻ Check again'),
   );
 }
 
@@ -581,6 +598,15 @@ function networkBanner(s) {
       { class: 'network-banner', role: 'alert' },
       h('span', {}, h('strong', {}, n.closedByTimer ? 'The internet link is closed. ' : 'The internet link is down. '), n.message ?? ''),
       h('button', { onclick: () => socket.send({ t: 'network', action: 'use-tunnel' }) }, n.closedByTimer ? 'Use the internet link' : 'Try again'),
+    );
+  }
+  // A weak connection is worth knowing before the teams arrive, not in the middle of the quiz.
+  if (n.mode === 'tunnel' && n.state === 'up' && n.speed?.level === 'weak' && (s.phase === 'idle' || s.phase === 'lobby')) {
+    return h(
+      'div',
+      { class: 'network-banner calm', role: 'status' },
+      h('span', {}, h('strong', {}, 'The internet connection looks weak. '), `${n.speed.latencyMs} ms round trip, ${n.speed.mbps} Mbit/s: phones may lag. A phone hotspot may do better.`),
+      h('button', { onclick: () => socket.send({ t: 'network', action: 'speed-check' }) }, 'Check again'),
     );
   }
   return null;

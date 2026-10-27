@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Plays a whole quiz with many simulated teams over a slow, jittery, unreliable network and checks every score.
 //   node scripts/loadtest.ts --teams 30 --questions 10 --latency 80 --jitter 40 --drop 0.1
+//   node scripts/loadtest.ts --tunnel     the phones come in through a real Cloudflare quick tunnel, as on a quiz night
 import { parseArgs } from 'node:util';
 
 // The checks expect the 1000-point questions the tests use, so ask for that before the game code loads.
@@ -21,6 +22,7 @@ const { values } = parseArgs({
     drop: { type: 'string', default: '0.1' },
     correct: { type: 'string', default: '0.6' },
     extra: { type: 'string', default: '5' },
+    tunnel: { type: 'boolean', default: false },
     quiet: { type: 'boolean', default: false },
     help: { type: 'boolean', short: 'h', default: false },
   },
@@ -35,15 +37,17 @@ if (values.help) {
   --jitter <ms>     random extra delay, plus or minus (default 25)
   --drop <0-1>      chance per team per question that its connection drops and comes back (default 0.1)
   --correct <0-1>   chance a team answers correctly (default 0.6)
-  --extra <n>       more teams than fit, to check the cap holds (default 5)`);
+  --extra <n>       more teams than fit, to check the cap holds (default 5)
+  --tunnel          phones join through a real Cloudflare quick tunnel (needs the internet; ignores --latency and --jitter)`);
   process.exit(0);
 }
 
 const num = (name: keyof typeof values) => Number(values[name]);
 const log = values.quiet ? undefined : (line: string) => console.log(`  ${line}`);
 
+const network = values.tunnel ? 'through a real Cloudflare quick tunnel' : `${num('latency')} ms ±${num('jitter')} each way`;
 console.log(
-  `Load test: ${num('teams')} teams, ${num('questions')} questions, ${num('latency')} ms ±${num('jitter')} each way, ` +
+  `Load test: ${num('teams')} teams, ${num('questions')} questions, ${network}, ` +
     `${Math.round(num('drop') * 100)}% drop chance per question, ${num('extra')} extra teams\n`,
 );
 
@@ -56,13 +60,14 @@ const report = await runLoad({
   dropRate: num('drop'),
   correctRate: num('correct'),
   extraTeams: num('extra'),
-  log,
+  tunnel: values.tunnel,
+  log: log ?? (values.tunnel ? (line: string) => line.startsWith('tunnel') && console.log(`  ${line}`) : undefined),
 });
 
 const ms = (s: { min: number; p50: number; p95: number; max: number }) => `min ${s.min}, median ${s.p50}, p95 ${s.p95}, max ${s.max} ms`;
 console.log(`
 Took ${(report.durationMs / 1000).toFixed(1)} s
-Question reaches a phone after:   ${ms(report.fanOutMs)}   (includes the ${num('latency')} ms network delay)
+Question reaches a phone after:   ${ms(report.fanOutMs)}   (includes the ${values.tunnel ? 'round trip through the tunnel' : `${num('latency')} ms network delay`})
 Gap between first and last phone: ${ms(report.spreadMs)}
 Connections dropped and restored: ${report.drops}
 Answers sent / never recorded:    ${report.answersSent} / ${report.answersMissing} (an answer lost with its connection)

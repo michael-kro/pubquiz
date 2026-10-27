@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- **Connection check:** each time the internet link opens, the program measures the connection through it (round trip and speed, the way the phones' traffic goes) and shows 🟢 good, 🟡 OK or 🔴 weak in the internet-link panel, with **↻ Check again**. A weak connection also shows a banner before the quiz starts, suggesting a phone hotspot.
+- **Docker: the internet link is in the image.** `cloudflared` is fetched and checksum-checked when the image is built, so a container no longer downloads it on the night, which could be slow or fail on venue internet.
+- **cloudflared 2026.10.1** (was 2026.9.3), for everyone: it fixes denial-of-service bugs in the Go libraries it was built with, which the image scan found once `cloudflared` was in the image. One remaining finding, fixed only in a release from 2026-10-26, is accepted until 2026-11-02 in `.trivyignore.yaml`, when the scan fails again as a reminder to move to it.
+- **Load test through a real tunnel:** `node scripts/loadtest.ts --tunnel` plays a whole quiz with 30 phones joining through a real Cloudflare quick tunnel; a new workflow runs it weekly. The first run passed: every question reached all 30 phones within 85 ms, and every score was right after 36 dropped connections.
+
 - **One branch, releases on demand:** `develop` is gone and every change goes straight into `main` by pull request. `npm run release` cuts a release when there is something to release, instead of a workflow every Friday; it opens the pull request as you, so the `RELEASE_TOKEN` secret is no longer needed. Publishing no longer opens a merge back into `develop`. CI and the ZAP scan run once per pull request instead of again on the push.
 
 ## 0.3.0 — 2026-10-23
