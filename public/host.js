@@ -753,35 +753,7 @@ function libraryView(s) {
             h('select', { 'aria-label': 'Venue', onchange: (e) => switchVenue(e.target.value) }, venues.list.map((v) => h('option', { value: v.id, selected: v.id === venues.active }, v.label))),
           )
         : null,
-      h('a', { class: 'button', href: '#branding' }, 'Branding'),
-      h('button', { type: 'button', onclick: openSettings, title: 'Where your quizzes are kept' }, '⚙ Settings'),
       libraryMoreMenu(),
-      h(
-        'label',
-        { class: 'button' },
-        'Import…',
-        h('input', {
-          type: 'file',
-          accept: '.yaml,.yml,.zip',
-          hidden: true,
-          onchange: (e) => e.target.files[0] && importQuiz(e.target.files[0]),
-        }),
-      ),
-      h(
-        'button',
-        {
-          class: 'primary',
-          onclick: async () => {
-            try {
-              const { id } = await api('POST', '/quizzes');
-              location.hash = `#edit/${id}`;
-            } catch (error) {
-              showNotice(error.message);
-            }
-          },
-        },
-        '+ New quiz',
-      ),
     ),
     library.error ? h('p', { class: 'error' }, library.error) : null,
     items === null
@@ -791,14 +763,14 @@ function libraryView(s) {
             'div',
             { class: 'empty' },
             h('p', { class: 'big' }, 'No quizzes yet.'),
-            h('p', { class: 'muted' }, 'Make one with “New quiz”, or import a quiz file (.yaml, or a .zip with pictures).'),
+            h('p', { class: 'muted' }, 'Make one, import a quiz file (.yaml, or a .zip with pictures), or start with the sample.'),
+            // The same as in the ⋯ menu, out in the open: a first-time host should not have to look for them.
             h(
-              'button',
-              {
-                class: 'primary',
-                onclick: act(() => api('POST', '/sample')),
-              },
-              'Add a sample quiz to try',
+              'div',
+              { class: 'empty-actions' },
+              h('button', { type: 'button', class: 'primary', onclick: newQuiz }, '+ New quiz'),
+              h('button', { type: 'button', onclick: chooseQuizFile }, '📥 Import…'),
+              h('button', { type: 'button', onclick: act(() => api('POST', '/sample')) }, 'Add a sample quiz to try'),
             ),
           )
         : [
@@ -1285,17 +1257,40 @@ document.addEventListener('click', (event) => {
   }
 });
 
-// The library screen's ⋯ menu: the less-used things, so the bar stays short.
+async function newQuiz() {
+  try {
+    const { id } = await api('POST', '/quizzes');
+    location.hash = `#edit/${id}`;
+  } catch (error) {
+    showNotice(error.message);
+  }
+}
+
+/** Opens the file picker for a quiz to import. Called from a click, so the browser allows it. */
+function chooseQuizFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.yaml,.yml,.zip';
+  input.onchange = () => input.files[0] && importQuiz(input.files[0]);
+  input.click();
+}
+
+// The library screen's ⋯ menu: everything but Clips and the venue, which are used on the night; the rest is
+// for preparing a quiz, so the bar stays short.
 let libraryMoreOpen = false;
 function libraryMoreMenu() {
   const items = [
-    ...(isPhone() ? [] : [['📲 Host on my phone', () => { hostQrOpen = true; }]]),
+    ['+ New quiz', newQuiz],
+    ['📥 Import…', chooseQuizFile],
+    ['🎨 Branding', () => { location.hash = '#branding'; }],
+    ['⚙ Settings', openSettings],
+    ...(isPhone() ? [] : [['📲 Phone host', () => { hostQrOpen = true; }]]),
     ['🎓 Practice', openPractice],
   ];
   return h(
     'span',
     { class: 'break-menu-wrap more-menu-wrap' },
-    h('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': String(libraryMoreOpen), title: 'More', 'aria-label': 'More actions', onclick: () => { libraryMoreOpen = !libraryMoreOpen; render(); } }, '⋯'),
+    h('button', { type: 'button', 'aria-haspopup': 'true', 'aria-expanded': String(libraryMoreOpen), title: 'New quiz, import, branding, settings and more', 'aria-label': 'More actions', onclick: () => { libraryMoreOpen = !libraryMoreOpen; render(); } }, isPhone() ? '⋯' : '⋯ More'),
     libraryMoreOpen
       ? h('div', { class: 'break-menu', role: 'menu' }, items.map(([label, run]) => h('button', { type: 'button', role: 'menuitem', onclick: () => { libraryMoreOpen = false; run(); render(); } }, label)))
       : null,
@@ -1309,7 +1304,7 @@ let moreOpen = false;
 function moreControl(s) {
   const items = [
     ...(isPhone() && s.phase === 'reveal' && s.skipsLeaderboardNext ? [['🏆 Show leaderboard', () => socket.send({ t: 'leaderboard' })]] : []),
-    ...(isPhone() ? [['🎵 Clips', openClips]] : [['📲 Host on my phone', () => { hostQrOpen = true; }]]),
+    ...(isPhone() ? [['🎵 Clips', openClips]] : [['📲 Phone host', () => { hostQrOpen = true; }]]),
     ...(isPhone() && linkReady(s) ? [['📋 Copy join link', async () => showNotice((await copyText(s.shortLinks?.join ?? s.joinUrl)) ? 'Join link copied.' : 'Could not copy the link.')]] : []),
     ['📱 Show join QR code', () => socket.send({ t: 'show-join', shown: true })],
     ...(s.canEndRound ? [['⏭ End round', () => endRound(s)]] : []),
